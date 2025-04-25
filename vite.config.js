@@ -1,17 +1,15 @@
-import { defineConfig } from 'vite'
-import { resolve } from 'path'
+import tailwindcss from '@tailwindcss/vite/dist/index.mjs';
+import vue from '@vitejs/plugin-vue';
 
-import vue from '@vitejs/plugin-vue'
-import tailwindcss from '@tailwindcss/vite'
+import { fileURLToPath, URL } from 'url';
+import { defineConfig } from 'vite';
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue(), tailwindcss(),],
+  plugins: [vue(), tailwindcss()],
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src')
-    }
-  }  
-})
-
-
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+});
