@@ -1,4 +1,4 @@
-import tailwindcss from '@tailwindcss/vite/dist/index.mjs';
+import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 
 import { fileURLToPath, URL } from 'url';
