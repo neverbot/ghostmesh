@@ -3,8 +3,6 @@ import EventEmitter from '@/utils/event-emitter.js';
 /** Default interval between automatic LIST refreshes (5 minutes). */
 const LIST_REFRESH_INTERVAL = 5 * 60 * 1000;
 
-/** Default delay before initial LIST request (fallback if no server hint). */
-const LIST_DEFAULT_DELAY = 5 * 1000;
 
 /**
  * IRC protocol service. Manages WebSocket connections, parses IRC messages,
@@ -13,15 +11,19 @@ const LIST_DEFAULT_DELAY = 5 * 1000;
 class IRCService extends EventEmitter {
   /**
    * @param {object} store — store API with mutation methods
+   * @param {object} serverSettings — server settings store API
    */
-  constructor(store) {
+  constructor(store, serverSettings) {
     super();
     this.store = store;
+    this.serverSettings = serverSettings;
     this.connections = new Map();
     this.listTimers = new Map();
     this.initialListTimers = new Map();
     /** @type {Record<string, number>} detected LIST wait per server (seconds) */
     this.listWaitOverrides = {};
+    /** @type {Set<string>} servers where mIRC formatting was detected */
+    this.mircDetected = new Set();
   }
 
   /**
@@ -118,13 +120,16 @@ class IRCService extends EventEmitter {
    */
   startListRefresh(serverId) {
     this.stopListRefresh(serverId);
+    const settings = this.serverSettings.getSettings(serverId);
+    const interval = (settings.listRefreshInterval || LIST_REFRESH_INTERVAL / 1000) * 1000;
+    if (interval <= 0) return; // Disabled
     const timer = setInterval(() => {
       if (this.connections.has(serverId)) {
         this.requestList(serverId);
       } else {
         this.stopListRefresh(serverId);
       }
-    }, LIST_REFRESH_INTERVAL);
+    }, interval);
     this.listTimers.set(serverId, timer);
   }
 
@@ -205,6 +210,16 @@ class IRCService extends EventEmitter {
     const nick = prefix ? prefix.split('!')[0] : '';
     const s = this.store;
 
+    // Detect mIRC formatting in any message
+    if (
+      trailing &&
+      !this.mircDetected.has(serverId) &&
+      /[\x02\x03\x04\x0F\x11\x1D\x1E\x1F\x16]/.test(trailing)
+    ) {
+      this.mircDetected.add(serverId);
+      this.serverSettings.markMircDetected(serverId);
+    }
+
     switch (command) {
       case 'PRIVMSG': {
         s.addMessage(serverId, params[0], nick, trailing, 'message');
@@ -268,10 +283,13 @@ class IRCService extends EventEmitter {
       case 'NOTICE': {
         const text = trailing || '';
         s.addSystemMessage(serverId, text);
-        // Detect LIST wait requirement (e.g. Example: "wait 15s after connecting")
-        const waitMatch = text.match(/wait\s+(\d+)s\s+after\s+connecting.*\/LIST/i);
-        if (waitMatch) {
-          this.listWaitOverrides[serverId] = parseInt(waitMatch[1], 10) + 2;
+        // Generic LIST delay detection: look for seconds + LIST in any NOTICE
+        // Matches patterns like "wait 15s", "15 seconds", "wait 15 sec" near "LIST"
+        if (/list/i.test(text)) {
+          const waitMatch = text.match(/(\d+)\s*(?:s(?:ec(?:ond)?s?)?)\b/i);
+          if (waitMatch) {
+            this.listWaitOverrides[serverId] = parseInt(waitMatch[1], 10) + 2;
+          }
         }
         break;
       }
@@ -296,8 +314,9 @@ class IRCService extends EventEmitter {
 
       case '376':
       case '422': {
-        // Registration complete — delay based on server hint or default
-        const waitSec = this.listWaitOverrides[serverId] || LIST_DEFAULT_DELAY / 1000;
+        // Registration complete — use settings > detected > default
+        const detected = this.listWaitOverrides[serverId] || null;
+        const waitSec = this.serverSettings.getListDelay(serverId, detected);
         const delay = waitSec * 1000;
         const timer = setTimeout(() => {
           this.initialListTimers.delete(serverId);

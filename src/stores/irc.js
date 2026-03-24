@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import IRCService from '@/services/irc.service.js';
+import { useServerSettingsStore } from '@/stores/server-settings.js';
 
 const useIrcStore = defineStore('irc', () => {
   // --- State ---
@@ -37,7 +38,10 @@ const useIrcStore = defineStore('irc', () => {
 
   /** @returns {IRCService} */
   function getService() {
-    if (!ircService) ircService = new IRCService(storeApi);
+    if (!ircService) {
+      const serverSettings = useServerSettingsStore();
+      ircService = new IRCService(storeApi, serverSettings);
+    }
     return ircService;
   }
 
