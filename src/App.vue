@@ -1,12 +1,5 @@
-<script setup>
-import IRC from './components/IRC.vue'
-</script>
+<script setup></script>
 
 <template>
-  <div>
-    <IRC />
-  </div>
+  <router-view />
 </template>
-
-<style scoped>
-</style>
