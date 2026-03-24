@@ -1,4 +1,5 @@
 import EventEmitter from '@/utils/event-emitter.js';
+import { hasFormatting } from '@/utils/mirc-format.js';
 
 /** Default interval between automatic LIST refreshes (5 minutes). */
 const LIST_REFRESH_INTERVAL = 5 * 60 * 1000;
@@ -211,11 +212,7 @@ class IRCService extends EventEmitter {
     const s = this.store;
 
     // Detect mIRC formatting in any message
-    if (
-      trailing &&
-      !this.mircDetected.has(serverId) &&
-      /[\x02\x03\x04\x0F\x11\x1D\x1E\x1F\x16]/.test(trailing)
-    ) {
+    if (trailing && !this.mircDetected.has(serverId) && hasFormatting(trailing)) {
       this.mircDetected.add(serverId);
       this.serverSettings.markMircDetected(serverId);
     }

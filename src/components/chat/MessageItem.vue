@@ -1,19 +1,18 @@
 <script setup>
   import { computed } from 'vue';
   import { useIrcStore } from '@/stores/irc.js';
+  import { useServerSettingsStore } from '@/stores/server-settings.js';
+  import { parseFormatting, stripFormatting, hasFormatting } from '@/utils/mirc-format.js';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
 
   const props = defineProps({
-    message: {
-      type: Object,
-      required: true,
-    },
+    message: { type: Object, required: true },
   });
 
   const store = useIrcStore();
+  const settingsStore = useServerSettingsStore();
 
   const isOwn = computed(() => props.message.nick === store.nickname);
-
   const isSystem = computed(() => ['system', 'join', 'part', 'quit'].includes(props.message.type));
 
   const timeString = computed(() => {
@@ -21,28 +20,40 @@
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   });
 
-  const avatarLetter = computed(() => {
-    return (props.message.nick || '?')[0].toUpperCase();
+  const avatarLetter = computed(() => (props.message.nick || '?')[0].toUpperCase());
+
+  /** Whether mIRC rendering is active for this message's server. */
+  const mircEnabled = computed(() => {
+    const serverId = props.message.serverId;
+    const detected = hasFormatting(props.message.content);
+    return settingsStore.isMircEnabled(serverId, detected);
   });
 
-  /** Strip mIRC formatting codes (bold, italic, underline, color, reverse, reset). */
-  function stripFormatting(text) {
-    if (!text) return '';
-    return text.replace(/\x02|\x1D|\x1F|\x16|\x0F|\x03(\d{1,2}(,\d{1,2})?)?/g, '');
-  }
+  /** Rendered content: HTML if mIRC enabled, plain text otherwise. */
+  const renderedHtml = computed(() => {
+    if (mircEnabled.value) return parseFormatting(props.message.content);
+    return null;
+  });
 
-  const cleanContent = computed(() => stripFormatting(props.message.content));
+  const plainContent = computed(() => stripFormatting(props.message.content));
 </script>
 
 <template>
-  <!-- System messages: left-aligned, monospace, tight vertical spacing -->
+  <!-- System messages -->
   <InfoTooltip
     v-if="isSystem"
     :text="timeString"
-    position="right"
   >
-    <div class="whitespace-pre-wrap font-mono text-xs leading-tight text-slate-400">
-      {{ cleanContent }}
+    <div
+      v-if="mircEnabled && renderedHtml"
+      class="whitespace-pre-wrap font-mono text-xs leading-tight text-slate-400"
+      v-html="renderedHtml"
+    />
+    <div
+      v-else
+      class="whitespace-pre-wrap font-mono text-xs leading-tight text-slate-400"
+    >
+      {{ plainContent }}
     </div>
   </InfoTooltip>
 
@@ -52,7 +63,6 @@
     class="flex gap-3 py-1.5"
     :class="isOwn ? 'flex-row-reverse' : 'flex-row'"
   >
-    <!-- Avatar -->
     <div
       class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
       :class="isOwn ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-600'"
@@ -60,7 +70,6 @@
       {{ avatarLetter }}
     </div>
 
-    <!-- Bubble -->
     <div
       :class="isOwn ? 'items-end' : 'items-start'"
       class="flex max-w-[70%] flex-col gap-1"
@@ -79,7 +88,11 @@
             : 'rounded-tl-sm bg-slate-100 text-slate-800'
         "
       >
-        {{ cleanContent }}
+        <span
+          v-if="mircEnabled && renderedHtml"
+          v-html="renderedHtml"
+        />
+        <template v-else>{{ plainContent }}</template>
       </div>
       <span class="text-[10px] text-slate-400">{{ timeString }}</span>
     </div>
