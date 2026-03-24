@@ -5,7 +5,7 @@ import eslintJsonc from 'eslint-plugin-jsonc';
 import prettier from 'eslint-plugin-prettier';
 import vue from 'eslint-plugin-vue';
 import globals from 'globals';
-import eslintJsoncParser from 'jsonc-eslint-parser';
+import * as eslintJsoncParser from 'jsonc-eslint-parser';
 import vueParser from 'vue-eslint-parser';
 
 import viteConfig from './vite.config.js';
