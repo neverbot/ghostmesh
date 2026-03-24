@@ -5,7 +5,7 @@ const STORAGE_KEY = 'ghostmesh:server-settings';
 
 /** Default settings for a server. */
 const DEFAULTS = {
-  listDelay: 30,
+  listDelay: 5,
   listRefreshInterval: 300,
   mircFormatting: null, // null = auto-detect, true = enabled, false = disabled
   nickname: '',
