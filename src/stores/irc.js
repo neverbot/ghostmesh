@@ -68,6 +68,14 @@ export const useIrcStore = defineStore('irc', () => {
     return availableChannels.value[selectedServerId.value] || [];
   });
 
+  const connectedServers = computed(() => {
+    return servers.value.filter((s) => activeConnections.value.includes(s.id));
+  });
+
+  const disconnectedServers = computed(() => {
+    return servers.value.filter((s) => !activeConnections.value.includes(s.id));
+  });
+
   const selectedServer = computed(() => {
     return servers.value.find((s) => s.id === selectedServerId.value) || null;
   });
@@ -215,7 +223,8 @@ export const useIrcStore = defineStore('irc', () => {
     selectedChannel.value = serverChannels[0] || null;
   }
 
-  function selectChannel(channel) {
+  function selectChannel(serverId, channel) {
+    selectedServerId.value = serverId;
     selectedChannel.value = channel;
   }
 
@@ -391,6 +400,8 @@ export const useIrcStore = defineStore('irc', () => {
     currentChannels,
     currentTopic,
     currentAvailableChannels,
+    connectedServers,
+    disconnectedServers,
     selectedServer,
 
     // Actions

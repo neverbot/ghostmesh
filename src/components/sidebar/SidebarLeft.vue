@@ -1,6 +1,5 @@
 <script setup>
-  import ServerList from './ServerList.vue';
-  import ChannelList from './ChannelList.vue';
+  import ServerTree from './ServerTree.vue';
 </script>
 
 <template>
@@ -27,17 +26,9 @@
       </div>
     </div>
 
-    <!-- Servers -->
-    <div class="px-2 pb-4">
-      <ServerList />
-    </div>
-
-    <!-- Divider -->
-    <div class="mx-4 border-t border-slate-700" />
-
-    <!-- Channels -->
-    <div class="flex flex-1 flex-col overflow-hidden px-2 pt-4">
-      <ChannelList />
+    <!-- Server tree: servers + channels unified -->
+    <div class="flex flex-1 flex-col overflow-hidden px-2 pt-1">
+      <ServerTree />
     </div>
   </div>
 </template>
