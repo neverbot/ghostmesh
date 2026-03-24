@@ -1,6 +1,5 @@
 <script setup>
   import { ref } from 'vue';
-  import simplebar from 'simplebar-vue';
   import { useIrcStore } from '@/stores/irc.js';
   import ServerSettingsModal from '@/components/ui/ServerSettingsModal.vue';
 
@@ -256,7 +255,7 @@
           </div>
 
           <!-- Channel list (scrollable) -->
-          <simplebar class="flex-1">
+          <div class="flex-1 overflow-y-auto">
             <!-- Joined channels -->
             <div
               v-for="entry in store.allJoinedChannels"
@@ -325,7 +324,7 @@
             >
               No channels yet
             </div>
-          </simplebar>
+          </div>
 
           <!-- Join channel input -->
           <div

@@ -1,6 +1,5 @@
 <script setup>
   import { ref, watch, nextTick } from 'vue';
-  import simplebar from 'simplebar-vue';
   import { useIrcStore } from '@/stores/irc.js';
   import MessageItem from './MessageItem.vue';
 
@@ -27,7 +26,7 @@
 </script>
 
 <template>
-  <simplebar class="flex-1 bg-white py-4 pr-6">
+  <div class="flex-1 overflow-y-auto bg-white py-4 pr-6">
     <div
       v-if="store.currentMessages.length === 0"
       class="flex h-full flex-col items-center justify-center text-slate-300"
@@ -60,5 +59,5 @@
       />
     </div>
     <div ref="scrollAnchor" />
-  </simplebar>
+  </div>
 </template>
