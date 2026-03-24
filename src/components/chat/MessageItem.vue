@@ -1,6 +1,7 @@
 <script setup>
   import { computed } from 'vue';
   import { useIrcStore } from '@/stores/irc.js';
+  import InfoTooltip from '@/components/ui/InfoTooltip.vue';
 
   const props = defineProps({
     message: {
@@ -27,8 +28,6 @@
   /** Strip mIRC formatting codes (bold, italic, underline, color, reverse, reset). */
   function stripFormatting(text) {
     if (!text) return '';
-    // \x02 = bold, \x1D = italic, \x1F = underline, \x16 = reverse, \x0F = reset
-    // \x03 followed by optional fg,bg color digits
     return text.replace(/\x02|\x1D|\x1F|\x16|\x0F|\x03(\d{1,2}(,\d{1,2})?)?/g, '');
   }
 
@@ -36,26 +35,21 @@
 </script>
 
 <template>
-  <!-- System messages: left-aligned, monospace, with hover timestamp -->
-  <div
+  <!-- System messages: left-aligned, monospace, tight vertical spacing -->
+  <InfoTooltip
     v-if="isSystem"
-    class="group flex items-start gap-2 py-0.5"
+    :text="timeString"
+    position="right"
   >
-    <span
-      class="invisible shrink-0 text-[10px] text-slate-500 group-hover:visible"
-      :title="timeString"
-    >
-      {{ timeString }}
-    </span>
-    <span class="whitespace-pre-wrap font-mono text-xs leading-relaxed text-slate-400">{{
-      cleanContent
-    }}</span>
-  </div>
+    <div class="whitespace-pre-wrap font-mono text-xs leading-tight text-slate-400">
+      {{ cleanContent }}
+    </div>
+  </InfoTooltip>
 
   <!-- User messages -->
   <div
     v-else
-    class="flex gap-3"
+    class="flex gap-3 py-1.5"
     :class="isOwn ? 'flex-row-reverse' : 'flex-row'"
   >
     <!-- Avatar -->

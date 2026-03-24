@@ -55,7 +55,7 @@
       </p>
     </div>
 
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-0.5">
       <MessageItem
         v-for="msg in store.currentMessages"
         :key="msg.id"
