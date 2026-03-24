@@ -3,8 +3,8 @@ import EventEmitter from '@/utils/event-emitter.js';
 /** Default interval between automatic LIST refreshes (5 minutes). */
 const LIST_REFRESH_INTERVAL = 5 * 60 * 1000;
 
-/** Delay before initial LIST request (some servers like Example require a wait). */
-const LIST_INITIAL_DELAY = 20 * 1000;
+/** Default delay before initial LIST request (fallback if no server hint). */
+const LIST_DEFAULT_DELAY = 5 * 1000;
 
 /**
  * IRC protocol service. Manages WebSocket connections, parses IRC messages,
@@ -20,6 +20,8 @@ class IRCService extends EventEmitter {
     this.connections = new Map();
     this.listTimers = new Map();
     this.initialListTimers = new Map();
+    /** @type {Record<string, number>} detected LIST wait per server (seconds) */
+    this.listWaitOverrides = {};
   }
 
   /**
@@ -264,8 +266,13 @@ class IRCService extends EventEmitter {
         break;
 
       case 'NOTICE': {
-        // Server/user notices go to status
-        s.addSystemMessage(serverId, trailing || '');
+        const text = trailing || '';
+        s.addSystemMessage(serverId, text);
+        // Detect LIST wait requirement (e.g. Example: "wait 15s after connecting")
+        const waitMatch = text.match(/wait\s+(\d+)s\s+after\s+connecting.*\/LIST/i);
+        if (waitMatch) {
+          this.listWaitOverrides[serverId] = parseInt(waitMatch[1], 10) + 2;
+        }
         break;
       }
 
@@ -289,14 +296,16 @@ class IRCService extends EventEmitter {
 
       case '376':
       case '422': {
-        // Registration complete — delay initial LIST (some servers enforce a wait)
+        // Registration complete — delay based on server hint or default
+        const waitSec = this.listWaitOverrides[serverId] || LIST_DEFAULT_DELAY / 1000;
+        const delay = waitSec * 1000;
         const timer = setTimeout(() => {
           this.initialListTimers.delete(serverId);
           if (this.connections.has(serverId)) {
             this.requestList(serverId);
             this.startListRefresh(serverId);
           }
-        }, LIST_INITIAL_DELAY);
+        }, delay);
         this.initialListTimers.set(serverId, timer);
         if (trailing) s.addSystemMessage(serverId, `[${command}] ${trailing}`);
         break;
