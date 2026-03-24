@@ -46,7 +46,7 @@
   >
     <!-- Timestamp gutter -->
     <InfoTooltip :text="timeString">
-      <div class="w-3 shrink-0 cursor-default self-stretch" />
+      <div class="w-6 shrink-0 cursor-default self-stretch" />
     </InfoTooltip>
     <!-- Content -->
     <div
@@ -65,8 +65,8 @@
   <!-- User messages -->
   <div
     v-else
-    class="flex gap-3 py-1.5"
-    :class="isOwn ? 'flex-row-reverse' : 'flex-row'"
+    class="flex gap-3 py-1.5 pl-6"
+    :class="isOwn ? 'flex-row-reverse pr-6' : 'flex-row'"
   >
     <div
       class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"

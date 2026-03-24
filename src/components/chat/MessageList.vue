@@ -29,7 +29,7 @@
 <template>
   <div
     ref="scrollContainer"
-    class="flex-1 overflow-y-auto bg-white px-6 py-4"
+    class="flex-1 overflow-y-auto bg-white py-4 pr-6"
   >
     <div
       v-if="store.currentMessages.length === 0"
