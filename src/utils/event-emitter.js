@@ -16,6 +16,13 @@ export default class EventEmitter {
     }
   }
 
+  off(event, callback) {
+    if (this.events.has(event)) {
+      const listeners = this.events.get(event).filter((cb) => cb !== callback);
+      this.events.set(event, listeners);
+    }
+  }
+
   removeAllListeners() {
     this.events.clear();
   }
