@@ -3,6 +3,9 @@ import EventEmitter from '@/utils/event-emitter.js';
 /** Default interval between automatic LIST refreshes (5 minutes). */
 const LIST_REFRESH_INTERVAL = 5 * 60 * 1000;
 
+/** Delay before initial LIST request (some servers like Example require a wait). */
+const LIST_INITIAL_DELAY = 20 * 1000;
+
 /**
  * IRC protocol service. Manages WebSocket connections, parses IRC messages,
  * handles protocol commands, and periodically refreshes channel lists.
@@ -16,6 +19,7 @@ class IRCService extends EventEmitter {
     this.store = store;
     this.connections = new Map();
     this.listTimers = new Map();
+    this.initialListTimers = new Map();
   }
 
   /**
@@ -160,6 +164,11 @@ class IRCService extends EventEmitter {
   cleanupConnection(serverId) {
     this.connections.delete(serverId);
     this.stopListRefresh(serverId);
+    const initTimer = this.initialListTimers.get(serverId);
+    if (initTimer) {
+      clearTimeout(initTimer);
+      this.initialListTimers.delete(serverId);
+    }
   }
 
   // --- IRC protocol handling ---
@@ -254,6 +263,20 @@ class IRCService extends EventEmitter {
       case '323': // RPL_LISTEND
         break;
 
+      case 'NOTICE': {
+        // Server/user notices go to status
+        s.addSystemMessage(serverId, trailing || '');
+        break;
+      }
+
+      case '372':
+      case '375': {
+        // MOTD lines — strip the leading "- " prefix to preserve ASCII art
+        const motdText = (trailing || '').replace(/^- ?/, '');
+        s.addSystemMessage(serverId, motdText);
+        break;
+      }
+
       case '322': {
         // RPL_LIST — one channel per message, arrives async
         s.addAvailableChannel(serverId, {
@@ -266,9 +289,15 @@ class IRCService extends EventEmitter {
 
       case '376':
       case '422': {
-        // Registration complete — initial LIST + start periodic refresh
-        this.requestList(serverId);
-        this.startListRefresh(serverId);
+        // Registration complete — delay initial LIST (some servers enforce a wait)
+        const timer = setTimeout(() => {
+          this.initialListTimers.delete(serverId);
+          if (this.connections.has(serverId)) {
+            this.requestList(serverId);
+            this.startListRefresh(serverId);
+          }
+        }, LIST_INITIAL_DELAY);
+        this.initialListTimers.set(serverId, timer);
         if (trailing) s.addSystemMessage(serverId, `[${command}] ${trailing}`);
         break;
       }
