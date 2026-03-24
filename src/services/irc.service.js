@@ -1,114 +1,106 @@
 import EventEmitter from '@/utils/event-emitter.js';
 
 export default class IRCService extends EventEmitter {
-  constructor() {
+  constructor(store) {
     super();
+    this.store = store;
     this.connections = new Map();
-    this.defaultConfig = {
-      nickname: 'ghostmesh_' + Math.floor(Math.random() * 1000),
-      username: 'ghostmesh',
-      realname: 'Ghost Mesh IRC Client',
-    };
   }
 
-  connect(serverUrl, serverId = 'default', config = {}) {
-    if (this.connections.has(serverId)) {
-      console.warn(`Already connected to server ${serverId}`);
-      return;
-    }
+  connect(server) {
+    const serverId = server.id;
+    if (this.connections.has(serverId)) return;
 
-    const ircConfig = {
-      ...this.defaultConfig,
-      ...config,
+    const config = {
+      nickname: this.store.nickname,
+      username: 'ghostmesh',
+      realname: 'GhostMesh IRC Client',
     };
 
-    // Create WebSocket connection
-    const socket = new WebSocket(serverUrl);
+    const socket = new WebSocket(server.host);
 
-    // Create connection object
-    const connection = {
-      socket,
-      channels: new Set(),
-      config: ircConfig,
-    };
+    const connection = { socket, config };
 
     socket.onopen = () => {
-      console.log(`Connected to IRC server ${serverId}`);
-      this.emit('connected', { serverId });
-      // Send IRC registration commands
-      this.send(serverId, `NICK ${ircConfig.nickname}`);
-      this.send(serverId, `USER ${ircConfig.username} 0 * :${ircConfig.realname}`);
+      this.store.addConnection(serverId);
+      this.send(serverId, `NICK ${config.nickname}`);
+      this.send(serverId, `USER ${config.username} 0 * :${config.realname}`);
     };
 
     socket.onmessage = (event) => {
-      const message = event.data;
-      console.log(`Raw message from ${serverId}:`, message);
+      const raw = event.data;
 
-      // Handle PING to prevent disconnection
-      if (message.startsWith('PING')) {
-        this.send(serverId, `PONG ${message.split(' ')[1]}`);
+      // Keep-alive
+      if (raw.startsWith('PING')) {
+        this.send(serverId, `PONG ${raw.split(' ')[1]}`);
+        return;
       }
 
-      // Emit parsed message event
-      this.parseIRCMessage(message, serverId);
+      const parsed = this.parseMessage(raw, serverId);
+      if (parsed) this.handleMessage(parsed);
     };
 
-    socket.onerror = (error) => {
-      console.error(`Connection error for server ${serverId}:`, error);
-      this.emit('error', { serverId, error });
+    socket.onerror = () => {
+      this.store.removeConnection(serverId);
+      this.store.addSystemMessage(serverId, `Error connecting to ${server.name}`);
+      this.cleanup(serverId);
     };
 
     socket.onclose = () => {
-      console.log(`Disconnected from server ${serverId}`);
-      this.connections.delete(serverId);
-      this.emit('disconnected', { serverId });
+      this.store.removeConnection(serverId);
+      this.store.addSystemMessage(serverId, `Disconnected from ${server.name}`);
+      this.cleanup(serverId);
     };
 
     this.connections.set(serverId, connection);
-
-    return connection;
   }
 
   send(serverId, message) {
     const connection = this.connections.get(serverId);
-    if (!connection) {
-      console.error(`No connection found for server ${serverId}`);
-      return;
-    }
-
+    if (!connection) return;
     connection.socket.send(message + '\r\n');
   }
 
   joinChannel(serverId, channel) {
-    const connection = this.connections.get(serverId);
-    if (!connection) {
-      console.error(`No connection found for server ${serverId}`);
-      return;
-    }
-
-    if (!channel.startsWith('#')) {
-      channel = '#' + channel;
-    }
-
+    if (!channel.startsWith('#')) channel = '#' + channel;
     this.send(serverId, `JOIN ${channel}`);
-    connection.channels.add(channel);
   }
 
   sendMessage(serverId, channel, message) {
-    if (!channel.startsWith('#')) {
-      channel = '#' + channel;
-    }
-
     this.send(serverId, `PRIVMSG ${channel} :${message}`);
   }
 
-  parseIRCMessage(raw, serverId) {
-    // Basic IRC message parser
+  requestList(serverId) {
+    this.store.clearAvailableChannels(serverId);
+    this.send(serverId, 'LIST');
+  }
+
+  disconnect(serverId) {
+    const connection = this.connections.get(serverId);
+    if (!connection) return;
+    this.send(serverId, 'QUIT :Goodbye');
+    connection.socket.close();
+    this.cleanup(serverId);
+  }
+
+  disconnectAll() {
+    for (const [serverId] of this.connections) {
+      this.disconnect(serverId);
+    }
+  }
+
+  cleanup(serverId) {
+    this.connections.delete(serverId);
+  }
+
+  // --- IRC protocol handling ---
+
+  parseMessage(raw, serverId) {
     const match = raw.match(/^(?::([^ ]+) )?([^ ]+)(?: ([^:][^ ]*(?: [^:][^ ]*)*))?(?: :(.*))?$/);
-    if (!match) return;
+    if (!match) return null;
 
     const [, prefix, command, params = '', trailing] = match;
-    const parsed = {
+    return {
       serverId,
       prefix,
       command,
@@ -116,22 +108,104 @@ export default class IRCService extends EventEmitter {
       trailing,
       raw,
     };
-
-    this.emit('message', parsed);
   }
 
-  disconnect(serverId) {
-    const connection = this.connections.get(serverId);
-    if (connection) {
-      this.send(serverId, 'QUIT :Goodbye');
-      connection.socket.close();
-      this.connections.delete(serverId);
-    }
-  }
+  handleMessage(parsed) {
+    const { serverId, prefix, command, params, trailing } = parsed;
+    const nick = prefix ? prefix.split('!')[0] : '';
+    const s = this.store;
 
-  disconnectAll() {
-    for (const [serverId] of this.connections) {
-      this.disconnect(serverId);
+    switch (command) {
+      case 'PRIVMSG': {
+        s.addMessage(serverId, params[0], nick, trailing, 'message');
+        break;
+      }
+
+      case 'JOIN': {
+        const channel = trailing || params[0];
+        if (nick === s.nickname) {
+          s.addJoinedChannel(serverId, channel);
+          s.selectChannel(serverId, channel);
+        } else {
+          s.addUser(serverId, channel, nick);
+        }
+        s.addMessage(serverId, channel, nick, `${nick} has joined ${channel}`, 'join');
+        break;
+      }
+
+      case 'PART': {
+        const channel = params[0];
+        if (nick === s.nickname) {
+          s.removeJoinedChannel(serverId, channel);
+        } else {
+          s.removeUser(serverId, channel, nick);
+        }
+        s.addMessage(serverId, channel, nick, `${nick} has left ${channel}`, 'part');
+        break;
+      }
+
+      case 'QUIT': {
+        const serverChannels = s.channels[serverId] || [];
+        for (const channel of serverChannels) {
+          s.removeUser(serverId, channel, nick);
+          s.addMessage(serverId, channel, nick, `${nick} has quit (${trailing || ''})`, 'quit');
+        }
+        break;
+      }
+
+      case '332': {
+        // RPL_TOPIC
+        s.setTopic(serverId, params[1], trailing || '');
+        break;
+      }
+
+      case '353': {
+        // RPL_NAMREPLY
+        const channel = params[2];
+        const names = (trailing || '')
+          .split(' ')
+          .map((n) => n.replace(/^[@+%~&]/, ''))
+          .filter(Boolean);
+        s.addUsers(serverId, channel, names);
+        break;
+      }
+
+      case '366':
+        // RPL_ENDOFNAMES — no-op
+        break;
+
+      case '321':
+        // RPL_LISTSTART — no-op, already cleared on request
+        break;
+
+      case '322': {
+        // RPL_LIST — arrives one per channel, async
+        s.addAvailableChannel(serverId, {
+          name: params[1],
+          users: parseInt(params[2], 10) || 0,
+          topic: trailing || '',
+        });
+        break;
+      }
+
+      case '323':
+        // RPL_LISTEND — no-op
+        break;
+
+      case '376':
+      case '422': {
+        // Registration complete — request channel list
+        this.requestList(serverId);
+        if (trailing) s.addSystemMessage(serverId, `[${command}] ${trailing}`);
+        break;
+      }
+
+      default: {
+        if (trailing) {
+          s.addSystemMessage(serverId, `[${command}] ${trailing}`);
+        }
+        break;
+      }
     }
   }
 }

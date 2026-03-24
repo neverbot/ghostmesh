@@ -3,23 +3,18 @@ import { ref, computed } from 'vue';
 import IRCService from '@/services/irc.service.js';
 
 export const useIrcStore = defineStore('irc', () => {
-  const ircService = new IRCService();
+  // --- State ---
 
-  // State
   const servers = ref([
     {
       id: 'example-1',
       name: 'Example Network',
       host: 'wss://example.invalid',
-      port: 443,
-      secure: true,
     },
     {
       id: 'example-2',
       name: 'Example Network',
       host: 'wss://example.invalid',
-      port: 443,
-      secure: true,
     },
   ]);
 
@@ -30,7 +25,7 @@ export const useIrcStore = defineStore('irc', () => {
 
   // { [serverId]: string[] } — joined channels
   const channels = ref({});
-  // { [serverId]: { name, users, topic }[] } — available channels from LIST
+  // { [serverId]: { name, users, topic }[] } — available channels from LIST (grows async)
   const availableChannels = ref({});
   // { [`${serverId}:${channel}`]: MessageObject[] }
   const messages = ref({});
@@ -39,34 +34,17 @@ export const useIrcStore = defineStore('irc', () => {
   // { [`${serverId}:${channel}`]: string }
   const topics = ref({});
 
-  // Getters
-  const currentMessages = computed(() => {
-    if (!selectedServerId.value || !selectedChannel.value) return [];
-    const key = `${selectedServerId.value}:${selectedChannel.value}`;
-    return messages.value[key] || [];
-  });
+  // Service (initialized lazily to break circular dep)
+  let ircService = null;
 
-  const currentUsers = computed(() => {
-    if (!selectedServerId.value || !selectedChannel.value) return [];
-    const key = `${selectedServerId.value}:${selectedChannel.value}`;
-    return users.value[key] || [];
-  });
+  function getService() {
+    if (!ircService) {
+      ircService = new IRCService(storeApi);
+    }
+    return ircService;
+  }
 
-  const currentChannels = computed(() => {
-    if (!selectedServerId.value) return [];
-    return channels.value[selectedServerId.value] || [];
-  });
-
-  const currentTopic = computed(() => {
-    if (!selectedServerId.value || !selectedChannel.value) return '';
-    const key = `${selectedServerId.value}:${selectedChannel.value}`;
-    return topics.value[key] || '';
-  });
-
-  const currentAvailableChannels = computed(() => {
-    if (!selectedServerId.value) return [];
-    return availableChannels.value[selectedServerId.value] || [];
-  });
+  // --- Getters ---
 
   const connectedServers = computed(() => {
     return servers.value.filter((s) => activeConnections.value.includes(s.id));
@@ -80,139 +58,73 @@ export const useIrcStore = defineStore('irc', () => {
     return servers.value.find((s) => s.id === selectedServerId.value) || null;
   });
 
-  // Helpers
-  function messageKey(serverId, channel) {
-    return `${serverId}:${channel}`;
-  }
+  const currentMessages = computed(() => {
+    if (!selectedServerId.value || !selectedChannel.value) return [];
+    return messages.value[`${selectedServerId.value}:${selectedChannel.value}`] || [];
+  });
 
-  function addMessage(serverId, channel, nick, content, type = 'message') {
-    const key = messageKey(serverId, channel);
-    if (!messages.value[key]) {
-      messages.value[key] = [];
-    }
-    messages.value[key].push({
-      id: crypto.randomUUID(),
-      serverId,
-      channel,
-      nick,
-      content,
-      timestamp: new Date(),
-      type,
-    });
-  }
+  const currentUsers = computed(() => {
+    if (!selectedServerId.value || !selectedChannel.value) return [];
+    return users.value[`${selectedServerId.value}:${selectedChannel.value}`] || [];
+  });
 
-  function addSystemMessage(serverId, content) {
-    // System messages go to the server's "status" channel
-    const channel = '*status';
-    addMessage(serverId, channel, '', content, 'system');
+  const currentTopic = computed(() => {
+    if (!selectedServerId.value || !selectedChannel.value) return '';
+    return topics.value[`${selectedServerId.value}:${selectedChannel.value}`] || '';
+  });
 
-    // Also add to selected channel if on this server
-    if (
-      selectedServerId.value === serverId &&
-      selectedChannel.value &&
-      selectedChannel.value !== '*status'
-    ) {
-      addMessage(serverId, selectedChannel.value, '', content, 'system');
-    }
-  }
-
-  // Actions
-  function isConnected(serverId) {
-    return activeConnections.value.includes(serverId);
-  }
-
-  function connectToServer(server) {
-    if (isConnected(server.id)) return;
-
-    const config = {
-      nickname: nickname.value,
-    };
-
-    const onConnected = ({ serverId }) => {
-      if (serverId !== server.id) return;
-      if (!activeConnections.value.includes(serverId)) {
-        activeConnections.value.push(serverId);
+  // All joined channels across all connected servers, with server info
+  const allJoinedChannels = computed(() => {
+    const result = [];
+    for (const serverId of activeConnections.value) {
+      const server = servers.value.find((s) => s.id === serverId);
+      const serverChannels = channels.value[serverId] || [];
+      for (const channel of serverChannels) {
+        result.push({ serverId, serverName: server?.name || serverId, channel });
       }
-      // Initialize channels for this server with a status channel
-      if (!channels.value[serverId]) {
-        channels.value[serverId] = ['*status'];
+    }
+    return result;
+  });
+
+  // All available channels across all connected servers (grows async via addAvailableChannel)
+  const allAvailableChannels = computed(() => {
+    const joined = new Set();
+    for (const serverId of activeConnections.value) {
+      for (const ch of channels.value[serverId] || []) {
+        joined.add(`${serverId}:${ch}`);
       }
-      // Auto-select this server if nothing selected
-      if (!selectedServerId.value) {
-        selectedServerId.value = serverId;
-        selectedChannel.value = '*status';
+    }
+
+    const result = [];
+    for (const serverId of activeConnections.value) {
+      const server = servers.value.find((s) => s.id === serverId);
+      const available = availableChannels.value[serverId] || [];
+      for (const ch of available) {
+        if (!joined.has(`${serverId}:${ch.name}`)) {
+          result.push({ serverId, serverName: server?.name || serverId, ...ch });
+        }
       }
-      addSystemMessage(serverId, `Connected to ${server.name}`);
-    };
-
-    const onDisconnected = ({ serverId }) => {
-      if (serverId !== server.id) return;
-      activeConnections.value = activeConnections.value.filter((id) => id !== serverId);
-      addSystemMessage(serverId, `Disconnected from ${server.name}`);
-      cleanup();
-    };
-
-    const onError = ({ serverId }) => {
-      if (serverId !== server.id) return;
-      activeConnections.value = activeConnections.value.filter((id) => id !== serverId);
-      addSystemMessage(serverId, `Error connecting to ${server.name}`);
-      cleanup();
-    };
-
-    const onMessage = (parsed) => {
-      if (parsed.serverId !== server.id) return;
-      handleIRCMessage(parsed);
-    };
-
-    function cleanup() {
-      ircService.off('connected', onConnected);
-      ircService.off('disconnected', onDisconnected);
-      ircService.off('error', onError);
-      ircService.off('message', onMessage);
     }
+    return result.sort((a, b) => b.users - a.users);
+  });
 
-    ircService.on('connected', onConnected);
-    ircService.on('disconnected', onDisconnected);
-    ircService.on('error', onError);
-    ircService.on('message', onMessage);
+  // --- Mutations (pure state changes) ---
 
-    try {
-      ircService.connect(server.host, server.id, config);
-    } catch (error) {
-      console.error(`Failed to connect to ${server.name}:`, error);
-      addSystemMessage(server.id, `Failed to connect to ${server.name}`);
+  function addConnection(serverId) {
+    if (!activeConnections.value.includes(serverId)) {
+      activeConnections.value.push(serverId);
+    }
+    if (!channels.value[serverId]) {
+      channels.value[serverId] = ['*status'];
+    }
+    if (!selectedServerId.value) {
+      selectedServerId.value = serverId;
+      selectedChannel.value = '*status';
     }
   }
 
-  function disconnectFromServer(serverId) {
-    ircService.disconnect(serverId);
-  }
-
-  function joinChannel(serverId, channel) {
-    if (!isConnected(serverId)) return;
-
-    if (!channel.startsWith('#')) {
-      channel = '#' + channel;
-    }
-
-    ircService.joinChannel(serverId, channel);
-  }
-
-  function sendMessage(content) {
-    if (!selectedServerId.value || !selectedChannel.value) return;
-    if (selectedChannel.value === '*status') return;
-
-    ircService.sendMessage(selectedServerId.value, selectedChannel.value, content);
-
-    // IRC doesn't echo back our own messages
-    addMessage(selectedServerId.value, selectedChannel.value, nickname.value, content, 'message');
-  }
-
-  function listChannels(serverId) {
-    if (!isConnected(serverId)) return;
-    // Clear previous list before requesting a new one
-    availableChannels.value[serverId] = [];
-    ircService.send(serverId, 'LIST');
+  function removeConnection(serverId) {
+    activeConnections.value = activeConnections.value.filter((id) => id !== serverId);
   }
 
   function selectServer(serverId) {
@@ -226,168 +138,152 @@ export const useIrcStore = defineStore('irc', () => {
     selectedChannel.value = channel;
   }
 
-  // IRC message handler
-  function handleIRCMessage(parsed) {
-    const { serverId, prefix, command, params, trailing } = parsed;
-    const nick = prefix ? prefix.split('!')[0] : '';
+  function isConnected(serverId) {
+    return activeConnections.value.includes(serverId);
+  }
 
-    switch (command) {
-      case 'PRIVMSG': {
-        const channel = params[0];
-        addMessage(serverId, channel, nick, trailing, 'message');
-        break;
-      }
+  function addJoinedChannel(serverId, channel) {
+    if (!channels.value[serverId]) {
+      channels.value[serverId] = [];
+    }
+    if (!channels.value[serverId].includes(channel)) {
+      channels.value[serverId].push(channel);
+    }
+    const key = `${serverId}:${channel}`;
+    if (!messages.value[key]) messages.value[key] = [];
+    if (!users.value[key]) users.value[key] = [];
+  }
 
-      case 'JOIN': {
-        const channel = trailing || params[0];
-        if (nick === nickname.value) {
-          // We joined a channel
-          if (!channels.value[serverId]) {
-            channels.value[serverId] = [];
-          }
-          if (!channels.value[serverId].includes(channel)) {
-            channels.value[serverId].push(channel);
-          }
-          // Initialize message and user arrays
-          const key = messageKey(serverId, channel);
-          if (!messages.value[key]) {
-            messages.value[key] = [];
-          }
-          if (!users.value[key]) {
-            users.value[key] = [];
-          }
-          // Auto-select the newly joined channel
-          selectedChannel.value = channel;
-        } else {
-          // Someone else joined
-          const key = messageKey(serverId, channel);
-          if (users.value[key] && !users.value[key].includes(nick)) {
-            users.value[key].push(nick);
-          }
-        }
-        addMessage(serverId, channel, nick, `${nick} has joined ${channel}`, 'join');
-        break;
-      }
+  function removeJoinedChannel(serverId, channel) {
+    if (channels.value[serverId]) {
+      channels.value[serverId] = channels.value[serverId].filter((c) => c !== channel);
+    }
+    if (selectedServerId.value === serverId && selectedChannel.value === channel) {
+      const remaining = channels.value[serverId] || [];
+      selectedChannel.value = remaining[0] || null;
+    }
+  }
 
-      case 'PART': {
-        const channel = params[0];
-        if (nick === nickname.value) {
-          // We left a channel
-          if (channels.value[serverId]) {
-            channels.value[serverId] = channels.value[serverId].filter((c) => c !== channel);
-          }
-          if (selectedChannel.value === channel) {
-            const remaining = channels.value[serverId] || [];
-            selectedChannel.value = remaining[0] || null;
-          }
-        } else {
-          const key = messageKey(serverId, channel);
-          if (users.value[key]) {
-            users.value[key] = users.value[key].filter((u) => u !== nick);
-          }
-        }
-        addMessage(serverId, channel, nick, `${nick} has left ${channel}`, 'part');
-        break;
-      }
+  function addMessage(serverId, channel, nick, content, type = 'message') {
+    const key = `${serverId}:${channel}`;
+    if (!messages.value[key]) messages.value[key] = [];
+    messages.value[key].push({
+      id: crypto.randomUUID(),
+      serverId,
+      channel,
+      nick,
+      content,
+      timestamp: new Date(),
+      type,
+    });
+  }
 
-      case 'QUIT': {
-        // Remove user from all channels on this server
-        const serverChannels = channels.value[serverId] || [];
-        for (const channel of serverChannels) {
-          const key = messageKey(serverId, channel);
-          if (users.value[key]) {
-            users.value[key] = users.value[key].filter((u) => u !== nick);
-          }
-          addMessage(serverId, channel, nick, `${nick} has quit (${trailing || ''})`, 'quit');
-        }
-        break;
-      }
+  function addSystemMessage(serverId, content) {
+    addMessage(serverId, '*status', '', content, 'system');
+    if (
+      selectedServerId.value === serverId &&
+      selectedChannel.value &&
+      selectedChannel.value !== '*status'
+    ) {
+      addMessage(serverId, selectedChannel.value, '', content, 'system');
+    }
+  }
 
-      case '332': {
-        // RPL_TOPIC: <channel> :<topic>
-        const channel = params[1];
-        const key = messageKey(serverId, channel);
-        topics.value[key] = trailing || '';
-        break;
-      }
+  function setTopic(serverId, channel, topic) {
+    topics.value[`${serverId}:${channel}`] = topic;
+  }
 
-      case '353': {
-        // RPL_NAMREPLY: <nick> = <channel> :<names>
-        const channel = params[2];
-        const key = messageKey(serverId, channel);
-        const names = (trailing || '')
-          .split(' ')
-          .map((n) => n.replace(/^[@+%~&]/, ''))
-          .filter(Boolean);
-        if (!users.value[key]) {
-          users.value[key] = [];
-        }
-        // Append (366 signals end, but we just accumulate)
-        for (const name of names) {
-          if (!users.value[key].includes(name)) {
-            users.value[key].push(name);
-          }
-        }
-        break;
-      }
+  function addUser(serverId, channel, nick) {
+    const key = `${serverId}:${channel}`;
+    if (!users.value[key]) users.value[key] = [];
+    if (!users.value[key].includes(nick)) {
+      users.value[key].push(nick);
+    }
+  }
 
-      case '366': {
-        // RPL_ENDOFNAMES - nothing to do, users already populated
-        break;
-      }
-
-      case '321': {
-        // RPL_LISTSTART — clear the list for a fresh request
-        if (!availableChannels.value[serverId]) {
-          availableChannels.value[serverId] = [];
-        }
-        break;
-      }
-
-      case '322': {
-        // RPL_LIST: <channel> <visible> :<topic>
-        const channelName = params[1];
-        const userCount = parseInt(params[2], 10) || 0;
-        if (!availableChannels.value[serverId]) {
-          availableChannels.value[serverId] = [];
-        }
-        availableChannels.value[serverId].push({
-          name: channelName,
-          users: userCount,
-          topic: trailing || '',
-        });
-        break;
-      }
-
-      case '323': {
-        // RPL_LISTEND — list complete, nothing extra to do
-        break;
-      }
-
-      case '376':
-      case '422': {
-        // RPL_ENDOFMOTD or ERR_NOMOTD — registration complete, safe to LIST
-        listChannels(serverId);
-        if (trailing) {
-          addSystemMessage(serverId, `[${command}] ${trailing}`);
-        }
-        break;
-      }
-
-      default: {
-        // Numeric replies and other commands go to status
-        if (trailing) {
-          addSystemMessage(serverId, `[${command}] ${trailing}`);
-        }
-        break;
+  function addUsers(serverId, channel, names) {
+    const key = `${serverId}:${channel}`;
+    if (!users.value[key]) users.value[key] = [];
+    for (const name of names) {
+      if (!users.value[key].includes(name)) {
+        users.value[key].push(name);
       }
     }
   }
 
-  function cleanup() {
-    ircService.removeAllListeners();
-    ircService.disconnectAll();
+  function removeUser(serverId, channel, nick) {
+    const key = `${serverId}:${channel}`;
+    if (users.value[key]) {
+      users.value[key] = users.value[key].filter((u) => u !== nick);
+    }
   }
+
+  function clearAvailableChannels(serverId) {
+    availableChannels.value[serverId] = [];
+  }
+
+  function addAvailableChannel(serverId, channel) {
+    if (!availableChannels.value[serverId]) {
+      availableChannels.value[serverId] = [];
+    }
+    availableChannels.value[serverId].push(channel);
+  }
+
+  // --- Actions (delegate to service) ---
+
+  function connectToServer(server) {
+    if (isConnected(server.id)) return;
+    getService().connect(server);
+  }
+
+  function disconnectFromServer(serverId) {
+    getService().disconnect(serverId);
+  }
+
+  function joinChannel(serverId, channel) {
+    if (!isConnected(serverId)) return;
+    getService().joinChannel(serverId, channel);
+  }
+
+  function sendMessage(content) {
+    if (!selectedServerId.value || !selectedChannel.value) return;
+    if (selectedChannel.value === '*status') return;
+    getService().sendMessage(selectedServerId.value, selectedChannel.value, content);
+    addMessage(selectedServerId.value, selectedChannel.value, nickname.value, content, 'message');
+  }
+
+  function cleanup() {
+    getService().disconnectAll();
+  }
+
+  // Public API reference for the service
+  const storeApi = {
+    get nickname() {
+      return nickname.value;
+    },
+    get channels() {
+      return channels.value;
+    },
+    get selectedServerId() {
+      return selectedServerId.value;
+    },
+    get selectedChannel() {
+      return selectedChannel.value;
+    },
+    addConnection,
+    removeConnection,
+    addJoinedChannel,
+    removeJoinedChannel,
+    addMessage,
+    addSystemMessage,
+    setTopic,
+    addUser,
+    addUsers,
+    removeUser,
+    clearAvailableChannels,
+    addAvailableChannel,
+    selectChannel,
+  };
 
   return {
     // State
@@ -403,24 +299,25 @@ export const useIrcStore = defineStore('irc', () => {
     nickname,
 
     // Getters
-    currentMessages,
-    currentUsers,
-    currentChannels,
-    currentTopic,
-    currentAvailableChannels,
     connectedServers,
     disconnectedServers,
     selectedServer,
+    currentMessages,
+    currentUsers,
+    currentTopic,
+    allJoinedChannels,
+    allAvailableChannels,
 
-    // Actions
+    // Mutations
     isConnected,
+    selectServer,
+    selectChannel,
+
+    // Actions (service delegation)
     connectToServer,
     disconnectFromServer,
     joinChannel,
-    listChannels,
     sendMessage,
-    selectServer,
-    selectChannel,
     cleanup,
   };
 });
