@@ -40,22 +40,27 @@
 
 <template>
   <!-- System messages -->
-  <InfoTooltip
+  <div
     v-if="isSystem"
-    :text="timeString"
+    class="flex items-start"
   >
+    <!-- Timestamp gutter -->
+    <InfoTooltip :text="timeString">
+      <div class="w-3 shrink-0 cursor-default" />
+    </InfoTooltip>
+    <!-- Content -->
     <div
       v-if="mircEnabled && renderedHtml"
-      class="whitespace-pre-wrap font-mono text-xs leading-tight text-slate-400"
+      class="min-w-0 whitespace-pre-wrap font-mono text-xs leading-tight text-slate-400"
       v-html="renderedHtml"
     />
     <div
       v-else
-      class="whitespace-pre-wrap font-mono text-xs leading-tight text-slate-400"
+      class="min-w-0 whitespace-pre-wrap font-mono text-xs leading-tight text-slate-400"
     >
       {{ plainContent }}
     </div>
-  </InfoTooltip>
+  </div>
 
   <!-- User messages -->
   <div
