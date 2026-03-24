@@ -15,11 +15,17 @@ export default [
     // global ignores
     // folders can only be ignored at the global level, per-cfg you must do:
     // '**/dist/**/*'
-    ignores: ['**/dist/', '**/public/', '**/node_modules/'],
+    ignores: ['**/dist/', '**/public/', '**/node_modules/', 'vite.config.js'],
   },
   // general defaults
   js.configs.recommended,
   importPlugin.flatConfigs.recommended,
+  {
+    files: ['eslint.config.js'],
+    rules: {
+      'import/no-unresolved': 'off',
+    },
+  },
   {
     files: ['**/*.js'],
     rules: {

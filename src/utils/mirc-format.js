@@ -1,3 +1,5 @@
+/* eslint-disable no-control-regex */
+
 /**
  * Standard mIRC 16-color palette.
  * @type {string[]}

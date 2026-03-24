@@ -5,7 +5,6 @@
   import MessageItem from './MessageItem.vue';
 
   const store = useIrcStore();
-  const scrollContainer = ref(null);
   const scrollAnchor = ref(null);
 
   function scrollToBottom() {
