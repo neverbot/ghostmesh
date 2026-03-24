@@ -12,7 +12,9 @@
     "lint:quiet": "npx eslint . --quiet"
   },
   "dependencies": {
-    "vue": "^3.5.30"
+    "pinia": "^3.0.4",
+    "vue": "^3.5.30",
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.28.6",
