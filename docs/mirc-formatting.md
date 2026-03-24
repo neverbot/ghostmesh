@@ -6,17 +6,17 @@ Reference: [mIRC Colors - Modern IRC](https://modern.ircdocs.horse/formatting)
 
 ## Control Codes
 
-| Code | Hex | Name | Description | Status |
-|------|-----|------|-------------|--------|
-| `\x02` | 0x02 | Bold | Toggle bold text | Stripped |
-| `\x1D` | 0x1D | Italic | Toggle italic text | Stripped |
-| `\x1F` | 0x1F | Underline | Toggle underline text | Stripped |
-| `\x1E` | 0x1E | Strikethrough | Toggle strikethrough text | — |
-| `\x11` | 0x11 | Monospace | Toggle monospace text | — |
-| `\x16` | 0x16 | Reverse | Swap foreground/background colors | Stripped |
-| `\x0F` | 0x0F | Reset | Reset all formatting | Stripped |
-| `\x03` | 0x03 | Color | Set foreground/background color | Stripped |
-| `\x04` | 0x04 | Hex Color | Set color using hex RGB | — |
+| Code   | Hex  | Name          | Description                       | Status |
+| ------ | ---- | ------------- | --------------------------------- | ------ |
+| `\x02` | 0x02 | Bold          | Toggle bold text                  | Done   |
+| `\x1D` | 0x1D | Italic        | Toggle italic text                | Done   |
+| `\x1F` | 0x1F | Underline     | Toggle underline text             | Done   |
+| `\x1E` | 0x1E | Strikethrough | Toggle strikethrough text         | Done   |
+| `\x11` | 0x11 | Monospace     | Toggle monospace text             | Done   |
+| `\x16` | 0x16 | Reverse       | Swap foreground/background colors | Done   |
+| `\x0F` | 0x0F | Reset         | Reset all formatting              | Done   |
+| `\x03` | 0x03 | Color         | Set foreground/background color   | Done   |
+| `\x04` | 0x04 | Hex Color     | Set color using hex RGB           | —      |
 
 ## Color Syntax
 
@@ -32,24 +32,24 @@ Where `<fg>` and `<bg>` are 1–2 digit numbers (0–99).
 
 ### Standard 16 colors (0–15)
 
-| Code | Color |
-|------|-------|
-| 0 | White |
-| 1 | Black |
-| 2 | Navy |
-| 3 | Green |
-| 4 | Red |
-| 5 | Maroon |
-| 6 | Purple |
-| 7 | Orange |
-| 8 | Yellow |
-| 9 | Light Green |
-| 10 | Teal |
-| 11 | Cyan |
-| 12 | Blue |
-| 13 | Pink |
-| 14 | Grey |
-| 15 | Light Grey |
+| Code | Color       |
+| ---- | ----------- |
+| 0    | White       |
+| 1    | Black       |
+| 2    | Navy        |
+| 3    | Green       |
+| 4    | Red         |
+| 5    | Maroon      |
+| 6    | Purple      |
+| 7    | Orange      |
+| 8    | Yellow      |
+| 9    | Light Green |
+| 10   | Teal        |
+| 11   | Cyan        |
+| 12   | Blue        |
+| 13   | Pink        |
+| 14   | Grey        |
+| 15   | Light Grey  |
 
 Codes 16–98 are extended colors (not universally supported).
 
@@ -65,25 +65,21 @@ Codes 16–98 are extended colors (not universally supported).
 
 mIRC formatting cannot be negotiated — servers always pass it through. We detect it by scanning incoming messages for control characters (0x02, 0x03, 0x04, 0x0F, 0x1D, 0x1E, 0x1F, 0x11, 0x16). If any are found, the server is marked as sending mIRC-formatted content.
 
-## Implementation Plan
+## Implementation Status
 
-### Phase 1 (current) — Strip
-All formatting codes are stripped from displayed text. ASCII art and plain text display correctly.
+### Done
+- Bold → `font-bold` class
+- Italic → `italic` class
+- Underline → `underline` class
+- Strikethrough → `line-through` class
+- Monospace → `font-mono` class
+- Reverse video → swap fg/bg colors
+- Reset → close all formatting
+- Color codes 0–15 → inline CSS with exact mIRC hex values
+- Extended colors 16–98 → inline CSS with HSL approximation
+- Foreground and background colors
+- Auto-detection of mIRC formatting per server
+- User toggle: auto-detect / always on / always off (persisted in localStorage)
 
-### Phase 2 — Render basic formatting
-- Bold → `<strong>`
-- Italic → `<em>`
-- Underline → `<u>`
-- Reset → close all open tags
-
-### Phase 3 — Render colors
-- Map color codes 0–15 to CSS classes
-- Support foreground and background
-- Handle extended colors (16–98)
-- Handle hex colors (`\x04`)
-
-### Phase 4 — Full support
-- Strikethrough → `<del>`
-- Monospace → `<code>`
-- Reverse video
-- Nested formatting combinations
+### Pending
+- Hex color codes (`\x04RRGGBB`)

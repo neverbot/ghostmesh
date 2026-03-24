@@ -170,15 +170,16 @@
             </div>
 
             <div class="rounded-lg bg-slate-700/30 px-3 py-2">
-              <p class="text-[10px] font-medium text-slate-400">Currently supported</p>
-              <ul class="mt-1 text-[10px] text-slate-500">
-                <li>Stripping of bold, italic, underline, color, reverse, reset codes</li>
+              <p class="text-[10px] font-medium text-slate-400">Supported</p>
+              <ul class="mt-1 list-inside list-disc text-[10px] text-slate-500">
+                <li>Bold, italic, underline, strikethrough, monospace</li>
+                <li>Foreground and background colors (16 standard + 83 extended)</li>
+                <li>Reverse video (swap fg/bg)</li>
+                <li>Reset formatting</li>
               </ul>
-              <p class="mt-2 text-[10px] font-medium text-slate-400">Planned</p>
-              <ul class="mt-1 text-[10px] text-slate-500">
-                <li>Render bold, italic, underline as styled text</li>
-                <li>Render foreground/background colors (16 + 83 extended)</li>
-                <li>Hex color support</li>
+              <p class="mt-2 text-[10px] font-medium text-slate-400">Not yet supported</p>
+              <ul class="mt-1 list-inside list-disc text-[10px] text-slate-500">
+                <li>Hex color codes (\x04RRGGBB)</li>
               </ul>
             </div>
           </div>
