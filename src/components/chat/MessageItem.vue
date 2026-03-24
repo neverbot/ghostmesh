@@ -42,11 +42,11 @@
   <!-- System messages -->
   <div
     v-if="isSystem"
-    class="flex items-start"
+    class="flex items-stretch"
   >
     <!-- Timestamp gutter -->
     <InfoTooltip :text="timeString">
-      <div class="w-3 shrink-0 cursor-default" />
+      <div class="w-3 shrink-0 cursor-default self-stretch" />
     </InfoTooltip>
     <!-- Content -->
     <div

@@ -29,7 +29,7 @@
 
 <template>
   <div
-    class="inline-flex"
+    class="flex self-stretch"
     @mouseenter="onEnter"
     @mousemove="onMove"
     @mouseleave="onLeave"
