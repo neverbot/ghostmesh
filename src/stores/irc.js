@@ -15,11 +15,11 @@ export const useIrcStore = defineStore('irc', () => {
       secure: true,
     },
     {
-      id: 'local',
-      name: 'Local',
-      host: 'ws://localhost:6667',
-      port: 6667,
-      secure: false,
+      id: 'example-2',
+      name: 'Example Network',
+      host: 'wss://example.invalid',
+      port: 443,
+      secure: true,
     },
   ]);
 
@@ -143,8 +143,6 @@ export const useIrcStore = defineStore('irc', () => {
         selectedChannel.value = '*status';
       }
       addSystemMessage(serverId, `Connected to ${server.name}`);
-      // Auto-request channel list
-      listChannels(serverId);
     };
 
     const onDisconnected = ({ serverId }) => {
@@ -363,6 +361,16 @@ export const useIrcStore = defineStore('irc', () => {
 
       case '323': {
         // RPL_LISTEND — list complete, nothing extra to do
+        break;
+      }
+
+      case '376':
+      case '422': {
+        // RPL_ENDOFMOTD or ERR_NOMOTD — registration complete, safe to LIST
+        listChannels(serverId);
+        if (trailing) {
+          addSystemMessage(serverId, `[${command}] ${trailing}`);
+        }
         break;
       }
 
