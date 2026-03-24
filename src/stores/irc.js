@@ -28,8 +28,10 @@ export const useIrcStore = defineStore('irc', () => {
   const selectedChannel = ref(null);
   const nickname = ref('ghostmesh_' + Math.floor(Math.random() * 1000));
 
-  // { [serverId]: string[] }
+  // { [serverId]: string[] } — joined channels
   const channels = ref({});
+  // { [serverId]: { name, users, topic }[] } — available channels from LIST
+  const availableChannels = ref({});
   // { [`${serverId}:${channel}`]: MessageObject[] }
   const messages = ref({});
   // { [`${serverId}:${channel}`]: string[] }
@@ -59,6 +61,11 @@ export const useIrcStore = defineStore('irc', () => {
     if (!selectedServerId.value || !selectedChannel.value) return '';
     const key = `${selectedServerId.value}:${selectedChannel.value}`;
     return topics.value[key] || '';
+  });
+
+  const currentAvailableChannels = computed(() => {
+    if (!selectedServerId.value) return [];
+    return availableChannels.value[selectedServerId.value] || [];
   });
 
   const selectedServer = computed(() => {
@@ -128,6 +135,8 @@ export const useIrcStore = defineStore('irc', () => {
         selectedChannel.value = '*status';
       }
       addSystemMessage(serverId, `Connected to ${server.name}`);
+      // Auto-request channel list
+      listChannels(serverId);
     };
 
     const onDisconnected = ({ serverId }) => {
@@ -191,6 +200,13 @@ export const useIrcStore = defineStore('irc', () => {
 
     // IRC doesn't echo back our own messages
     addMessage(selectedServerId.value, selectedChannel.value, nickname.value, content, 'message');
+  }
+
+  function listChannels(serverId) {
+    if (!isConnected(serverId)) return;
+    // Clear previous list before requesting a new one
+    availableChannels.value[serverId] = [];
+    ircService.send(serverId, 'LIST');
   }
 
   function selectServer(serverId) {
@@ -313,6 +329,34 @@ export const useIrcStore = defineStore('irc', () => {
         break;
       }
 
+      case '321': {
+        // RPL_LISTSTART — clear the list for a fresh request
+        if (!availableChannels.value[serverId]) {
+          availableChannels.value[serverId] = [];
+        }
+        break;
+      }
+
+      case '322': {
+        // RPL_LIST: <channel> <visible> :<topic>
+        const channelName = params[1];
+        const userCount = parseInt(params[2], 10) || 0;
+        if (!availableChannels.value[serverId]) {
+          availableChannels.value[serverId] = [];
+        }
+        availableChannels.value[serverId].push({
+          name: channelName,
+          users: userCount,
+          topic: trailing || '',
+        });
+        break;
+      }
+
+      case '323': {
+        // RPL_LISTEND — list complete, nothing extra to do
+        break;
+      }
+
       default: {
         // Numeric replies and other commands go to status
         if (trailing) {
@@ -335,6 +379,7 @@ export const useIrcStore = defineStore('irc', () => {
     selectedServerId,
     selectedChannel,
     channels,
+    availableChannels,
     messages,
     users,
     topics,
@@ -345,6 +390,7 @@ export const useIrcStore = defineStore('irc', () => {
     currentUsers,
     currentChannels,
     currentTopic,
+    currentAvailableChannels,
     selectedServer,
 
     // Actions
@@ -352,6 +398,7 @@ export const useIrcStore = defineStore('irc', () => {
     connectToServer,
     disconnectFromServer,
     joinChannel,
+    listChannels,
     sendMessage,
     selectServer,
     selectChannel,
