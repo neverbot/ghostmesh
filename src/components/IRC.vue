@@ -79,12 +79,12 @@
             secure: false,
           },
         ],
-        activeConnections: new Set(),
+        activeConnections: [],
       };
     },
     computed: {
       currentServerId() {
-        return Array.from(this.activeConnections)[0] || null;
+        return this.activeConnections[0] || null;
       },
     },
     mounted() {
@@ -117,21 +117,23 @@
       setupIRCEvents(server) {
         this.ircService.on('connected', ({ serverId }) => {
           if (serverId === server.id) {
-            this.activeConnections.add(serverId);
+            if (!this.activeConnections.includes(serverId)) {
+              this.activeConnections.push(serverId);
+            }
             this.messages.push(`Connected to ${server.name}`);
           }
         });
 
         this.ircService.on('disconnected', ({ serverId }) => {
           if (serverId === server.id) {
-            this.activeConnections.delete(serverId);
+            this.activeConnections = this.activeConnections.filter((id) => id !== serverId);
             this.messages.push(`Disconnected from ${server.name}`);
           }
         });
 
         this.ircService.on('error', ({ serverId, error }) => {
           if (serverId === server.id) {
-            this.activeConnections.delete(serverId);
+            this.activeConnections = this.activeConnections.filter((id) => id !== serverId);
             this.messages.push(`Error connecting to ${server.name}`);
           }
         });
@@ -152,12 +154,12 @@
       },
 
       isConnected(serverId) {
-        return this.activeConnections.has(serverId);
+        return this.activeConnections.includes(serverId);
       },
 
       joinChannel(serverId, channel) {
         console.log(`Joining channel #${channel} on ${serverId}...`);
-        if (!this.activeConnections.has(serverId)) {
+        if (!this.activeConnections.includes(serverId)) {
           this.messages.push('Server not connected');
           return;
         }
