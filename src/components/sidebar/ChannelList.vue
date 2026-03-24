@@ -4,6 +4,7 @@
 
   const store = useIrcStore();
   const joinInput = ref('');
+  const collapsed = ref(false);
 
   function handleJoin() {
     const channel = joinInput.value.trim();
@@ -15,11 +16,30 @@
 
 <template>
   <div class="flex flex-1 flex-col overflow-hidden">
-    <span class="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+    <button
+      class="mb-1 flex w-full items-center gap-1.5 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-500 transition-colors hover:text-slate-400"
+      @click="collapsed = !collapsed"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 16 16"
+        fill="currentColor"
+        class="h-2.5 w-2.5 transition-transform"
+        :class="collapsed ? '-rotate-90' : ''"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z"
+          clip-rule="evenodd"
+        />
+      </svg>
       Channels
-    </span>
+    </button>
 
-    <div class="flex-1 overflow-y-auto">
+    <div
+      v-show="!collapsed"
+      class="flex-1 overflow-y-auto"
+    >
       <div
         v-for="channel in store.currentChannels"
         :key="channel"
