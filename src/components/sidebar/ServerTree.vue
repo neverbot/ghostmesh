@@ -1,10 +1,12 @@
 <script setup>
-  import { ref } from 'vue';
+  import { ref, computed } from 'vue';
   import { useIrcStore } from '@/stores/irc.js';
 
   const store = useIrcStore();
   const collapsedServers = ref({});
+  const collapsedBrowse = ref({});
   const joinInputs = ref({});
+  const browseFilter = ref({});
 
   function toggleServer(serverId) {
     collapsedServers.value[serverId] = !collapsedServers.value[serverId];
@@ -31,6 +33,29 @@
 
   function getServerChannels(serverId) {
     return store.channels[serverId] || [];
+  }
+
+  function getAvailableChannels(serverId) {
+    const available = store.availableChannels[serverId] || [];
+    const joined = new Set(getServerChannels(serverId));
+    const filter = (browseFilter.value[serverId] || '').toLowerCase();
+    return available
+      .filter((ch) => !joined.has(ch.name))
+      .filter((ch) => !filter || ch.name.toLowerCase().includes(filter))
+      .sort((a, b) => b.users - a.users);
+  }
+
+  function toggleBrowse(serverId) {
+    collapsedBrowse.value[serverId] = !collapsedBrowse.value[serverId];
+  }
+
+  function isBrowseCollapsed(serverId) {
+    // Collapsed by default
+    return collapsedBrowse.value[serverId] !== false;
+  }
+
+  function joinFromBrowse(serverId, channelName) {
+    store.joinChannel(serverId, channelName);
   }
 </script>
 
@@ -133,6 +158,62 @@
               />
             </svg>
           </button>
+        </div>
+
+        <!-- Browse available channels -->
+        <div
+          v-if="(store.availableChannels[server.id] || []).length > 0"
+          class="mt-1"
+        >
+          <button
+            class="flex w-full items-center gap-1.5 py-1 pl-5 pr-3 text-[10px] font-medium uppercase tracking-wider text-slate-600 transition-colors hover:text-slate-500"
+            @click="toggleBrowse(server.id)"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              class="h-2 w-2 transition-transform"
+              :class="isBrowseCollapsed(server.id) ? '-rotate-90' : ''"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Browse ({{ getAvailableChannels(server.id).length }})
+          </button>
+
+          <div v-show="!isBrowseCollapsed(server.id)">
+            <!-- Filter -->
+            <div class="px-6 pb-1">
+              <input
+                v-model="browseFilter[server.id]"
+                type="text"
+                placeholder="Filter channels..."
+                class="w-full rounded-md border border-slate-700/50 bg-slate-700/20 px-2 py-0.5 text-[10px] text-slate-400 outline-none placeholder:text-slate-600 focus:border-slate-600"
+              />
+            </div>
+
+            <!-- Channel list -->
+            <div class="max-h-48 overflow-y-auto">
+              <div
+                v-for="ch in getAvailableChannels(server.id)"
+                :key="`browse:${server.id}:${ch.name}`"
+                class="group flex cursor-pointer items-center gap-2 rounded-md py-1 pl-7 pr-3 text-slate-500 transition-colors hover:bg-slate-700/30 hover:text-slate-400"
+                @click="joinFromBrowse(server.id, ch.name)"
+              >
+                <span class="w-3 text-center text-[10px] opacity-50">#</span>
+                <span class="min-w-0 flex-1 truncate text-xs">
+                  {{ ch.name.replace(/^#/, '') }}
+                </span>
+                <span class="text-[10px] text-slate-600">
+                  {{ ch.users }}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
