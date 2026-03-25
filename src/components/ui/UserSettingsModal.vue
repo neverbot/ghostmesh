@@ -2,6 +2,7 @@
   import { ref, watch, nextTick } from 'vue';
   import { useUserSettingsStore } from '@/stores/user-settings.js';
   import { useIrcStore } from '@/stores/irc.js';
+  import InfoTooltip from '@/components/ui/InfoTooltip.vue';
 
   const backdrop = ref(null);
 
@@ -190,14 +191,18 @@
                   :style="{ backgroundColor: color }"
                   @click="form.avatarColor = color"
                 />
-                <button
-                  class="flex h-6 w-6 items-center justify-center rounded-full border-2 text-[8px] text-slate-400 transition-transform hover:scale-110"
-                  :class="!form.avatarColor ? 'border-white scale-110' : 'border-transparent'"
-                  title="Auto (from nickname)"
-                  @click="form.avatarColor = ''"
+                <InfoTooltip
+                  text="Auto (from nickname)"
+                  :delay="0"
                 >
-                  A
-                </button>
+                  <button
+                    class="flex h-6 w-6 items-center justify-center rounded-full border-2 text-[8px] text-slate-400 transition-transform hover:scale-110"
+                    :class="!form.avatarColor ? 'border-white scale-110' : 'border-transparent'"
+                    @click="form.avatarColor = ''"
+                  >
+                    A
+                  </button>
+                </InfoTooltip>
               </div>
             </div>
           </div>
