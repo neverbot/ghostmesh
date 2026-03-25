@@ -501,6 +501,36 @@ class IRCService extends EventEmitter {
         break;
       }
 
+      case 'KICK': {
+        // KICK #channel target :reason
+        const channel = params[0];
+        const target = params[1];
+        const reason = trailing || '';
+        const connection = this.connections.get(serverId);
+        const ourNick = connection?.config?.nickname || '';
+        if (target.toLowerCase() === ourNick.toLowerCase()) {
+          // We were kicked
+          s.removeJoinedChannel(serverId, channel);
+          s.addMessage(
+            serverId,
+            '*status',
+            nick,
+            `You were kicked from ${channel} by ${nick} (${reason})`,
+            'system',
+          );
+        } else {
+          s.removeUser(serverId, channel, target);
+          s.addMessage(
+            serverId,
+            channel,
+            nick,
+            `${target} was kicked by ${nick} (${reason})`,
+            'part',
+          );
+        }
+        break;
+      }
+
       case 'PART': {
         const channel = params[0];
         if (nick === s.nickname) {
