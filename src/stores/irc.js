@@ -437,9 +437,14 @@ const useIrcStore = defineStore('irc', () => {
    */
   function unreadCount(serverId, channel) {
     const key = `${serverId}:${channel}`;
-    const total = (messages.value[key] || []).length;
+    const msgs = messages.value[key] || [];
     const read = readCounts.value[key] || 0;
-    return Math.max(0, total - read);
+    // Only count user messages (not system/join/part/quit/nick) as unread
+    let count = 0;
+    for (let i = read; i < msgs.length; i++) {
+      if (msgs[i].type === 'message') count++;
+    }
+    return count;
   }
 
   /**
