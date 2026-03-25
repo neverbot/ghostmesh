@@ -17,7 +17,7 @@ Reference: [RFC 1459](https://datatracker.ietf.org/doc/html/rfc1459), [RFC 2812]
 | Command         | Description                    | Status | Notes                                                             |
 | --------------- | ------------------------------ | ------ | ----------------------------------------------------------------- |
 | `PASS`          | Set connection password        | —      |                                                                   |
-| `NICK`          | Set/change nickname            | Done   | Sent on connect from config; per-server override in settings      |
+| `NICK`          | Set/change nickname            | Done   | Sent on connect; live change via user/server settings; handles 432/433/436 errors with fallback |
 | `USER`          | Register username and realname | Done   | Sent on connect from `config.js`                                  |
 | `QUIT`          | Disconnect from server         | Done   | Sent on disconnect; socket handlers detached before close         |
 | `PING` / `PONG` | Keep-alive                     | Done   | Auto PONG response, processed immediately (never queued)          |
@@ -38,7 +38,7 @@ Reference: [RFC 1459](https://datatracker.ietf.org/doc/html/rfc1459), [RFC 2812]
 
 | Command   | Description                          | Status  | Notes                                                    |
 | --------- | ------------------------------------ | ------- | -------------------------------------------------------- |
-| `PRIVMSG` | Send message to channel or user      | Done    | Channel messages via chat input; disabled on `*status`   |
+| `PRIVMSG` | Send message to channel or user      | Done    | Channel + DM support; DM creates private channel with sender nick |
 | `NOTICE`  | Send notice (no auto-reply expected) | Partial | Received and displayed as system message; cannot send    |
 
 ## Server Queries
@@ -106,6 +106,9 @@ Reference: [RFC 1459](https://datatracker.ietf.org/doc/html/rfc1459), [RFC 2812]
 | `375`   | RPL_MOTDSTART      | Done                                 | Stripped `- ` prefix                                 |
 | `376`   | RPL_ENDOFMOTD      | Done                                 | Triggers delayed LIST request + periodic refresh     |
 | `422`   | ERR_NOMOTD         | Done                                 | Same as 376 (triggers LIST)                          |
+| `432`   | ERR_ERRONEUSNICKNAME | Done                               | During registration: fallback nick; post: revert     |
+| `433`   | ERR_NICKNAMEINUSE  | Done                                 | During registration: fallback nick; post: revert     |
+| `436`   | ERR_NICKCOLLISION  | Done                                 | During registration: fallback nick; post: revert     |
 | Other   | Unhandled numerics | Shown as `[code] trailing` in status |                                                      |
 
 ## Implementation Notes
