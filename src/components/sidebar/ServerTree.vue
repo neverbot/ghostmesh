@@ -322,7 +322,12 @@
               <span class="w-3 shrink-0 text-center text-[10px] opacity-60">
                 {{ entry.channel === '*status' ? '~' : entry.isDM ? '@' : '#' }}
               </span>
-              <span class="min-w-0 flex-1 truncate text-sm">
+              <span
+                class="min-w-0 flex-1 truncate text-sm"
+                :class="
+                  entry.isDM && !store.isDMOnline(entry.serverId, entry.channel) ? 'opacity-40' : ''
+                "
+              >
                 {{
                   entry.channel === '*status'
                     ? 'status'
@@ -335,7 +340,12 @@
               <div class="ml-auto flex items-center gap-1.5">
                 <span
                   v-if="store.unreadCount(entry.serverId, entry.channel) > 0"
-                  class="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-white"
+                  class="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold"
+                  :class="
+                    entry.channel === '*status'
+                      ? 'bg-slate-600 text-slate-400'
+                      : 'bg-emerald-500 text-white'
+                  "
                 >
                   {{
                     store.unreadCount(entry.serverId, entry.channel) > 99
@@ -346,7 +356,7 @@
                 <span
                   v-if="
                     entry.channel !== '*status' &&
-                    store.unreadCount(entry.serverId, entry.channel) === 0
+                      store.unreadCount(entry.serverId, entry.channel) === 0
                   "
                   class="text-[10px] text-slate-500"
                 >

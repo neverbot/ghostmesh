@@ -48,6 +48,12 @@ const useIrcStore = defineStore('irc', () => {
   const nicknamePerServer = ref({});
 
   /**
+   * Online status of DM users. Key = "serverId:nick", value = boolean.
+   * @type {import('vue').Ref<Record<string, boolean>>}
+   */
+  const dmOnline = ref({});
+
+  /**
    * Number of messages the user has "read" per channel key.
    * Unread count = messages[key].length - readCounts[key].
    * @type {import('vue').Ref<Record<string, number>>}
@@ -434,6 +440,28 @@ const useIrcStore = defineStore('irc', () => {
   }
 
   /**
+   * Set the online status of a DM user.
+   * @param {string} serverId
+   * @param {string} nick
+   * @param {boolean} online
+   */
+  function setDMOnline(serverId, nick, online) {
+    dmOnline.value[`${serverId}:${nick}`] = online;
+  }
+
+  /**
+   * Check if a DM user is online.
+   * @param {string} serverId
+   * @param {string} nick
+   * @returns {boolean}
+   */
+  function isDMOnline(serverId, nick) {
+    const key = `${serverId}:${nick}`;
+    // Default to true (assume online until we see QUIT)
+    return dmOnline.value[key] !== false;
+  }
+
+  /**
    * Mark the last own message in the current channel with a warning.
    * Used when the server reports an error that may be related to a recent message.
    * @param {string} serverId
@@ -464,7 +492,8 @@ const useIrcStore = defineStore('irc', () => {
     if (
       selectedServerId.value === serverId &&
       selectedChannel.value &&
-      selectedChannel.value !== '*status'
+      selectedChannel.value !== '*status' &&
+      !isDM(selectedChannel.value)
     ) {
       addMessage(serverId, selectedChannel.value, '', content, 'system');
     }
@@ -721,6 +750,9 @@ const useIrcStore = defineStore('irc', () => {
     if (selectedChannel.value === '*status') return;
     getService().sendMessage(selectedServerId.value, selectedChannel.value, content);
     addMessage(selectedServerId.value, selectedChannel.value, nickname.value, content, 'message');
+    // Own messages should not increase unread count
+    const key = `${selectedServerId.value}:${selectedChannel.value}`;
+    readCounts.value[key] = (messages.value[key] || []).length;
   }
 
   /**
@@ -851,6 +883,7 @@ const useIrcStore = defineStore('irc', () => {
     flushChannelBuffer,
     selectChannel,
     setNickname,
+    setDMOnline,
     renameUser,
   };
 
@@ -880,6 +913,7 @@ const useIrcStore = defineStore('irc', () => {
     currentUsers,
     currentTopic,
     isDM,
+    isDMOnline,
     allJoinedChannels,
     allAvailableChannels,
     isListLoading,

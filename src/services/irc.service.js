@@ -465,6 +465,7 @@ class IRCService extends EventEmitter {
             s.addJoinedChannel(serverId, nick);
           }
           s.addMessage(serverId, nick, nick, trailing, 'message');
+          s.setDMOnline(serverId, nick, true);
         } else {
           s.addMessage(serverId, target, nick, trailing, 'message');
         }
@@ -478,6 +479,12 @@ class IRCService extends EventEmitter {
           s.selectChannel(serverId, channel);
         } else {
           s.addUser(serverId, channel, nick);
+          // If we have a DM with this user, mark them back online
+          const serverChannels = s.channels[serverId] || [];
+          if (serverChannels.includes(nick)) {
+            s.setDMOnline(serverId, nick, true);
+            s.addMessage(serverId, nick, '', `${nick} is back online`, 'join');
+          }
         }
         s.addMessage(serverId, channel, nick, `${nick} has joined ${channel}`, 'join');
         break;
@@ -498,10 +505,14 @@ class IRCService extends EventEmitter {
         const serverChannels = s.channels[serverId] || [];
         for (const channel of serverChannels) {
           s.removeUser(serverId, channel, nick);
-          // Only show quit messages in real channels, not DMs
           if (CHANNEL_PREFIXES.some((p) => channel.startsWith(p)) || channel === '*status') {
             s.addMessage(serverId, channel, nick, `${nick} has quit (${trailing || ''})`, 'quit');
           }
+        }
+        // If we have a DM open with this user, notify and mark offline
+        if (serverChannels.includes(nick)) {
+          s.addMessage(serverId, nick, '', `${nick} has disconnected`, 'quit');
+          s.setDMOnline(serverId, nick, false);
         }
         break;
       }

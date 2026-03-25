@@ -78,9 +78,33 @@ function handleImageError(img) {
       }
     };
   } else {
-    // Proxy also failed — hide the image
-    // TODO: future fallbacks could be added here before hiding
-    img.style.display = 'none';
+    // Proxy also failed — show retry button
+    const src = img.dataset.originalSrc;
+    console.warn(`[GhostMesh] Image failed to load: ${src} (proxy also failed)`);
+    failedPreviews.add(src);
+    const wrapper = document.createElement('div');
+    wrapper.className =
+      'my-1 flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-[10px] text-slate-400';
+    wrapper.innerHTML =
+      '<span class="truncate">Image failed to load</span>' +
+      '<button class="shrink-0 rounded p-0.5 text-slate-400 hover:text-slate-600 transition-colors" title="Retry">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-3 w-3">' +
+      '<path fill-rule="evenodd" d="M13.836 2.477a.75.75 0 0 1 .75.75v3.182a.75.75 0 0 1-.75.75h-3.182a.75.75 0 0 1 0-1.5h1.37l-.84-.84a4.5 4.5 0 0 0-7.08.932.75.75 0 0 1-1.3-.75 6 6 0 0 1 9.44-1.242l.842.84V3.227a.75.75 0 0 1 .75-.75Zm-.911 7.5A.75.75 0 0 1 13.199 11a6 6 0 0 1-9.44 1.241l-.84-.84v1.371a.75.75 0 0 1-1.5 0V9.591a.75.75 0 0 1 .75-.75H5.35a.75.75 0 0 1 0 1.5H3.98l.841.841a4.5 4.5 0 0 0 7.08-.932.75.75 0 0 1 1.025-.273Z" clip-rule="evenodd"/>' +
+      '</svg></button>';
+    wrapper.querySelector('button').addEventListener('click', () => {
+      failedPreviews.delete(src);
+      const newImg = document.createElement('img');
+      newImg.src = src;
+      newImg.dataset.originalSrc = src;
+      newImg.dataset.attempt = '0';
+      newImg.alt = '';
+      newImg.referrerPolicy = 'no-referrer';
+      newImg.className = 'my-1 block max-w-full rounded-lg';
+      newImg.loading = 'lazy';
+      newImg.onerror = () => handleImageError(newImg);
+      wrapper.replaceWith(newImg);
+    });
+    img.replaceWith(wrapper);
   }
 }
 
@@ -123,10 +147,12 @@ async function resolveAsyncImage(asyncMarker, placeholderId) {
       img.className = 'my-1 block max-w-full rounded-lg';
       el.replaceWith(img);
     } else {
+      console.warn(`[GhostMesh] Async image not available: ${asyncMarker}`);
       failedPreviews.add(asyncMarker);
       el.textContent = 'Image expired or unavailable';
     }
-  } catch {
+  } catch (err) {
+    console.warn(`[GhostMesh] Async image failed: ${asyncMarker}`, err);
     failedPreviews.add(asyncMarker);
     const el = document.getElementById(placeholderId);
     if (el) el.textContent = 'Preview failed';
