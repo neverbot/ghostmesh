@@ -305,7 +305,7 @@
 
           <!-- Channel list (scrollable with fade) -->
           <div
-            class="flex-1 overflow-y-auto [mask-image:linear-gradient(to_bottom,black_calc(100%-2rem),transparent)]"
+            class="flex-1 overflow-y-auto pb-8 [mask-image:linear-gradient(to_bottom,black_calc(100%-2rem),transparent)]"
           >
             <!-- Joined channels -->
             <div
