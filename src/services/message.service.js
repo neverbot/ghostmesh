@@ -5,15 +5,13 @@
 
 import config from '@/config.js';
 import { resolveImageProvider, providers } from '@/services/image-providers.js';
+import { imageProxyUrl, corsProxyUrl } from '@/services/proxy-services.js';
 
 /** Image file extensions to detect for inline preview. */
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif'];
 
 /** Regex to match URLs in text. */
 const URL_REGEX = /(?:https?:\/\/|www\.)[^\s<>"'()]+/gi;
-
-/** Free image proxy to bypass anti-hotlinking (403). */
-const IMAGE_PROXY = 'https://image-proxy.invalid/?url=';
 
 /**
  * Check if a URL points to an image file by extension.
@@ -44,9 +42,6 @@ function normalizeUrl(rawUrl) {
  * @param {string} url — original image URL
  * @returns {string}
  */
-function proxyUrl(url) {
-  return IMAGE_PROXY + encodeURIComponent(url);
-}
 
 /**
  * Handle image load error with fallback chain.
@@ -68,7 +63,7 @@ function handleImageError(img) {
   if (attempt === 0) {
     // First failure: try via image-proxy.invalid proxy
     img.dataset.attempt = '1';
-    img.src = proxyUrl(img.dataset.originalSrc);
+    img.src = imageProxyUrl(img.dataset.originalSrc);
     img.onload = () => {
       // Proxy succeeded — add caption if configured
       if (config.images.showProxyCaption && !img.dataset.captionAdded) {
@@ -114,18 +109,22 @@ async function resolveAsyncImage(asyncMarker, placeholderId) {
   }
 
   try {
-    const dataUrl = await provider.resolve(id);
-    if (dataUrl && placeholder.parentNode) {
+    const dataUrl = await provider.resolve(id, { corsProxyUrl });
+    const el = document.getElementById(placeholderId);
+    if (!el) return;
+
+    if (dataUrl) {
       const img = document.createElement('img');
       img.src = dataUrl;
       img.alt = '';
       img.className = 'my-1 block max-w-full rounded-lg';
-      placeholder.replaceWith(img);
+      el.replaceWith(img);
     } else {
-      placeholder.textContent = 'Preview not available';
+      el.textContent = 'Image expired or unavailable';
     }
   } catch {
-    placeholder.textContent = 'Preview failed';
+    const el = document.getElementById(placeholderId);
+    if (el) el.textContent = 'Preview failed';
   }
 }
 
@@ -176,7 +175,13 @@ function linkifyText(text) {
       // Async provider — render placeholder, resolve in background
       const placeholderId = `img-async-${Math.random().toString(36).slice(2, 8)}`;
       result += `<div id="${placeholderId}" class="my-1 text-[10px] italic opacity-60">Loading preview...</div>`;
-      resolveAsyncImage(imageSrc, placeholderId);
+      // Defer until Vue renders the HTML into the DOM
+      requestAnimationFrame(() => {
+        resolveAsyncImage(imageSrc, placeholderId).catch(() => {
+          const el = document.getElementById(placeholderId);
+          if (el) el.textContent = 'Preview failed';
+        });
+      });
     } else if (imageSrc) {
       const escapedSrc = escapeHtml(imageSrc);
       result += `<img src="${escapedSrc}" data-original-src="${escapedSrc}" data-attempt="0" alt="" referrerpolicy="no-referrer" class="my-1 block max-w-full rounded-lg" loading="lazy" onerror="window.__ghostmeshImageError?.(this)" />`;
