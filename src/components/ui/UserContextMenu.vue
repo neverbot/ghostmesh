@@ -69,7 +69,7 @@
         :style="{ left: posX + 'px', top: posY + 'px' }"
       >
         <!-- Header -->
-        <div class="border-b border-slate-700 px-3 py-2">
+        <div class="flex min-h-9 items-center border-b border-slate-700 px-3">
           <span class="text-xs font-bold text-white">{{ nick }}</span>
         </div>
 
