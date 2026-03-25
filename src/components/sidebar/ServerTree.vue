@@ -320,10 +320,16 @@
               @click="store.selectChannel(entry.serverId, entry.channel)"
             >
               <span class="w-3 shrink-0 text-center text-[10px] opacity-60">
-                {{ entry.channel === '*status' ? '~' : '#' }}
+                {{ entry.channel === '*status' ? '~' : entry.isDM ? '@' : '#' }}
               </span>
               <span class="min-w-0 flex-1 truncate text-sm">
-                {{ entry.channel === '*status' ? 'status' : entry.channel.replace(/^#/, '') }}
+                {{
+                  entry.channel === '*status'
+                    ? 'status'
+                    : entry.isDM
+                      ? entry.channel
+                      : entry.channel.replace(/^#/, '')
+                }}
               </span>
               <!-- Right-aligned group: user count + server badge + leave -->
               <div class="ml-auto flex items-center gap-1.5">
@@ -343,7 +349,7 @@
                 <!-- Leave button — always rendered for consistent width, invisible for status -->
                 <InfoTooltip
                   v-if="entry.channel !== '*status'"
-                  text="Leave channel"
+                  :text="entry.isDM ? 'Close conversation' : 'Leave channel'"
                   :delay="500"
                 >
                   <button

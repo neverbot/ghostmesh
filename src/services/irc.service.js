@@ -2,6 +2,9 @@ import EventEmitter from '@/utils/event-emitter.js';
 import { hasFormatting } from '@/utils/mirc-format.js';
 import config from '@/config.js';
 
+/** Channel prefixes per IRC spec. Names without these are DMs or special. */
+const CHANNEL_PREFIXES = ['#', '&', '!', '+'];
+
 /**
  * IRC protocol service. Manages WebSocket connections, parses IRC messages,
  * handles protocol commands, and periodically refreshes channel lists.
@@ -495,7 +498,10 @@ class IRCService extends EventEmitter {
         const serverChannels = s.channels[serverId] || [];
         for (const channel of serverChannels) {
           s.removeUser(serverId, channel, nick);
-          s.addMessage(serverId, channel, nick, `${nick} has quit (${trailing || ''})`, 'quit');
+          // Only show quit messages in real channels, not DMs
+          if (CHANNEL_PREFIXES.some((p) => channel.startsWith(p)) || channel === '*status') {
+            s.addMessage(serverId, channel, nick, `${nick} has quit (${trailing || ''})`, 'quit');
+          }
         }
         break;
       }
@@ -512,7 +518,9 @@ class IRCService extends EventEmitter {
         const nickChannels = s.channels[serverId] || [];
         s.renameUser(serverId, nick, newNick);
         for (const channel of nickChannels) {
-          s.addMessage(serverId, channel, nick, `${nick} is now known as ${newNick}`, 'nick');
+          if (CHANNEL_PREFIXES.some((p) => channel.startsWith(p)) || channel === '*status') {
+            s.addMessage(serverId, channel, nick, `${nick} is now known as ${newNick}`, 'nick');
+          }
         }
         break;
       }

@@ -93,8 +93,25 @@ const useIrcStore = defineStore('irc', () => {
   });
 
   /** All joined channels across connected servers, with server metadata. */
+  /**
+   * Check if a channel name is a DM (not a channel prefix and not *status).
+   * @param {string} name
+   * @returns {boolean}
+   */
+  function isDM(name) {
+    return (
+      name &&
+      !name.startsWith('#') &&
+      !name.startsWith('&') &&
+      !name.startsWith('!') &&
+      !name.startsWith('+') &&
+      name !== '*status'
+    );
+  }
+
   const allJoinedChannels = computed(() => {
-    const result = [];
+    const chans = [];
+    const dms = [];
     for (const serverId of activeConnections.value) {
       const server = servers.value.find((s) => s.id === serverId);
       const serverName = server?.name || serverId;
@@ -102,10 +119,17 @@ const useIrcStore = defineStore('irc', () => {
         const key = `${serverId}:${channel}`;
         const userList = users.value[key];
         const userCount = userList ? userList.length : 0;
-        result.push({ serverId, serverName, channel, userCount });
+        const dm = isDM(channel);
+        const entry = { serverId, serverName, channel, userCount, isDM: dm };
+        if (dm) {
+          dms.push(entry);
+        } else {
+          chans.push(entry);
+        }
       }
     }
-    return result;
+    // Channels first, then DMs
+    return [...chans, ...dms];
   });
 
   /** Set of "serverId:channelName" keys for quick joined lookup. */
@@ -721,6 +745,7 @@ const useIrcStore = defineStore('irc', () => {
     currentMessages,
     currentUsers,
     currentTopic,
+    isDM,
     allJoinedChannels,
     allAvailableChannels,
     isListLoading,
