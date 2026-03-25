@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
+import config from '@/config.js';
 
-const STORAGE_KEY = 'ghostmesh:user-prefs';
+const STORAGE_KEY = config.storageKeys.userPrefs;
 
 /**
  * Load user prefs from localStorage.

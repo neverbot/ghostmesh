@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import config from '@/config.js';
 
-const STORAGE_KEY = 'ghostmesh:server-settings';
+const STORAGE_KEY = config.storageKeys.serverSettings;
 const DEFAULTS = config.serverDefaults;
 
 /**

@@ -3,6 +3,14 @@
  * All configurable values should live here so they are easy to find and change.
  */
 const config = {
+  /** localStorage keys — single source of truth. */
+  storageKeys: {
+    userSettings: 'ghostmesh:user-settings',
+    serverSettings: 'ghostmesh:server-settings',
+    userPrefs: 'ghostmesh:user-prefs',
+    session: 'ghostmesh:session',
+  },
+
   /** IRC connection defaults. */
   irc: {
     nickname: 'ghostmesh',

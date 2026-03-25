@@ -2,8 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import config from '@/config.js';
 
-const STORAGE_KEY = 'ghostmesh:user-settings';
-const SERVER_STORAGE_KEY = 'ghostmesh:server-settings';
+const STORAGE_KEY = config.storageKeys.userSettings;
 
 const DEFAULTS = {
   nickname: '',
@@ -111,10 +110,10 @@ const useUserSettingsStore = defineStore('user-settings', () => {
    * Resets in-memory state to defaults.
    */
   function clearAll() {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(SERVER_STORAGE_KEY);
-    localStorage.removeItem('ghostmesh:user-prefs');
-    localStorage.removeItem('ghostmesh:session');
+    localStorage.removeItem(config.storageKeys.userSettings);
+    localStorage.removeItem(config.storageKeys.serverSettings);
+    localStorage.removeItem(config.storageKeys.userPrefs);
+    localStorage.removeItem(config.storageKeys.session);
     settings.value = { ...DEFAULTS };
   }
 

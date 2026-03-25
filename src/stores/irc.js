@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia';
 import { ref, shallowRef, computed, triggerRef, watch } from 'vue';
+import config from '@/config.js';
 import IRCService from '@/services/irc.service.js';
 import { useServerSettingsStore } from '@/stores/server-settings.js';
 import { useUserSettingsStore } from '@/stores/user-settings.js';
 import { useUserPrefsStore } from '@/stores/user-prefs.js';
 import defaultServers from '@/servers.js';
 
-const SESSION_KEY = 'ghostmesh:session';
+const SESSION_KEY = config.storageKeys.session;
 
 /**
  * Load saved session state from localStorage.
