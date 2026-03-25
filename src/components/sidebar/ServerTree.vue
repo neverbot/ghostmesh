@@ -309,7 +309,7 @@
             <div
               v-for="entry in store.allJoinedChannels"
               :key="`joined:${entry.serverId}:${entry.channel}`"
-              class="flex cursor-pointer items-center gap-2 rounded-lg py-1.5 pl-5 pr-3 transition-colors"
+              class="group/ch flex cursor-pointer items-center gap-2 rounded-lg py-1.5 pl-5 pr-3 transition-colors"
               :class="
                 isSelected(entry.serverId, entry.channel)
                   ? 'bg-emerald-500/20 text-emerald-400'
@@ -330,6 +330,28 @@
               >
                 {{ serverAbbr(entry.serverName) }}
               </span>
+              <!-- Leave channel -->
+              <InfoTooltip
+                v-if="entry.channel !== '*status'"
+                text="Leave channel"
+                :delay="500"
+              >
+                <button
+                  class="hidden shrink-0 rounded p-0.5 text-slate-500 transition-colors hover:bg-slate-600 hover:text-red-400 group-hover/ch:block"
+                  @click.stop="store.partChannel(entry.serverId, entry.channel)"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 16 16"
+                    fill="currentColor"
+                    class="h-3 w-3"
+                  >
+                    <path
+                      d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"
+                    />
+                  </svg>
+                </button>
+              </InfoTooltip>
             </div>
 
             <!-- Separator if there are joined channels AND available channels -->
@@ -364,6 +386,15 @@
               <span class="shrink-0 text-[10px] text-slate-600">
                 {{ ch.users }}
               </span>
+            </div>
+
+            <!-- Truncation notice -->
+            <div
+              v-if="store.allAvailableChannels.length > config.list.browseLimit"
+              class="px-5 py-2 text-center text-[10px] text-slate-600"
+            >
+              Showing {{ config.list.browseLimit }} of
+              {{ store.allAvailableChannels.length }} channels. Use filters to narrow results.
             </div>
 
             <!-- Empty state -->

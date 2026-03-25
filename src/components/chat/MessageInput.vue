@@ -1,5 +1,5 @@
 <script setup>
-  import { ref } from 'vue';
+  import { ref, computed } from 'vue';
   import { useIrcStore } from '@/stores/irc.js';
 
   const store = useIrcStore();
@@ -14,7 +14,7 @@
     text.value = '';
   }
 
-  const isDisabled = !store.selectedChannel || store.selectedChannel === '*status';
+  const isDisabled = computed(() => !store.selectedChannel || store.selectedChannel === '*status');
 </script>
 
 <template>

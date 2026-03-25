@@ -409,6 +409,17 @@ const useIrcStore = defineStore('irc', () => {
   }
 
   /**
+   * Leave a channel on a server.
+   * @param {string} serverId
+   * @param {string} channel
+   */
+  function partChannel(serverId, channel) {
+    if (!isConnected(serverId)) return;
+    if (channel === '*status') return;
+    getService().partChannel(serverId, channel);
+  }
+
+  /**
    * Send a message to the currently selected channel.
    * @param {string} content
    */
@@ -520,6 +531,7 @@ const useIrcStore = defineStore('irc', () => {
     connectToServer,
     disconnectFromServer,
     joinChannel,
+    partChannel,
     sendMessage,
     refreshChannelList,
     cleanup,

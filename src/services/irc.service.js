@@ -99,6 +99,15 @@ class IRCService extends EventEmitter {
   }
 
   /**
+   * Send PART command to leave a channel.
+   * @param {string} serverId
+   * @param {string} channel
+   */
+  partChannel(serverId, channel) {
+    this.send(serverId, `PART ${channel}`);
+  }
+
+  /**
    * Send a PRIVMSG to a channel.
    * @param {string} serverId
    * @param {string} channel
