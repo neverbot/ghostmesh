@@ -15,7 +15,9 @@
   const settingsStore = useServerSettingsStore();
 
   const isOwn = computed(() => props.message.nick === store.nickname);
-  const isSystem = computed(() => ['system', 'join', 'part', 'quit'].includes(props.message.type));
+  const isSystem = computed(() =>
+    ['system', 'join', 'part', 'quit', 'nick'].includes(props.message.type),
+  );
 
   const timeString = computed(() => {
     const d = new Date(props.message.timestamp);
