@@ -927,6 +927,7 @@ const useIrcStore = defineStore('irc', () => {
     selectChannel,
     setNickname,
     setDMOnline,
+    isDM,
     renameUser,
   };
 

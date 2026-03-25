@@ -683,12 +683,22 @@ class IRCService extends EventEmitter {
       }
 
       default: {
+        const code = parseInt(command, 10);
+        const isError = code >= 400 && code < 600;
         if (trailing) {
           s.addSystemMessage(serverId, `[${command}] ${trailing}`);
+          // Errors also appear in DMs (addSystemMessage skips DMs by default)
+          if (
+            isError &&
+            s.selectedServerId === serverId &&
+            s.selectedChannel &&
+            s.selectedChannel !== '*status' &&
+            s.isDM(s.selectedChannel)
+          ) {
+            s.addMessage(serverId, s.selectedChannel, '', `[${command}] ${trailing}`, 'system');
+          }
         }
-        // Server error numerics (4xx) — may relate to a message we just sent
-        const code = parseInt(command, 10);
-        if (code >= 400 && code < 500 && trailing) {
+        if (isError && trailing) {
           s.warnLastOwnMessage(
             serverId,
             `The server reported an error that may be related to this message: [${command}] ${trailing}`,
