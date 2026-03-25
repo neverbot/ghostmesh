@@ -171,13 +171,10 @@ const useIrcStore = defineStore('irc', () => {
       }
     }
 
-    // Sort only if multiple servers (single server data is pre-sorted)
-    if (sources.length > 1 || byName) {
-      if (byName) {
-        result.sort((a, b) => a.name.localeCompare(b.name));
-      } else {
-        result.sort((a, b) => b.users - a.users);
-      }
+    if (byName) {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+      result.sort((a, b) => b.users - a.users);
     }
     return result;
   });
