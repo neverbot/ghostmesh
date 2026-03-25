@@ -9,8 +9,8 @@ const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ic
 /** Regex to match URLs in text. */
 const URL_REGEX = /(?:https?:\/\/|www\.)[^\s<>"'()]+/gi;
 
-/** Cache of image URL load results: url → 'ok' | 'fail' | 'loading' */
-const imageCache = new Map();
+/** Free image proxy to bypass anti-hotlinking (403). */
+const IMAGE_PROXY = 'https://image-proxy.invalid/?url=';
 
 /**
  * Check if a URL points to an image file by extension.
@@ -37,52 +37,45 @@ function normalizeUrl(rawUrl) {
 }
 
 /**
- * Preload an image to check if it loads successfully.
- * Caches the result to avoid repeated requests.
- * @param {string} url
- * @returns {Promise<boolean>}
+ * Build the proxy URL for an image via image-proxy.invalid.
+ * @param {string} url — original image URL
+ * @returns {string}
  */
-function preloadImage(url) {
-  const cached = imageCache.get(url);
-  if (cached === 'ok') return Promise.resolve(true);
-  if (cached === 'fail') return Promise.resolve(false);
-  if (cached === 'loading') {
-    // Wait for the in-flight request
-    return new Promise((resolve) => {
-      const check = setInterval(() => {
-        const status = imageCache.get(url);
-        if (status !== 'loading') {
-          clearInterval(check);
-          resolve(status === 'ok');
-        }
-      }, 100);
-    });
+function proxyUrl(url) {
+  return IMAGE_PROXY + encodeURIComponent(url);
+}
+
+/**
+ * Handle image load error with fallback chain.
+ * Called inline from the img onerror attribute.
+ *
+ * Fallback order:
+ *   1. Original URL with referrerpolicy="no-referrer" (already set in the tag)
+ *   2. image-proxy.invalid proxy (bypasses hotlinking from server side)
+ *   3. Hide the image (all fallbacks exhausted)
+ *
+ * TODO: Add additional fallback proxies here if image-proxy.invalid becomes unavailable.
+ *       Options: self-hosted wsrv instance, Cloudflare Worker, own backend endpoint.
+ *
+ * @param {HTMLImageElement} img — the img element that failed
+ */
+function handleImageError(img) {
+  const attempt = parseInt(img.dataset.attempt || '0', 10);
+
+  if (attempt === 0) {
+    // First failure: try via image-proxy.invalid proxy
+    img.dataset.attempt = '1';
+    img.src = proxyUrl(img.dataset.originalSrc);
+  } else {
+    // Proxy also failed — hide the image
+    // TODO: future fallbacks could be added here before hiding
+    img.style.display = 'none';
   }
+}
 
-  imageCache.set(url, 'loading');
-
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      imageCache.set(url, 'ok');
-      resolve(true);
-    };
-    img.onerror = () => {
-      // Try with no-referrer to bypass hotlink protection
-      const img2 = new Image();
-      img2.referrerPolicy = 'no-referrer';
-      img2.onload = () => {
-        imageCache.set(url, 'ok');
-        resolve(true);
-      };
-      img2.onerror = () => {
-        imageCache.set(url, 'fail');
-        resolve(false);
-      };
-      img2.src = url;
-    };
-    img.src = url;
-  });
+// Expose globally so inline onerror can call it
+if (typeof window !== 'undefined') {
+  window.__ghostmeshImageError = handleImageError;
 }
 
 /**
@@ -120,10 +113,7 @@ function linkifyText(text) {
     result += `<a href="${escapedHref}" target="_blank" rel="noopener" class="underline break-all opacity-80 hover:opacity-100">${escapedDisplay}</a>`;
 
     if (isImageUrl(rawUrl)) {
-      const imgId = `img-${Math.random().toString(36).slice(2, 8)}`;
-      result += `<img id="${imgId}" src="${escapedHref}" alt="" referrerpolicy="no-referrer" class="my-1 block max-w-full rounded-lg" loading="lazy" onerror="this.style.display='none'" />`;
-      // Trigger preload to update cache
-      preloadImage(href);
+      result += `<img src="${escapedHref}" data-original-src="${escapedHref}" data-attempt="0" alt="" referrerpolicy="no-referrer" class="my-1 block max-w-full rounded-lg" loading="lazy" onerror="window.__ghostmeshImageError?.(this)" />`;
     }
 
     lastIndex = match.index + rawUrl.length;
@@ -175,4 +165,4 @@ function hasUrls(text) {
   return URL_REGEX.test(text);
 }
 
-export { formatPlainContent, formatHtmlContent, hasUrls, isImageUrl, preloadImage };
+export { formatPlainContent, formatHtmlContent, hasUrls, isImageUrl };

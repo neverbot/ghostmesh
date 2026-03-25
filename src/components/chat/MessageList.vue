@@ -1,11 +1,24 @@
 <script setup>
-  import { ref, watch, nextTick } from 'vue';
+  import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
   import { useIrcStore } from '@/stores/irc.js';
   import MessageItem from './MessageItem.vue';
 
   const store = useIrcStore();
   const scrollContainer = ref(null);
   const scrollAnchor = ref(null);
+
+  /** Re-scroll when images inside the chat load (they change scrollHeight). */
+  function onImageLoad() {
+    scrollToBottomIfNeeded();
+  }
+
+  onMounted(() => {
+    scrollContainer.value?.addEventListener('load', onImageLoad, true);
+  });
+
+  onUnmounted(() => {
+    scrollContainer.value?.removeEventListener('load', onImageLoad, true);
+  });
 
   /**
    * Check if the user is scrolled near the bottom (within 100px).
