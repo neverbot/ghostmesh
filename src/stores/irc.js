@@ -47,6 +47,13 @@ const useIrcStore = defineStore('irc', () => {
   /** @type {import('vue').Ref<Record<string, string>>} actual nick per server (confirmed by server) */
   const nicknamePerServer = ref({});
 
+  /**
+   * Number of messages the user has "read" per channel key.
+   * Unread count = messages[key].length - readCounts[key].
+   * @type {import('vue').Ref<Record<string, number>>}
+   */
+  const readCounts = ref({});
+
   /** @type {import('vue').Ref<Record<string, string[]>>} joined channels per server */
   const channels = ref({});
   /**
@@ -395,6 +402,34 @@ const useIrcStore = defineStore('irc', () => {
     const max = config.chat.maxMessages;
     if (arr.length > max) {
       arr.splice(0, arr.length - max);
+    }
+  }
+
+  /**
+   * Get the unread message count for a channel.
+   * @param {string} serverId
+   * @param {string} channel
+   * @returns {number}
+   */
+  function unreadCount(serverId, channel) {
+    const key = `${serverId}:${channel}`;
+    const total = (messages.value[key] || []).length;
+    const read = readCounts.value[key] || 0;
+    return Math.max(0, total - read);
+  }
+
+  /**
+   * Mark a channel as read up to a given count.
+   * Since reading a message marks all previous as read, we just store the high-water mark.
+   * @param {string} serverId
+   * @param {string} channel
+   * @param {number} count — messages read (usually messages.length when at scroll bottom)
+   */
+  function markRead(serverId, channel, count) {
+    const key = `${serverId}:${channel}`;
+    const current = readCounts.value[key] || 0;
+    if (count > current) {
+      readCounts.value[key] = count;
     }
   }
 
@@ -865,6 +900,8 @@ const useIrcStore = defineStore('irc', () => {
     refreshChannelList,
     changeNick,
     changeNickGlobal,
+    unreadCount,
+    markRead,
     restoreSession,
     cleanup,
   };

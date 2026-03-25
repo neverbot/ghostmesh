@@ -331,10 +331,23 @@
                       : entry.channel.replace(/^#/, '')
                 }}
               </span>
-              <!-- Right-aligned group: user count + server badge + leave -->
+              <!-- Right-aligned group: unread badge + user count + server badge + leave -->
               <div class="ml-auto flex items-center gap-1.5">
                 <span
-                  v-if="entry.channel !== '*status'"
+                  v-if="store.unreadCount(entry.serverId, entry.channel) > 0"
+                  class="flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-white"
+                >
+                  {{
+                    store.unreadCount(entry.serverId, entry.channel) > 99
+                      ? '99+'
+                      : store.unreadCount(entry.serverId, entry.channel)
+                  }}
+                </span>
+                <span
+                  v-if="
+                    entry.channel !== '*status' &&
+                    store.unreadCount(entry.serverId, entry.channel) === 0
+                  "
                   class="text-[10px] text-slate-500"
                 >
                   {{ entry.userCount || '' }}

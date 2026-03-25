@@ -16,6 +16,12 @@
   const menuX = ref(0);
   const menuY = ref(0);
 
+  /** Saved scroll positions per channel key. */
+  const scrollPositions = {};
+
+  /** Previous channel key for saving scroll on switch. */
+  let prevKey = null;
+
   /**
    * Handle user-click from a MessageItem.
    * @param {{ nick: string, serverId: string, x: number, y: number }} payload
@@ -36,7 +42,7 @@
     store.openDM(serverId, nick);
   }
 
-  /** Current channel key for v-show comparison. */
+  /** Current channel key. */
   const selectedKey = computed(() => {
     if (!store.selectedServerId || !store.selectedChannel) return null;
     return `${store.selectedServerId}:${store.selectedChannel}`;
@@ -44,9 +50,6 @@
 
   /** All channel keys that have messages. */
   const messageKeys = computed(() => Object.keys(store.messages));
-
-  /** Whether we should keep scrolling to bottom (set when a new message arrives near bottom). */
-  let shouldStick = true;
 
   /**
    * Check if the user is scrolled near the bottom (within 150px).
@@ -68,40 +71,84 @@
     });
   }
 
-  /**
-   * Re-scroll when images load (they change scrollHeight after the message was added).
-   */
+  /** Mark current channel as read up to its message count. */
+  function markCurrentAsRead() {
+    if (!store.selectedServerId || !store.selectedChannel) return;
+    const key = selectedKey.value;
+    const msgs = store.messages[key];
+    if (msgs) {
+      store.markRead(store.selectedServerId, store.selectedChannel, msgs.length);
+    }
+  }
+
+  /** Re-scroll when images load. */
   function onImageLoad() {
-    if (shouldStick) {
+    if (isNearBottom()) {
       doScroll('instant');
+      markCurrentAsRead();
+    }
+  }
+
+  /** On user scroll, check if at bottom and mark as read. */
+  function onScroll() {
+    if (isNearBottom()) {
+      markCurrentAsRead();
     }
   }
 
   onMounted(() => {
-    scrollContainer.value?.addEventListener('load', onImageLoad, true);
+    const el = scrollContainer.value;
+    if (el) {
+      el.addEventListener('load', onImageLoad, true);
+      el.addEventListener('scroll', onScroll, { passive: true });
+    }
   });
 
   onUnmounted(() => {
-    scrollContainer.value?.removeEventListener('load', onImageLoad, true);
+    const el = scrollContainer.value;
+    if (el) {
+      el.removeEventListener('load', onImageLoad, true);
+      el.removeEventListener('scroll', onScroll);
+    }
   });
 
+  // When new messages arrive in the current channel
   watch(
     () => store.currentMessages.length,
     () => {
-      shouldStick = isNearBottom();
-      if (shouldStick) {
+      if (isNearBottom()) {
         doScroll('smooth');
+        markCurrentAsRead();
       }
     },
   );
 
-  watch(
-    () => store.selectedChannel,
-    () => {
-      shouldStick = true;
-      doScroll('instant');
-    },
-  );
+  // When switching channels: save scroll, restore new channel's scroll
+  watch(selectedKey, (newKey, oldKey) => {
+    const el = scrollContainer.value;
+
+    // Save scroll position of the channel we're leaving
+    if (oldKey && el) {
+      scrollPositions[oldKey] = el.scrollTop;
+    }
+
+    prevKey = newKey;
+
+    if (!newKey) return;
+
+    nextTick(() => {
+      if (!el) return;
+      const saved = scrollPositions[newKey];
+      if (saved !== undefined) {
+        // Restore saved position
+        el.scrollTo({ top: saved, behavior: 'instant' });
+      } else {
+        // New channel — scroll to bottom and mark as read
+        el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
+        markCurrentAsRead();
+      }
+    });
+  });
 </script>
 
 <template>
@@ -109,7 +156,7 @@
     ref="scrollContainer"
     class="flex-1 overflow-y-auto bg-white py-4 pr-6"
   >
-    <!-- Empty state (only when selected channel has no messages) -->
+    <!-- Empty state -->
     <div
       v-if="!selectedKey || store.currentMessages.length === 0"
       v-show="!selectedKey || store.currentMessages.length === 0"
@@ -137,8 +184,7 @@
 
     <!--
       All channels rendered simultaneously, only the selected one is visible.
-      This keeps MessageItem components alive so previews and IntersectionObserver
-      state survive channel switches.
+      Keeps MessageItem components alive so previews survive channel switches.
     -->
     <div
       v-for="key in messageKeys"
