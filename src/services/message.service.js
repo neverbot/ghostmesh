@@ -149,14 +149,45 @@ async function resolveAsyncImage(asyncMarker, placeholderId) {
     } else {
       console.warn(`[GhostMesh] Async image not available: ${asyncMarker}`);
       failedPreviews.add(asyncMarker);
-      el.textContent = 'Image expired or unavailable';
+      replaceWithRetry(el, asyncMarker, placeholderId, 'Image expired or unavailable');
     }
   } catch (err) {
     console.warn(`[GhostMesh] Async image failed: ${asyncMarker}`, err);
     failedPreviews.add(asyncMarker);
     const el = document.getElementById(placeholderId);
-    if (el) el.textContent = 'Preview failed';
+    if (el) replaceWithRetry(el, asyncMarker, placeholderId, 'Preview failed');
   }
+}
+
+/**
+ * Replace a placeholder element with a failure message and a retry button.
+ * @param {HTMLElement} el — the element to replace
+ * @param {string} asyncMarker — the async marker for retrying
+ * @param {string} placeholderId — the placeholder DOM id
+ * @param {string} message — failure message to display
+ */
+function replaceWithRetry(el, asyncMarker, placeholderId, message) {
+  el.className = 'my-1 flex items-center gap-1.5 text-[10px] italic opacity-60';
+  el.innerHTML = '';
+  const span = document.createElement('span');
+  span.textContent = message;
+  el.appendChild(span);
+  const btn = document.createElement('button');
+  btn.className = 'shrink-0 rounded p-0.5 text-slate-400 hover:text-slate-600 transition-colors';
+  btn.title = 'Retry';
+  btn.innerHTML =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="h-3 w-3">' +
+    '<path fill-rule="evenodd" d="M13.836 2.477a.75.75 0 0 1 .75.75v3.182a.75.75 0 0 1-.75.75h-3.182a.75.75 0 0 1 0-1.5h1.37l-.84-.84a4.5 4.5 0 0 0-7.08.932.75.75 0 0 1-1.3-.75 6 6 0 0 1 9.44-1.242l.842.84V3.227a.75.75 0 0 1 .75-.75Zm-.911 7.5A.75.75 0 0 1 13.199 11a6 6 0 0 1-9.44 1.241l-.84-.84v1.371a.75.75 0 0 1-1.5 0V9.591a.75.75 0 0 1 .75-.75H5.35a.75.75 0 0 1 0 1.5H3.98l.841.841a4.5 4.5 0 0 0 7.08-.932.75.75 0 0 1 1.025-.273Z" clip-rule="evenodd"/>' +
+    '</svg>';
+  btn.addEventListener('click', () => {
+    failedPreviews.delete(asyncMarker);
+    el.className = 'my-1 text-[10px] italic opacity-60';
+    el.innerHTML = '';
+    el.textContent = 'Loading preview...';
+    el.id = placeholderId;
+    resolveAsyncImage(asyncMarker, placeholderId).catch(() => {});
+  });
+  el.appendChild(btn);
 }
 
 /**
@@ -196,6 +227,7 @@ function linkifyText(text, { resolveImages = true } = {}) {
 
     // Determine image src: direct image URL, or resolved from hosting provider
     let imageSrc = null;
+    const wouldHavePreview = isImageUrl(rawUrl) || resolveImageProvider(href) !== null;
     if (resolveImages) {
       if (isImageUrl(rawUrl)) {
         imageSrc = href;
@@ -207,6 +239,9 @@ function linkifyText(text, { resolveImages = true } = {}) {
       if (imageSrc && failedPreviews.has(imageSrc)) {
         imageSrc = null;
       }
+    } else if (wouldHavePreview) {
+      result +=
+        '<div class="my-0.5 text-[10px] italic opacity-50">Preview hidden for this user</div>';
     }
 
     if (imageSrc && imageSrc.startsWith('async:')) {

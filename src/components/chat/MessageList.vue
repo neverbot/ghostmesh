@@ -19,6 +19,12 @@
   /** Whether to show the "scroll to bottom" button. */
   const showScrollBtn = ref(false);
 
+  /**
+   * Auto-scroll mode: when true, any new content (message, image load) scrolls to bottom.
+   * Activates when user is near bottom. Deactivates when user scrolls up.
+   */
+  let autoScroll = true;
+
   /** Saved scroll positions per channel key. */
   const scrollPositions = {};
 
@@ -84,25 +90,27 @@
     }
   }
 
-  /** Re-scroll when images load. */
+  /** Re-scroll when images load (if auto-scroll is active). */
   function onImageLoad() {
-    if (isNearBottom()) {
+    if (autoScroll) {
       doScroll('instant');
       markCurrentAsRead();
     }
   }
 
-  /** On user scroll, check if at bottom and mark as read. */
+  /** On user scroll, toggle auto-scroll mode based on position. */
   function onScroll() {
     const near = isNearBottom();
+    autoScroll = near;
     showScrollBtn.value = !near;
     if (near) {
       markCurrentAsRead();
     }
   }
 
-  /** Scroll to bottom and mark as read. */
+  /** Scroll to bottom, re-enable auto-scroll, and mark as read. */
   function scrollToBottom() {
+    autoScroll = true;
     doScroll('smooth');
     markCurrentAsRead();
     showScrollBtn.value = false;
@@ -128,7 +136,7 @@
   watch(
     () => store.currentMessages.length,
     () => {
-      if (isNearBottom()) {
+      if (autoScroll) {
         doScroll('smooth');
         markCurrentAsRead();
       }
@@ -152,10 +160,14 @@
       if (!el) return;
       const saved = scrollPositions[newKey];
       if (saved !== undefined) {
-        // Restore saved position
+        // Restore saved position and auto-scroll state
         el.scrollTo({ top: saved, behavior: 'instant' });
+        autoScroll = isNearBottom();
+        showScrollBtn.value = !autoScroll;
       } else {
-        // New channel — scroll to bottom and mark as read
+        // New channel — scroll to bottom, enable auto-scroll
+        autoScroll = true;
+        showScrollBtn.value = false;
         el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
         markCurrentAsRead();
       }
