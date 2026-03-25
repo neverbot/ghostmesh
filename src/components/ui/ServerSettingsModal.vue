@@ -322,7 +322,7 @@
 
             <!-- Hidden previews (first) -->
             <div class="flex flex-col gap-1">
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between pr-3">
                 <label class="text-xs font-medium text-slate-300">Hidden previews</label>
                 <InfoTooltip
                   v-if="userPrefs.hiddenPreviewsForServer(serverId).length > 0"
@@ -365,7 +365,7 @@
 
             <!-- Blocked users (second) -->
             <div class="flex flex-col gap-1">
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between pr-3">
                 <label class="text-xs font-medium text-slate-300">Blocked users</label>
                 <InfoTooltip
                   v-if="userPrefs.blockedUsersForServer(serverId).length > 0"
