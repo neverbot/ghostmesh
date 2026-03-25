@@ -2,6 +2,7 @@
   import { computed, ref, onMounted, onUnmounted } from 'vue';
   import { useIrcStore } from '@/stores/irc.js';
   import { useServerSettingsStore } from '@/stores/server-settings.js';
+  import { useUserPrefsStore } from '@/stores/user-prefs.js';
   import { parseFormatting, stripFormatting, hasFormatting } from '@/utils/mirc-format.js';
   import { formatPlainContent, formatHtmlContent, isImageUrl } from '@/services/message.service.js';
   import { resolveImageProvider } from '@/services/image-providers.js';
@@ -11,8 +12,11 @@
     message: { type: Object, required: true },
   });
 
+  const emit = defineEmits(['user-click']);
+
   const store = useIrcStore();
   const settingsStore = useServerSettingsStore();
+  const userPrefs = useUserPrefsStore();
 
   /** Root element ref for IntersectionObserver. */
   const messageEl = ref(null);
@@ -62,11 +66,16 @@
     return settingsStore.isMircEnabled(serverId, detected);
   });
 
+  /** Whether previews are allowed for this message's author. */
+  const canResolveImages = computed(
+    () => previewReady.value && !userPrefs.isPreviewHidden(props.message.nick),
+  );
+
   /** Rendered HTML content with mIRC formatting + URL linkification. */
   const renderedHtml = computed(() => {
     if (mircEnabled.value) {
       return formatHtmlContent(parseFormatting(props.message.content), {
-        resolveImages: previewReady.value,
+        resolveImages: canResolveImages.value,
       });
     }
     return null;
@@ -75,7 +84,7 @@
   /** Plain text content with URLs linkified (no mIRC). */
   const plainHtml = computed(() => {
     return formatPlainContent(stripFormatting(props.message.content), {
-      resolveImages: previewReady.value,
+      resolveImages: canResolveImages.value,
     });
   });
 
@@ -90,9 +99,22 @@
     return 'rounded-tl-sm bg-slate-100 text-slate-800';
   });
 
+  /**
+   * Emit a user-click event for the context menu.
+   * @param {MouseEvent} e
+   */
+  function onUserClick(e) {
+    emit('user-click', {
+      nick: props.message.nick,
+      serverId: props.message.serverId,
+      x: e.clientX,
+      y: e.clientY,
+    });
+  }
+
   /** Whether the message contains an image URL (only checks when preview ready). */
   const hasImage = computed(() => {
-    if (!previewReady.value) return false;
+    if (!canResolveImages.value) return false;
     const text = props.message.content || '';
     const urlMatch = text.match(/(?:https?:\/\/|www\.)[^\s<>"'()]+/gi);
     if (!urlMatch) return false;
@@ -130,7 +152,11 @@
   >
     <div
       class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-      :class="isOwn ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-600'"
+      :class="[
+        isOwn ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-600',
+        !isOwn ? 'cursor-pointer' : '',
+      ]"
+      @click="!isOwn && onUserClick($event)"
     >
       {{ avatarLetter }}
     </div>
@@ -141,7 +167,8 @@
     >
       <span
         v-if="!isOwn"
-        class="text-xs font-semibold text-slate-500"
+        class="cursor-pointer text-xs font-semibold text-slate-500 hover:text-slate-700"
+        @click="onUserClick($event)"
       >
         {{ message.nick }}
       </span>

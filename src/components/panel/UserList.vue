@@ -1,7 +1,34 @@
 <script setup>
+  import { ref } from 'vue';
   import { useIrcStore } from '@/stores/irc.js';
+  import UserContextMenu from '@/components/ui/UserContextMenu.vue';
 
   const store = useIrcStore();
+
+  const menuOpen = ref(false);
+  const menuNick = ref('');
+  const menuX = ref(0);
+  const menuY = ref(0);
+
+  /**
+   * Open context menu on a user.
+   * @param {string} nick
+   * @param {MouseEvent} e
+   */
+  function onUserClick(nick, e) {
+    menuNick.value = nick;
+    menuX.value = e.clientX;
+    menuY.value = e.clientY;
+    menuOpen.value = true;
+  }
+
+  /**
+   * Handle "Open conversation" from context menu.
+   * @param {{ nick: string, serverId: string }} payload
+   */
+  function onOpenDM({ nick, serverId }) {
+    store.openDM(serverId, nick);
+  }
 </script>
 
 <template>
@@ -22,7 +49,8 @@
       <div
         v-for="user in store.currentUsers"
         :key="user"
-        class="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-slate-100"
+        class="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-slate-100"
+        @click="onUserClick(user, $event)"
       >
         <div
           class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-500"
@@ -40,4 +68,14 @@
       No users
     </div>
   </div>
+
+  <UserContextMenu
+    :nick="menuNick"
+    :server-id="store.selectedServerId || ''"
+    :x="menuX"
+    :y="menuY"
+    :open="menuOpen"
+    @close="menuOpen = false"
+    @open-dm="onOpenDM"
+  />
 </template>

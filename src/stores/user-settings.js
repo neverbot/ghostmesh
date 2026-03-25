@@ -113,6 +113,7 @@ const useUserSettingsStore = defineStore('user-settings', () => {
   function clearAll() {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(SERVER_STORAGE_KEY);
+    localStorage.removeItem('ghostmesh:user-prefs');
     settings.value = { ...DEFAULTS };
   }
 

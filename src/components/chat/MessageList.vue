@@ -1,11 +1,41 @@
 <script setup>
   import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
   import { useIrcStore } from '@/stores/irc.js';
+  import { useUserPrefsStore } from '@/stores/user-prefs.js';
   import MessageItem from './MessageItem.vue';
+  import UserContextMenu from '@/components/ui/UserContextMenu.vue';
 
   const store = useIrcStore();
+  const userPrefs = useUserPrefsStore();
   const scrollContainer = ref(null);
   const scrollAnchor = ref(null);
+
+  // Context menu state
+  const menuOpen = ref(false);
+  const menuNick = ref('');
+  const menuServerId = ref('');
+  const menuX = ref(0);
+  const menuY = ref(0);
+
+  /**
+   * Handle user-click from a MessageItem.
+   * @param {{ nick: string, serverId: string, x: number, y: number }} payload
+   */
+  function onUserClick(payload) {
+    menuNick.value = payload.nick;
+    menuServerId.value = payload.serverId;
+    menuX.value = payload.x;
+    menuY.value = payload.y;
+    menuOpen.value = true;
+  }
+
+  /**
+   * Handle "Open conversation" from context menu.
+   * @param {{ nick: string, serverId: string }} payload
+   */
+  function onOpenDM({ nick, serverId }) {
+    store.openDM(serverId, nick);
+  }
 
   /** Whether we should keep scrolling to bottom (set when a new message arrives near bottom). */
   let shouldStick = true;
@@ -99,10 +129,22 @@
     <div class="flex flex-col gap-0.5">
       <MessageItem
         v-for="msg in store.currentMessages"
+        v-show="!userPrefs.isUserHidden(msg.nick)"
         :key="msg.id"
         :message="msg"
+        @user-click="onUserClick"
       />
     </div>
     <div ref="scrollAnchor" />
   </div>
+
+  <UserContextMenu
+    :nick="menuNick"
+    :server-id="menuServerId"
+    :x="menuX"
+    :y="menuY"
+    :open="menuOpen"
+    @close="menuOpen = false"
+    @open-dm="onOpenDM"
+  />
 </template>

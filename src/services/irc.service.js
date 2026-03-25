@@ -11,12 +11,14 @@ class IRCService extends EventEmitter {
    * @param {object} store — store API with mutation methods
    * @param {object} serverSettings — server settings store API
    * @param {object} userSettings — user settings store API
+   * @param {object} userPrefs — user prefs store API (hidden users, etc.)
    */
-  constructor(store, serverSettings, userSettings) {
+  constructor(store, serverSettings, userSettings, userPrefs) {
     super();
     this.store = store;
     this.serverSettings = serverSettings;
     this.userSettings = userSettings;
+    this.userPrefs = userPrefs;
     this.connections = new Map();
     this.listTimers = new Map();
     this.initialListTimers = new Map();
@@ -320,7 +322,22 @@ class IRCService extends EventEmitter {
 
     switch (command) {
       case 'PRIVMSG': {
-        s.addMessage(serverId, params[0], nick, trailing, 'message');
+        const target = params[0];
+        const connection = this.connections.get(serverId);
+        const ourNick = connection?.config?.nickname || '';
+        // Direct message: target is our nick, not a channel
+        if (target.toLowerCase() === ourNick.toLowerCase()) {
+          // Shadow ban: ignore DMs from hidden users
+          if (this.userPrefs?.isUserHidden(nick)) break;
+          // Create DM channel if it doesn't exist
+          const serverChannels = s.channels[serverId] || [];
+          if (!serverChannels.includes(nick)) {
+            s.addJoinedChannel(serverId, nick);
+          }
+          s.addMessage(serverId, nick, nick, trailing, 'message');
+        } else {
+          s.addMessage(serverId, target, nick, trailing, 'message');
+        }
         break;
       }
 

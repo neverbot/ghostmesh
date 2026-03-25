@@ -3,6 +3,7 @@ import { ref, shallowRef, computed, triggerRef } from 'vue';
 import IRCService from '@/services/irc.service.js';
 import { useServerSettingsStore } from '@/stores/server-settings.js';
 import { useUserSettingsStore } from '@/stores/user-settings.js';
+import { useUserPrefsStore } from '@/stores/user-prefs.js';
 import defaultServers from '@/servers.js';
 
 const useIrcStore = defineStore('irc', () => {
@@ -53,7 +54,8 @@ const useIrcStore = defineStore('irc', () => {
     if (!ircService) {
       const serverSettings = useServerSettingsStore();
       const userSettings = useUserSettingsStore();
-      ircService = new IRCService(storeApi, serverSettings, userSettings);
+      const userPrefs = useUserPrefsStore();
+      ircService = new IRCService(storeApi, serverSettings, userSettings, userPrefs);
     }
     return ircService;
   }
@@ -602,6 +604,21 @@ const useIrcStore = defineStore('irc', () => {
   }
 
   /**
+   * Open a direct message channel with a user.
+   * Creates the DM channel if it doesn't exist and selects it.
+   * @param {string} serverId
+   * @param {string} nick
+   */
+  function openDM(serverId, nick) {
+    if (!isConnected(serverId)) return;
+    const serverChannels = channels.value[serverId] || [];
+    if (!serverChannels.includes(nick)) {
+      addJoinedChannel(serverId, nick);
+    }
+    selectChannel(serverId, nick);
+  }
+
+  /**
    * Send a message to the currently selected channel.
    * @param {string} content
    */
@@ -719,6 +736,7 @@ const useIrcStore = defineStore('irc', () => {
     disconnectFromServer,
     joinChannel,
     partChannel,
+    openDM,
     sendMessage,
     refreshChannelList,
     changeNick,
