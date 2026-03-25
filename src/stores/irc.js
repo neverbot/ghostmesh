@@ -365,6 +365,15 @@ const useIrcStore = defineStore('irc', () => {
     addMessage(selectedServerId.value, selectedChannel.value, nickname.value, content, 'message');
   }
 
+  /**
+   * Check if any connected server is currently loading a channel list.
+   * @returns {boolean}
+   */
+  function isListLoading() {
+    const service = getService();
+    return activeConnections.value.some((id) => service.listLoading.has(id));
+  }
+
   /** Request a fresh LIST from all connected servers. */
   function refreshChannelList() {
     const service = getService();
@@ -445,6 +454,7 @@ const useIrcStore = defineStore('irc', () => {
     disconnectFromServer,
     joinChannel,
     sendMessage,
+    isListLoading,
     refreshChannelList,
     cleanup,
   };

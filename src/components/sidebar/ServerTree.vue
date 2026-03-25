@@ -178,11 +178,21 @@
         <!-- Refresh channels -->
         <InfoTooltip
           v-if="store.connectedServers.length > 0"
-          text="Refresh channel list from all servers"
+          :text="
+            store.isListLoading()
+              ? 'Loading channel list...'
+              : 'Refresh channel list from all servers'
+          "
           :delay="500"
         >
           <button
-            class="rounded p-1 text-slate-600 transition-colors hover:text-slate-400"
+            class="rounded p-1 transition-colors"
+            :class="
+              store.isListLoading()
+                ? 'animate-spin text-emerald-500'
+                : 'text-slate-600 hover:text-slate-400'
+            "
+            :disabled="store.isListLoading()"
             @click="store.refreshChannelList()"
           >
             <svg
