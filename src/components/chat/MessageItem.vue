@@ -3,7 +3,7 @@
   import { useIrcStore } from '@/stores/irc.js';
   import { useServerSettingsStore } from '@/stores/server-settings.js';
   import { parseFormatting, stripFormatting, hasFormatting } from '@/utils/mirc-format.js';
-  import { formatPlainContent, formatHtmlContent } from '@/services/message.service.js';
+  import { formatPlainContent, formatHtmlContent, isImageUrl } from '@/services/message.service.js';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
 
   const props = defineProps({
@@ -42,6 +42,13 @@
   const plainHtml = computed(() => {
     return formatPlainContent(stripFormatting(props.message.content));
   });
+
+  /** Whether the message contains an image URL. */
+  const hasImage = computed(() => {
+    const text = props.message.content || '';
+    const urlMatch = text.match(/(?:https?:\/\/|www\.)[^\s<>"'()]+/gi);
+    return urlMatch ? urlMatch.some((u) => isImageUrl(u)) : false;
+  });
 </script>
 
 <template>
@@ -75,8 +82,8 @@
     </div>
 
     <div
-      :class="isOwn ? 'items-end' : 'items-start'"
-      class="flex max-w-[70%] flex-col gap-1"
+      :class="[isOwn ? 'items-end' : 'items-start', hasImage ? 'max-w-[75%]' : 'max-w-[70%]']"
+      class="flex flex-col gap-1"
     >
       <span
         v-if="!isOwn"

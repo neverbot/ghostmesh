@@ -121,7 +121,7 @@ function linkifyText(text) {
 
     if (isImageUrl(rawUrl)) {
       const imgId = `img-${Math.random().toString(36).slice(2, 8)}`;
-      result += `<img id="${imgId}" src="${escapedHref}" alt="" referrerpolicy="no-referrer" class="my-1 block max-h-64 w-3/4 max-w-3/4 rounded-lg object-contain" loading="lazy" onerror="this.style.display='none'" />`;
+      result += `<img id="${imgId}" src="${escapedHref}" alt="" referrerpolicy="no-referrer" class="my-1 block max-w-full rounded-lg" loading="lazy" onerror="this.style.display='none'" />`;
       // Trigger preload to update cache
       preloadImage(href);
     }
