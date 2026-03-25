@@ -21,11 +21,11 @@
 <template>
   <div class="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
     <div class="flex flex-col">
-      <div class="flex items-center gap-2">
-        <h2 class="text-lg font-bold text-slate-800">{{ title }}</h2>
+      <div class="mb-1 flex items-end gap-2">
+        <h2 class="text-lg font-bold leading-none text-slate-800">{{ title }}</h2>
         <div
           v-if="userCount > 0 && store.selectedChannel !== '*status'"
-          class="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5"
+          class="mb-px flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
