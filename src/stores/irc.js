@@ -41,6 +41,8 @@ const useIrcStore = defineStore('irc', () => {
   const servers = ref([...defaultServers]);
 
   const activeConnections = ref([]);
+  /** @type {import('vue').Ref<string[]>} servers currently attempting to connect */
+  const connectingServers = ref([]);
   const selectedServerId = ref(null);
   const selectedChannel = ref(null);
   const nickname = ref('');
@@ -279,6 +281,11 @@ const useIrcStore = defineStore('irc', () => {
    * @param {string} serverId
    */
   function addConnection(serverId) {
+    connectingServers.value = connectingServers.value.filter((id) => id !== serverId);
+    if (connectTimers[serverId]) {
+      clearTimeout(connectTimers[serverId]);
+      delete connectTimers[serverId];
+    }
     if (!activeConnections.value.includes(serverId)) {
       activeConnections.value.push(serverId);
     }
@@ -297,6 +304,11 @@ const useIrcStore = defineStore('irc', () => {
    */
   function removeConnection(serverId) {
     activeConnections.value = activeConnections.value.filter((id) => id !== serverId);
+    connectingServers.value = connectingServers.value.filter((id) => id !== serverId);
+    if (connectTimers[serverId]) {
+      clearTimeout(connectTimers[serverId]);
+      delete connectTimers[serverId];
+    }
 
     // Clean up all data for this server
     const serverChannels = channels.value[serverId] || [];
@@ -692,9 +704,34 @@ const useIrcStore = defineStore('irc', () => {
    * Connect to a server.
    * @param {{ id: string, name: string, host: string }} server
    */
+  /** @type {Record<string, number>} connection timeout timers */
+  const connectTimers = {};
+
+  /**
+   * Connect to a server with connecting state and timeout.
+   * @param {{ id: string, name: string, host: string }} server
+   */
   function connectToServer(server) {
     if (isConnected(server.id)) return;
+    if (connectingServers.value.includes(server.id)) return;
+    connectingServers.value.push(server.id);
     getService().connect(server);
+    // Timeout: if not connected after 15s, show error
+    connectTimers[server.id] = setTimeout(() => {
+      if (!isConnected(server.id)) {
+        connectingServers.value = connectingServers.value.filter((id) => id !== server.id);
+        connectionError.value = `Could not connect to ${server.name}. The server may be offline or unreachable.`;
+        getService().cleanupConnection(server.id);
+      }
+    }, 15000);
+  }
+
+  /** @type {import('vue').Ref<string|null>} connection error message for popup */
+  const connectionError = ref(null);
+
+  /** Dismiss the connection error popup. */
+  function dismissConnectionError() {
+    connectionError.value = null;
   }
 
   /**
@@ -891,6 +928,8 @@ const useIrcStore = defineStore('irc', () => {
     // State
     servers,
     activeConnections,
+    connectingServers,
+    connectionError,
     selectedServerId,
     selectedChannel,
     channels,
@@ -936,6 +975,7 @@ const useIrcStore = defineStore('irc', () => {
     changeNickGlobal,
     unreadCount,
     markRead,
+    dismissConnectionError,
     restoreSession,
     cleanup,
   };

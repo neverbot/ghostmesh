@@ -1,5 +1,5 @@
 <script setup>
-  import { ref } from 'vue';
+  import { ref, computed } from 'vue';
   import config from '@/config.js';
   import { useIrcStore } from '@/stores/irc.js';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
@@ -7,6 +7,12 @@
 
   const store = useIrcStore();
   const serversCollapsed = ref(false);
+
+  /** True when connected but LIST hasn't started yet (waiting for delay timer). */
+  const isWaitingForList = computed(
+    () =>
+      store.connectedServers.length > 0 && !store.isListLoading && store.totalAvailableCount === 0,
+  );
   const channelsCollapsed = ref(false);
   const showFilters = ref(false);
   const joinInput = ref('');
@@ -79,19 +85,45 @@
           <div
             v-for="server in store.servers"
             :key="server.id"
-            class="group flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors"
-            :class="
+            class="group flex items-center gap-3 rounded-lg px-3 py-2 transition-colors"
+            :class="[
               store.isConnected(server.id)
                 ? 'text-slate-300 hover:bg-slate-700/40'
-                : 'text-slate-500 hover:bg-slate-700/30 hover:text-slate-400'
-            "
+                : 'text-slate-500 hover:bg-slate-700/30 hover:text-slate-400',
+              store.connectingServers.includes(server.id)
+                ? 'pointer-events-none opacity-60'
+                : 'cursor-pointer',
+            ]"
             @click="
               store.isConnected(server.id)
                 ? store.selectServer(server.id)
                 : store.connectToServer(server)
             "
           >
+            <!-- Spinner when connecting -->
+            <svg
+              v-if="store.connectingServers.includes(server.id)"
+              class="h-3 w-3 shrink-0 animate-spin text-amber-400"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              />
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4Z"
+              />
+            </svg>
+            <!-- Status dot when not connecting -->
             <div
+              v-else
               class="h-2 w-2 shrink-0 rounded-full"
               :class="store.isConnected(server.id) ? 'bg-emerald-400' : 'bg-slate-600'"
             />
@@ -181,7 +213,9 @@
           :text="
             store.isListLoading
               ? 'Loading channel list...'
-              : 'Refresh channel list from all servers'
+              : isWaitingForList
+                ? 'Waiting for server before requesting channels...'
+                : 'Refresh channel list from all servers'
           "
           :delay="500"
         >
@@ -190,9 +224,11 @@
             :class="
               store.isListLoading
                 ? 'animate-spin text-emerald-500'
-                : 'text-slate-600 hover:text-slate-400'
+                : isWaitingForList
+                  ? 'animate-spin text-amber-400'
+                  : 'text-slate-600 hover:text-slate-400'
             "
-            :disabled="store.isListLoading"
+            :disabled="store.isListLoading || isWaitingForList"
             @click="store.refreshChannelList()"
           >
             <svg
@@ -491,5 +527,28 @@
       :open="settingsModalOpen"
       @close="settingsModalOpen = false"
     />
+
+    <!-- Connection error popup -->
+    <Teleport to="body">
+      <div
+        v-if="store.connectionError"
+        class="fixed inset-0 z-50 flex items-start justify-center bg-black/50 pt-[15vh]"
+        tabindex="0"
+        @click.self="store.dismissConnectionError()"
+        @keydown.escape="store.dismissConnectionError()"
+      >
+        <div class="w-full max-w-sm rounded-xl bg-slate-800 px-5 py-4 shadow-2xl">
+          <p class="text-sm text-slate-300">{{ store.connectionError }}</p>
+          <div class="mt-4 flex justify-end">
+            <button
+              class="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
+              @click="store.dismissConnectionError()"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
