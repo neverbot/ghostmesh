@@ -1,6 +1,7 @@
 <script setup>
-  import { computed } from 'vue';
+  import { ref, computed } from 'vue';
   import { useIrcStore } from '@/stores/irc.js';
+  import UserContextMenu from '@/components/ui/UserContextMenu.vue';
 
   const store = useIrcStore();
 
@@ -25,6 +26,27 @@
     }
     return store.currentUsers.length;
   });
+
+  const isOnline = computed(() => {
+    if (!isPrivate.value) return true;
+    if (isSelfDM.value) return true;
+    return store.isDMOnline(store.selectedServerId, store.selectedChannel);
+  });
+
+  // Context menu
+  const menuOpen = ref(false);
+  const menuX = ref(0);
+  const menuY = ref(0);
+
+  /**
+   * Open context menu on the DM user.
+   * @param {MouseEvent} e
+   */
+  function onUserClick(e) {
+    menuX.value = e.clientX;
+    menuY.value = e.clientY;
+    menuOpen.value = true;
+  }
 </script>
 
 <template>
@@ -37,7 +59,35 @@
     </h3>
 
     <div class="flex flex-col gap-2">
-      <div class="flex items-center gap-2">
+      <!-- DM: avatar + name clickable -->
+      <div
+        v-if="isPrivate"
+        class="flex items-center gap-3"
+        :class="!isSelfDM ? 'cursor-pointer' : ''"
+        @click="!isSelfDM && onUserClick($event)"
+      >
+        <div
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold"
+          :class="isOnline ? 'bg-emerald-500 text-white' : 'bg-slate-300 text-slate-500'"
+        >
+          {{ (store.selectedChannel || '?')[0].toUpperCase() }}
+        </div>
+        <div class="flex flex-col">
+          <span class="text-lg font-bold text-slate-700">{{ channelName }}</span>
+          <span
+            class="text-[10px]"
+            :class="isOnline ? 'text-emerald-500' : 'text-slate-400'"
+          >
+            {{ isSelfDM ? 'You' : isOnline ? 'Online' : 'Offline' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Channel: just the name -->
+      <div
+        v-else
+        class="flex items-center gap-2"
+      >
         <span class="text-lg font-bold text-slate-700">{{ channelName }}</span>
       </div>
 
@@ -74,4 +124,16 @@
       </div>
     </div>
   </div>
+
+  <!-- Context menu for DM user -->
+  <UserContextMenu
+    v-if="isPrivate && !isSelfDM"
+    :nick="store.selectedChannel || ''"
+    :server-id="store.selectedServerId || ''"
+    :x="menuX"
+    :y="menuY"
+    :open="menuOpen"
+    @close="menuOpen = false"
+    @open-dm="menuOpen = false"
+  />
 </template>
