@@ -179,7 +179,7 @@
         <InfoTooltip
           v-if="store.connectedServers.length > 0"
           :text="
-            store.isListLoading()
+            store.isListLoading
               ? 'Loading channel list...'
               : 'Refresh channel list from all servers'
           "
@@ -188,11 +188,11 @@
           <button
             class="rounded p-1 transition-colors"
             :class="
-              store.isListLoading()
+              store.isListLoading
                 ? 'animate-spin text-emerald-500'
                 : 'text-slate-600 hover:text-slate-400'
             "
-            :disabled="store.isListLoading()"
+            :disabled="store.isListLoading"
             @click="store.refreshChannelList()"
           >
             <svg

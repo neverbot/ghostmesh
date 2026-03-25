@@ -136,6 +136,7 @@ class IRCService extends EventEmitter {
     if (this.listLoading.has(serverId)) return;
     if (!force && !this.canRefreshList(serverId)) return;
     this.listLoading.add(serverId);
+    this.store.setListLoading(serverId);
     this.store.clearAvailableChannels(serverId);
     this.send(serverId, 'LIST');
   }
@@ -204,6 +205,7 @@ class IRCService extends EventEmitter {
     this.stopListRefresh(serverId);
     this.mircDetected.delete(serverId);
     this.listLoading.delete(serverId);
+    this.store.clearListLoading(serverId);
     delete this.listWaitOverrides[serverId];
     delete this.connectedAt[serverId];
     const initTimer = this.initialListTimers.get(serverId);
@@ -312,6 +314,7 @@ class IRCService extends EventEmitter {
 
       case '323': // RPL_LISTEND
         this.listLoading.delete(serverId);
+        this.store.clearListLoading(serverId);
         break;
 
       case 'NOTICE': {

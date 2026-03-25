@@ -27,6 +27,9 @@ const useIrcStore = defineStore('irc', () => {
   /** @type {import('vue').Ref<Record<string, string>>} topics per serverId:channel key */
   const topics = ref({});
 
+  /** @type {import('vue').Ref<string[]>} servers currently loading LIST */
+  const listLoadingServers = ref([]);
+
   // Channel list filters
   const filterServer = ref(null);
   const filterMinUsers = ref(0);
@@ -124,6 +127,9 @@ const useIrcStore = defineStore('irc', () => {
     }
     return result;
   });
+
+  /** Whether any server is currently loading a channel list. */
+  const isListLoading = computed(() => listLoadingServers.value.length > 0);
 
   /** Total count of available channels before filtering (for display). */
   const totalAvailableCount = computed(() => {
@@ -366,12 +372,21 @@ const useIrcStore = defineStore('irc', () => {
   }
 
   /**
-   * Check if any connected server is currently loading a channel list.
-   * @returns {boolean}
+   * Mark a server as loading LIST.
+   * @param {string} serverId
    */
-  function isListLoading() {
-    const service = getService();
-    return activeConnections.value.some((id) => service.listLoading.has(id));
+  function setListLoading(serverId) {
+    if (!listLoadingServers.value.includes(serverId)) {
+      listLoadingServers.value.push(serverId);
+    }
+  }
+
+  /**
+   * Mark a server as done loading LIST.
+   * @param {string} serverId
+   */
+  function clearListLoading(serverId) {
+    listLoadingServers.value = listLoadingServers.value.filter((id) => id !== serverId);
   }
 
   /** Request a fresh LIST from all connected servers. */
@@ -403,6 +418,8 @@ const useIrcStore = defineStore('irc', () => {
     },
     addConnection,
     removeConnection,
+    setListLoading,
+    clearListLoading,
     addJoinedChannel,
     removeJoinedChannel,
     addMessage,
@@ -442,6 +459,7 @@ const useIrcStore = defineStore('irc', () => {
     currentTopic,
     allJoinedChannels,
     allAvailableChannels,
+    isListLoading,
     totalAvailableCount,
 
     // Mutations
@@ -454,7 +472,6 @@ const useIrcStore = defineStore('irc', () => {
     disconnectFromServer,
     joinChannel,
     sendMessage,
-    isListLoading,
     refreshChannelList,
     cleanup,
   };
