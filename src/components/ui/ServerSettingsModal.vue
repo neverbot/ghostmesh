@@ -314,18 +314,20 @@
               >
                 No users blocked
               </div>
-              <div
-                v-for="nick in userPrefs.hiddenUsers"
-                :key="'hidden:' + nick"
-                class="flex items-center justify-between rounded-md bg-slate-700/30 px-3 py-1.5"
-              >
-                <span class="text-xs text-slate-300">{{ nick }}</span>
-                <button
-                  class="text-[10px] text-red-400 transition-colors hover:text-red-300"
-                  @click="userPrefs.toggleUserHidden(nick)"
+              <div class="max-h-32 overflow-y-auto">
+                <div
+                  v-for="nick in userPrefs.hiddenUsers"
+                  :key="'hidden:' + nick"
+                  class="flex items-center justify-between rounded-md bg-slate-700/30 px-3 py-1.5"
                 >
-                  Unblock
-                </button>
+                  <span class="text-xs text-slate-300">{{ nick }}</span>
+                  <button
+                    class="text-[10px] text-red-400 transition-colors hover:text-red-300"
+                    @click="userPrefs.toggleUserHidden(nick)"
+                  >
+                    Unblock
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -341,37 +343,39 @@
               >
                 No users with hidden previews
               </div>
-              <div
-                v-for="nick in userPrefs.hiddenPreviews"
-                :key="'preview:' + nick"
-                class="flex items-center justify-between rounded-md bg-slate-700/30 px-3 py-1.5"
-              >
-                <span class="text-xs text-slate-300">{{ nick }}</span>
-                <button
-                  class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
-                  @click="userPrefs.togglePreviewHidden(nick)"
+              <div class="max-h-32 overflow-y-auto">
+                <div
+                  v-for="nick in userPrefs.hiddenPreviews"
+                  :key="'preview:' + nick"
+                  class="flex items-center justify-between rounded-md bg-slate-700/30 px-3 py-1.5"
                 >
-                  Remove
-                </button>
+                  <span class="text-xs text-slate-300">{{ nick }}</span>
+                  <button
+                    class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
+                    @click="userPrefs.togglePreviewHidden(nick)"
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Footer -->
-        <div class="flex justify-end gap-2 border-t border-slate-700 px-5 py-3">
-          <button
-            class="rounded-lg px-4 py-1.5 text-xs text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-300"
-            @click="close"
-          >
-            Cancel
-          </button>
-          <button
-            class="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
-            @click="save"
-          >
-            Save
-          </button>
+          <!-- Footer -->
+          <div class="flex justify-end gap-2 border-t border-slate-700 px-5 py-3">
+            <button
+              class="rounded-lg px-4 py-1.5 text-xs text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-300"
+              @click="close"
+            >
+              Cancel
+            </button>
+            <button
+              class="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
+              @click="save"
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
     </div>
