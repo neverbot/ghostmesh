@@ -1,6 +1,7 @@
 <script setup>
   import { ref, computed, watch, nextTick } from 'vue';
   import { useServerSettingsStore } from '@/stores/server-settings.js';
+  import { useIrcStore } from '@/stores/irc.js';
 
   const backdrop = ref(null);
 
@@ -13,6 +14,7 @@
   const emit = defineEmits(['close']);
 
   const settingsStore = useServerSettingsStore();
+  const ircStore = useIrcStore();
   const activeTab = ref('general');
 
   const form = ref({});
@@ -55,7 +57,12 @@
     if (data.listDelay !== current.listDelay) {
       data.listDelayManual = true;
     }
+    const oldNick = current.nickname;
     settingsStore.updateSettings(props.serverId, data);
+    // If per-server nick changed and we're connected, send NICK command
+    if (data.nickname && data.nickname !== oldNick && ircStore.isConnected(props.serverId)) {
+      ircStore.changeNick(props.serverId, data.nickname);
+    }
     emit('close');
   }
 
@@ -101,7 +108,7 @@
         <!-- Tabs -->
         <div class="flex border-b border-slate-700 px-5">
           <button
-            v-for="tab in ['general', 'formatting']"
+            v-for="tab in ['general', 'user', 'formatting']"
             :key="tab"
             class="border-b-2 px-3 py-2.5 text-xs font-medium capitalize transition-colors"
             :class="
@@ -155,16 +162,48 @@
                 class="w-24 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-emerald-500"
               />
             </div>
+          </div>
 
-            <!-- Nickname override -->
+          <!-- User tab -->
+          <div
+            v-if="activeTab === 'user'"
+            class="flex flex-col gap-4"
+          >
+            <p class="text-[10px] text-slate-500">
+              Override identity for this server. Leave fields empty to use your global settings.
+            </p>
+
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-slate-300">Nickname override</label>
-              <p class="text-[10px] text-slate-500">Leave empty to use the global nickname.</p>
+              <label class="text-xs font-medium text-slate-300">Nickname</label>
               <input
                 v-model="form.nickname"
                 type="text"
                 placeholder="(use global)"
                 class="w-48 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
+              />
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-slate-300">Username</label>
+              <p class="text-[10px] text-slate-500">Only takes effect on next connection.</p>
+              <input
+                v-model="form.username"
+                type="text"
+                placeholder="(use global)"
+                class="w-48 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
+              />
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-slate-300">Real name</label>
+              <p class="text-[10px] text-slate-500">
+                Visible in WHOIS. Only takes effect on next connection.
+              </p>
+              <input
+                v-model="form.realname"
+                type="text"
+                placeholder="(use global)"
+                class="w-full rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
               />
             </div>
           </div>

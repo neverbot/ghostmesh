@@ -10,11 +10,13 @@ class IRCService extends EventEmitter {
   /**
    * @param {object} store — store API with mutation methods
    * @param {object} serverSettings — server settings store API
+   * @param {object} userSettings — user settings store API
    */
-  constructor(store, serverSettings) {
+  constructor(store, serverSettings, userSettings) {
     super();
     this.store = store;
     this.serverSettings = serverSettings;
+    this.userSettings = userSettings;
     this.connections = new Map();
     this.listTimers = new Map();
     this.initialListTimers = new Map();
@@ -26,6 +28,8 @@ class IRCService extends EventEmitter {
     this.listLoading = new Set();
     /** @type {Set<string>} servers where mIRC formatting was detected */
     this.mircDetected = new Set();
+    /** @type {Set<string>} servers that completed registration (received 376/422) */
+    this.registered = new Set();
     /** @type {object[]} queue of parsed messages waiting to be processed */
     this.messageQueue = [];
     /** @type {number|null} rAF id for queue drain */
@@ -41,9 +45,9 @@ class IRCService extends EventEmitter {
     if (this.connections.has(serverId)) return;
 
     const ircConfig = {
-      nickname: this.store.nickname || config.irc.nickname + '_' + Math.floor(Math.random() * 1000),
-      username: config.irc.username,
-      realname: config.irc.realname,
+      nickname: this.userSettings.resolveNick(serverId, this.serverSettings),
+      username: this.userSettings.resolveUsername(serverId, this.serverSettings),
+      realname: this.userSettings.resolveRealname(serverId, this.serverSettings),
     };
 
     const socket = new WebSocket(server.host);
@@ -150,6 +154,17 @@ class IRCService extends EventEmitter {
 
   /**
    * Request the channel list from a server. Clears previous results first.
+   * Send a NICK command to change nickname on a server.
+   * @param {string} serverId
+   * @param {string} newNick
+   */
+  changeNick(serverId, newNick) {
+    if (!this.connections.has(serverId)) return;
+    this.send(serverId, `NICK ${newNick}`);
+  }
+
+  /**
+   * Request a channel list from a server.
    * Skips if already loading or wait time not elapsed.
    * @param {string} serverId
    * @param {boolean} [force=false] — bypass wait time check (used by internal timer)
@@ -253,6 +268,7 @@ class IRCService extends EventEmitter {
     this.connections.delete(serverId);
     this.stopListRefresh(serverId);
     this.mircDetected.delete(serverId);
+    this.registered.delete(serverId);
     this.listLoading.delete(serverId);
     this.store.clearListLoading(serverId);
     delete this.listWaitOverrides[serverId];
@@ -336,6 +352,46 @@ class IRCService extends EventEmitter {
         for (const channel of serverChannels) {
           s.removeUser(serverId, channel, nick);
           s.addMessage(serverId, channel, nick, `${nick} has quit (${trailing || ''})`, 'quit');
+        }
+        break;
+      }
+
+      case 'NICK': {
+        const newNick = trailing || params[0];
+        const connection = this.connections.get(serverId);
+        // Our own nick changed
+        if (connection && nick === connection.config.nickname) {
+          connection.config.nickname = newNick;
+          s.setNickname(serverId, newNick);
+        }
+        // Update user lists and show message in all channels
+        const nickChannels = s.channels[serverId] || [];
+        s.renameUser(serverId, nick, newNick);
+        for (const channel of nickChannels) {
+          s.addMessage(serverId, channel, nick, `${nick} is now known as ${newNick}`, 'nick');
+        }
+        break;
+      }
+
+      case '432': // ERR_ERRONEUSNICKNAME
+      case '433': // ERR_NICKNAMEINUSE
+      case '436': {
+        // ERR_NICKCOLLISION
+        const failedNick = params[1];
+        const connection = this.connections.get(serverId);
+        s.addSystemMessage(serverId, `[${command}] ${trailing}`);
+        // During registration (not yet received 376/422), try fallback nicks
+        if (connection && !this.registered.has(serverId)) {
+          const base = failedNick.replace(/_+$/, '').replace(/\d+$/, '');
+          const fallback = base + '_' + Math.floor(Math.random() * 1000);
+          connection.config.nickname = fallback;
+          this.send(serverId, `NICK ${fallback}`);
+          s.addSystemMessage(serverId, `Trying fallback nick: ${fallback}`);
+        } else {
+          // Post-registration: revert to confirmed nick
+          if (connection) {
+            s.setNickname(serverId, connection.config.nickname);
+          }
         }
         break;
       }
@@ -430,7 +486,13 @@ class IRCService extends EventEmitter {
 
       case '376':
       case '422': {
-        // Registration complete — use settings > detected > default
+        // Registration complete — confirm the nick
+        this.registered.add(serverId);
+        const conn = this.connections.get(serverId);
+        if (conn) {
+          s.setNickname(serverId, conn.config.nickname);
+        }
+        // Use settings > detected > default for LIST delay
         const detected = this.listWaitOverrides[serverId] || null;
         const waitSec = this.serverSettings.getListDelay(serverId, detected);
         const delay = waitSec * 1000;

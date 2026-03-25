@@ -1,5 +1,10 @@
 <script setup>
+  import { ref } from 'vue';
   import ServerTree from './ServerTree.vue';
+  import UserProfile from './UserProfile.vue';
+  import UserSettingsModal from '@/components/ui/UserSettingsModal.vue';
+
+  const userSettingsOpen = ref(false);
 </script>
 
 <template>
@@ -26,9 +31,19 @@
       </div>
     </div>
 
+    <!-- User profile -->
+    <UserProfile @open-settings="userSettingsOpen = true" />
+    <div class="mx-3 my-2 border-t border-slate-700" />
+
     <!-- Server tree: servers + channels unified -->
     <div class="flex flex-1 flex-col overflow-hidden px-2 pt-1">
       <ServerTree />
     </div>
   </div>
+
+  <!-- User settings modal -->
+  <UserSettingsModal
+    :open="userSettingsOpen"
+    @close="userSettingsOpen = false"
+  />
 </template>

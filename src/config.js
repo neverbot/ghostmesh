@@ -32,6 +32,10 @@ const config = {
     mircFormatting: null,
     /** Per-server nickname override (empty = use global). */
     nickname: '',
+    /** Per-server username override (empty = use global). */
+    username: '',
+    /** Per-server realname override (empty = use global). */
+    realname: '',
   },
 };
 

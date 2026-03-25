@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, shallowRef, computed, triggerRef } from 'vue';
 import IRCService from '@/services/irc.service.js';
 import { useServerSettingsStore } from '@/stores/server-settings.js';
+import { useUserSettingsStore } from '@/stores/user-settings.js';
 import defaultServers from '@/servers.js';
 
 const useIrcStore = defineStore('irc', () => {
@@ -12,7 +13,9 @@ const useIrcStore = defineStore('irc', () => {
   const activeConnections = ref([]);
   const selectedServerId = ref(null);
   const selectedChannel = ref(null);
-  const nickname = ref('ghostmesh_' + Math.floor(Math.random() * 1000));
+  const nickname = ref('');
+  /** @type {import('vue').Ref<Record<string, string>>} actual nick per server (confirmed by server) */
+  const nicknamePerServer = ref({});
 
   /** @type {import('vue').Ref<Record<string, string[]>>} joined channels per server */
   const channels = ref({});
@@ -49,7 +52,8 @@ const useIrcStore = defineStore('irc', () => {
   function getService() {
     if (!ircService) {
       const serverSettings = useServerSettingsStore();
-      ircService = new IRCService(storeApi, serverSettings);
+      const userSettings = useUserSettingsStore();
+      ircService = new IRCService(storeApi, serverSettings, userSettings);
     }
     return ircService;
   }
@@ -438,6 +442,68 @@ const useIrcStore = defineStore('irc', () => {
   }
 
   /**
+   * Set the confirmed nickname for a server.
+   * @param {string} serverId
+   * @param {string} nick
+   */
+  function setNickname(serverId, nick) {
+    nicknamePerServer.value = { ...nicknamePerServer.value, [serverId]: nick };
+    // Update global display nick to the selected server's nick
+    if (serverId === selectedServerId.value || !nickname.value) {
+      nickname.value = nick;
+    }
+  }
+
+  /**
+   * Rename a user across all channels on a server.
+   * @param {string} serverId
+   * @param {string} oldNick
+   * @param {string} newNick
+   */
+  function renameUser(serverId, oldNick, newNick) {
+    let changed = false;
+    const serverChannels = channels.value[serverId] || [];
+    for (const channel of serverChannels) {
+      const key = `${serverId}:${channel}`;
+      const userList = users.value[key];
+      if (userList) {
+        const idx = userList.indexOf(oldNick);
+        if (idx !== -1) {
+          userList[idx] = newNick;
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
+      users.value = { ...users.value };
+    }
+  }
+
+  /**
+   * Send a NICK command to change nick on a server.
+   * @param {string} serverId
+   * @param {string} newNick
+   */
+  function changeNick(serverId, newNick) {
+    getService().changeNick(serverId, newNick);
+  }
+
+  /**
+   * Send NICK to all connected servers using global settings.
+   * Skips servers with per-server nick overrides.
+   * @param {string} newNick
+   */
+  function changeNickGlobal(newNick) {
+    const serverSettings = useServerSettingsStore();
+    for (const serverId of activeConnections.value) {
+      const serverNick = serverSettings.getSettings(serverId).nickname;
+      if (!serverNick) {
+        getService().changeNick(serverId, newNick);
+      }
+    }
+  }
+
+  /**
    * Clear available channels for a server (before LIST refresh).
    * @param {string} serverId
    */
@@ -609,6 +675,8 @@ const useIrcStore = defineStore('irc', () => {
     addAvailableChannel,
     flushChannelBuffer,
     selectChannel,
+    setNickname,
+    renameUser,
   };
 
   return {
@@ -623,6 +691,7 @@ const useIrcStore = defineStore('irc', () => {
     users,
     topics,
     nickname,
+    nicknamePerServer,
     filterServer,
     filterMinUsers,
     filterText,
@@ -652,6 +721,8 @@ const useIrcStore = defineStore('irc', () => {
     partChannel,
     sendMessage,
     refreshChannelList,
+    changeNick,
+    changeNickGlobal,
     cleanup,
   };
 });
