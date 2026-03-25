@@ -65,9 +65,14 @@ class IRCService extends EventEmitter {
       }
       const parsed = this.parseMessage(raw, serverId);
       if (!parsed) return;
-      // Queue the message and schedule processing
-      this.messageQueue.push(parsed);
-      this.scheduleDrain();
+      // Only queue RPL_LIST (322) messages — they arrive in bulk and block the UI
+      // Everything else is processed immediately for responsiveness
+      if (parsed.command === '322') {
+        this.messageQueue.push(parsed);
+        this.scheduleDrain();
+      } else {
+        this.handleMessage(parsed);
+      }
     };
 
     socket.onerror = () => {
