@@ -96,7 +96,7 @@
   /** Re-scroll when images load (if auto-scroll is active). */
   function onImageLoad() {
     if (autoScroll && !suppressMarkRead) {
-      doScroll('instant');
+      doScroll('smooth');
       markCurrentAsRead();
     }
   }
@@ -132,7 +132,7 @@
     if (!el || !autoScroll || suppressMarkRead) return;
     if (el.scrollHeight !== lastScrollHeight) {
       lastScrollHeight = el.scrollHeight;
-      el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     }
   }
 
