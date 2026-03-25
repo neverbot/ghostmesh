@@ -25,8 +25,11 @@ const useIrcStore = defineStore('irc', () => {
   const availableChannels = shallowRef({});
   /** @type {import('vue').Ref<Record<string, object[]>>} messages per serverId:channel key */
   const messages = ref({});
-  /** @type {import('vue').Ref<Record<string, string[]>>} user lists per serverId:channel key */
-  const users = ref({});
+  /**
+   * User lists per channel. shallowRef — channels like #linux have 2000+ users.
+   * @type {import('vue').ShallowRef<Record<string, string[]>>}
+   */
+  const users = shallowRef({});
   /** @type {import('vue').Ref<Record<string, string>>} topics per serverId:channel key */
   const topics = ref({});
 
@@ -72,7 +75,8 @@ const useIrcStore = defineStore('irc', () => {
 
   const currentUsers = computed(() => {
     if (!selectedServerId.value || !selectedChannel.value) return [];
-    return users.value[`${selectedServerId.value}:${selectedChannel.value}`] || [];
+    const list = users.value[`${selectedServerId.value}:${selectedChannel.value}`];
+    return list ? [...list] : [];
   });
 
   const currentTopic = computed(() => {
@@ -223,6 +227,7 @@ const useIrcStore = defineStore('irc', () => {
       delete topics.value[key];
     }
     delete channels.value[serverId];
+    users.value = { ...users.value };
     delete availableChannels.value[serverId];
     triggerRef(availableChannels);
 
@@ -355,11 +360,15 @@ const useIrcStore = defineStore('irc', () => {
   function addUser(serverId, channel, nick) {
     const key = `${serverId}:${channel}`;
     if (!users.value[key]) users.value[key] = [];
-    if (!users.value[key].includes(nick)) users.value[key].push(nick);
+    if (!users.value[key].includes(nick)) {
+      users.value[key].push(nick);
+      users.value = { ...users.value };
+    }
   }
 
   /**
-   * Add multiple users to a channel's user list.
+   * Add multiple users to a channel's user list (from NAMREPLY).
+   * Does NOT trigger reactivity — call finalizeUsers() after all NAMREPLY are processed.
    * @param {string} serverId
    * @param {string} channel
    * @param {string[]} names
@@ -367,9 +376,22 @@ const useIrcStore = defineStore('irc', () => {
   function addUsers(serverId, channel, names) {
     const key = `${serverId}:${channel}`;
     if (!users.value[key]) users.value[key] = [];
+    const existing = new Set(users.value[key]);
     for (const name of names) {
-      if (!users.value[key].includes(name)) users.value[key].push(name);
+      if (!existing.has(name)) {
+        existing.add(name);
+        users.value[key].push(name);
+      }
     }
+    // No triggerRef — wait for finalizeUsers (366 ENDOFNAMES)
+  }
+
+  /**
+   * Signal that all NAMREPLY for a channel have been received.
+   * Replaces the users object to force Vue to see the change with shallowRef.
+   */
+  function finalizeUsers() {
+    users.value = { ...users.value };
   }
 
   /**
@@ -382,6 +404,7 @@ const useIrcStore = defineStore('irc', () => {
     const key = `${serverId}:${channel}`;
     if (users.value[key]) {
       users.value[key] = users.value[key].filter((u) => u !== nick);
+      users.value = { ...users.value };
     }
   }
 
@@ -550,6 +573,7 @@ const useIrcStore = defineStore('irc', () => {
     setTopic,
     addUser,
     addUsers,
+    finalizeUsers,
     removeUser,
     clearAvailableChannels,
     addAvailableChannel,

@@ -358,6 +358,9 @@ class IRCService extends EventEmitter {
       }
 
       case '366': // RPL_ENDOFNAMES
+        s.finalizeUsers();
+        break;
+
       case '321': // RPL_LISTSTART
         break;
 
