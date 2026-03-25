@@ -236,7 +236,7 @@
       </div>
 
       <div
-        class="grid transition-[grid-template-rows] duration-200"
+        class="grid min-h-0 flex-1 transition-[grid-template-rows] duration-200"
         :style="{ gridTemplateRows: channelsCollapsed ? '0fr' : '1fr' }"
       >
         <div class="flex flex-1 flex-col overflow-hidden">
