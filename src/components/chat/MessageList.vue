@@ -161,6 +161,16 @@
     }
   }
 
+  /** Handle delegated clicks on data-action links inside v-html content. */
+  function onActionClick(e) {
+    const link = e.target.closest('[data-action]');
+    if (!link) return;
+    e.preventDefault();
+    if (link.dataset.action === 'open-blocked-settings' && store.selectedServerId) {
+      store.requestOpenSettings(store.selectedServerId, 'blocked');
+    }
+  }
+
   onMounted(() => {
     const el = scrollContainer.value;
     if (el) {
@@ -169,6 +179,7 @@
       el.addEventListener('wheel', onUserScroll, { passive: true });
       el.addEventListener('touchstart', onUserScroll, { passive: true });
       el.addEventListener('animationend', onAnimationEnd, true);
+      el.addEventListener('click', onActionClick);
       lastScrollHeight = el.scrollHeight;
       mutationObserver = new MutationObserver(() => checkScrollHeightChange());
       mutationObserver.observe(el, { childList: true, subtree: true, characterData: true });
@@ -183,6 +194,7 @@
       el.removeEventListener('wheel', onUserScroll);
       el.removeEventListener('touchstart', onUserScroll);
       el.removeEventListener('animationend', onAnimationEnd, true);
+      el.removeEventListener('click', onActionClick);
     }
     if (mutationObserver) {
       mutationObserver.disconnect();

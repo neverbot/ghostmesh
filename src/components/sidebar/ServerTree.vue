@@ -1,5 +1,5 @@
 <script setup>
-  import { ref, computed } from 'vue';
+  import { ref, computed, watch } from 'vue';
   import config from '@/config.js';
   import { useIrcStore } from '@/stores/irc.js';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
@@ -19,10 +19,28 @@
   const settingsModalOpen = ref(false);
   const settingsServerId = ref(null);
   const settingsServerName = ref('');
+  const settingsInitialTab = ref(null);
+
+  // Watch for external requests to open settings (e.g. from "view settings" links)
+  watch(
+    () => store.openSettingsRequest,
+    (req) => {
+      if (!req) return;
+      const server = store.servers.find((s) => s.id === req.serverId);
+      if (server) {
+        settingsServerId.value = server.id;
+        settingsServerName.value = server.name;
+        settingsInitialTab.value = req.tab || null;
+        settingsModalOpen.value = true;
+      }
+      store.openSettingsRequest = null;
+    },
+  );
 
   function openSettings(server) {
     settingsServerId.value = server.id;
     settingsServerName.value = server.name;
+    settingsInitialTab.value = null;
     settingsModalOpen.value = true;
   }
 
@@ -525,6 +543,7 @@
       :server-id="settingsServerId"
       :server-name="settingsServerName"
       :open="settingsModalOpen"
+      :initial-tab="settingsInitialTab"
       @close="settingsModalOpen = false"
     />
 

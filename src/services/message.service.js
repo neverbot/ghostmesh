@@ -255,7 +255,7 @@ function linkifyText(text, { resolveImages = true } = {}) {
       }
     } else if (wouldHavePreview) {
       result +=
-        '<div class="my-0.5 text-[10px] italic opacity-50">Preview hidden for this user</div>';
+        '<div class="my-0.5 text-[10px] italic opacity-50">Preview hidden for this user · <a href="#" data-action="open-blocked-settings" class="not-italic underline opacity-70 hover:opacity-100">view settings</a></div>';
     }
 
     if (imageSrc && imageSrc.startsWith('async:')) {

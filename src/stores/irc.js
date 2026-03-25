@@ -748,6 +748,22 @@ const useIrcStore = defineStore('irc', () => {
   /** @type {import('vue').Ref<string|null>} connection error message for popup */
   const connectionError = ref(null);
 
+  /**
+   * Signal to open server settings on a specific tab.
+   * Set to { serverId, tab } to open, null to close.
+   * @type {import('vue').Ref<{ serverId: string, tab: string }|null>}
+   */
+  const openSettingsRequest = ref(null);
+
+  /**
+   * Request opening server settings on a specific tab.
+   * @param {string} serverId
+   * @param {string} tab
+   */
+  function requestOpenSettings(serverId, tab) {
+    openSettingsRequest.value = { serverId, tab };
+  }
+
   /** Dismiss the connection error popup. */
   function dismissConnectionError() {
     connectionError.value = null;
@@ -971,6 +987,8 @@ const useIrcStore = defineStore('irc', () => {
     activeConnections,
     connectingServers,
     connectionError,
+    openSettingsRequest,
+    requestOpenSettings,
     selectedServerId,
     selectedChannel,
     channels,

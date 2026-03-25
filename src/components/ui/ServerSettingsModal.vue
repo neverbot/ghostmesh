@@ -11,6 +11,7 @@
     serverId: { type: String, required: true },
     serverName: { type: String, required: true },
     open: { type: Boolean, default: false },
+    initialTab: { type: String, default: null },
   });
 
   const emit = defineEmits(['close']);
@@ -44,6 +45,8 @@
       if (val) {
         const s = settingsStore.getSettings(props.serverId);
         form.value = { ...s };
+        if (props.initialTab) activeTab.value = props.initialTab;
+        else activeTab.value = 'general';
         nextTick(() => backdrop.value?.focus());
       }
     },
