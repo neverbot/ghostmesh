@@ -1,8 +1,6 @@
 import EventEmitter from '@/utils/event-emitter.js';
 import { hasFormatting } from '@/utils/mirc-format.js';
-
-/** Default interval between automatic LIST refreshes (5 minutes). */
-const LIST_REFRESH_INTERVAL = 5 * 60 * 1000;
+import config from '@/config.js';
 
 /**
  * IRC protocol service. Manages WebSocket connections, parses IRC messages,
@@ -22,6 +20,10 @@ class IRCService extends EventEmitter {
     this.initialListTimers = new Map();
     /** @type {Record<string, number>} detected LIST wait per server (seconds) */
     this.listWaitOverrides = {};
+    /** @type {Record<string, number>} connection timestamp per server (epoch ms) */
+    this.connectedAt = {};
+    /** @type {Set<string>} servers currently loading LIST */
+    this.listLoading = new Set();
     /** @type {Set<string>} servers where mIRC formatting was detected */
     this.mircDetected = new Set();
   }
@@ -34,19 +36,20 @@ class IRCService extends EventEmitter {
     const serverId = server.id;
     if (this.connections.has(serverId)) return;
 
-    const config = {
-      nickname: this.store.nickname,
-      username: 'ghostmesh',
-      realname: 'GhostMesh IRC Client',
+    const ircConfig = {
+      nickname: this.store.nickname || config.irc.nickname + '_' + Math.floor(Math.random() * 1000),
+      username: config.irc.username,
+      realname: config.irc.realname,
     };
 
     const socket = new WebSocket(server.host);
-    const connection = { socket, config };
+    const connection = { socket, config: ircConfig };
 
     socket.onopen = () => {
+      this.connectedAt[serverId] = Date.now();
       this.store.addConnection(serverId);
-      this.send(serverId, `NICK ${config.nickname}`);
-      this.send(serverId, `USER ${config.username} 0 * :${config.realname}`);
+      this.send(serverId, `NICK ${ircConfig.nickname}`);
+      this.send(serverId, `USER ${ircConfig.username} 0 * :${ircConfig.realname}`);
     };
 
     socket.onmessage = (event) => {
@@ -106,10 +109,33 @@ class IRCService extends EventEmitter {
   }
 
   /**
-   * Request the channel list from a server. Clears previous results first.
+   * Check if a LIST refresh is allowed for a server.
+   * Blocked if already loading or if minimum wait since connection hasn't elapsed.
    * @param {string} serverId
+   * @returns {boolean}
    */
-  requestList(serverId) {
+  canRefreshList(serverId) {
+    if (this.listLoading.has(serverId)) return false;
+    const connTime = this.connectedAt[serverId];
+    if (!connTime) return false;
+    const elapsed = (Date.now() - connTime) / 1000;
+    const minWait = this.serverSettings.getListDelay(
+      serverId,
+      this.listWaitOverrides[serverId] || null,
+    );
+    return elapsed >= minWait;
+  }
+
+  /**
+   * Request the channel list from a server. Clears previous results first.
+   * Skips if already loading or wait time not elapsed.
+   * @param {string} serverId
+   * @param {boolean} [force=false] — bypass wait time check (used by internal timer)
+   */
+  requestList(serverId, force = false) {
+    if (this.listLoading.has(serverId)) return;
+    if (!force && !this.canRefreshList(serverId)) return;
+    this.listLoading.add(serverId);
     this.store.clearAvailableChannels(serverId);
     this.send(serverId, 'LIST');
   }
@@ -121,11 +147,12 @@ class IRCService extends EventEmitter {
   startListRefresh(serverId) {
     this.stopListRefresh(serverId);
     const settings = this.serverSettings.getSettings(serverId);
-    const interval = (settings.listRefreshInterval || LIST_REFRESH_INTERVAL / 1000) * 1000;
+    const interval =
+      (settings.listRefreshInterval || config.serverDefaults.listRefreshInterval) * 1000;
     if (interval <= 0) return; // Disabled
     const timer = setInterval(() => {
       if (this.connections.has(serverId)) {
-        this.requestList(serverId);
+        this.requestList(serverId, true);
       } else {
         this.stopListRefresh(serverId);
       }
@@ -176,7 +203,9 @@ class IRCService extends EventEmitter {
     this.connections.delete(serverId);
     this.stopListRefresh(serverId);
     this.mircDetected.delete(serverId);
+    this.listLoading.delete(serverId);
     delete this.listWaitOverrides[serverId];
+    delete this.connectedAt[serverId];
     const initTimer = this.initialListTimers.get(serverId);
     if (initTimer) {
       clearTimeout(initTimer);
@@ -279,7 +308,10 @@ class IRCService extends EventEmitter {
 
       case '366': // RPL_ENDOFNAMES
       case '321': // RPL_LISTSTART
+        break;
+
       case '323': // RPL_LISTEND
+        this.listLoading.delete(serverId);
         break;
 
       case 'NOTICE': {
@@ -307,7 +339,7 @@ class IRCService extends EventEmitter {
               const newTimer = setTimeout(() => {
                 this.initialListTimers.delete(serverId);
                 if (this.connections.has(serverId)) {
-                  this.requestList(serverId);
+                  this.requestList(serverId, true);
                   this.startListRefresh(serverId);
                 }
               }, detected * 1000);
@@ -345,7 +377,7 @@ class IRCService extends EventEmitter {
         const timer = setTimeout(() => {
           this.initialListTimers.delete(serverId);
           if (this.connections.has(serverId)) {
-            this.requestList(serverId);
+            this.requestList(serverId, true);
             this.startListRefresh(serverId);
           }
         }, delay);

@@ -367,8 +367,9 @@ const useIrcStore = defineStore('irc', () => {
 
   /** Request a fresh LIST from all connected servers. */
   function refreshChannelList() {
+    const service = getService();
     for (const serverId of activeConnections.value) {
-      getService().requestList(serverId);
+      service.requestList(serverId);
     }
   }
 

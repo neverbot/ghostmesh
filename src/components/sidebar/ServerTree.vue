@@ -1,5 +1,6 @@
 <script setup>
   import { ref } from 'vue';
+  import config from '@/config.js';
   import { useIrcStore } from '@/stores/irc.js';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import ServerSettingsModal from '@/components/ui/ServerSettingsModal.vue';
@@ -42,7 +43,7 @@
   }
 
   function limitedAvailable() {
-    return store.allAvailableChannels.slice(0, 200);
+    return store.allAvailableChannels.slice(0, config.list.browseLimit);
   }
 </script>
 

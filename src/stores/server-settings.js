@@ -1,15 +1,9 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
+import config from '@/config.js';
 
 const STORAGE_KEY = 'ghostmesh:server-settings';
-
-/** Default settings for a server. */
-const DEFAULTS = {
-  listDelay: 5,
-  listRefreshInterval: 300,
-  mircFormatting: null, // null = auto-detect, true = enabled, false = disabled
-  nickname: '',
-};
+const DEFAULTS = config.serverDefaults;
 
 /**
  * Load all server settings from localStorage.
