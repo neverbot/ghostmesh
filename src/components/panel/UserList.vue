@@ -5,7 +5,7 @@
 </script>
 
 <template>
-  <div class="flex flex-1 flex-col overflow-hidden">
+  <div class="flex flex-1 flex-col overflow-hidden pt-4">
     <h3 class="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">
       Members
       <span

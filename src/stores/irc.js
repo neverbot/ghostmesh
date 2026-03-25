@@ -76,7 +76,9 @@ const useIrcStore = defineStore('irc', () => {
   const currentUsers = computed(() => {
     if (!selectedServerId.value || !selectedChannel.value) return [];
     const list = users.value[`${selectedServerId.value}:${selectedChannel.value}`];
-    return list ? [...list] : [];
+    return list
+      ? [...list].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+      : [];
   });
 
   const currentTopic = computed(() => {

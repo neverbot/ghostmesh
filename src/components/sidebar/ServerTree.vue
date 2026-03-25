@@ -424,7 +424,7 @@
           <!-- Join channel input -->
           <div
             v-if="store.connectedServers.length > 0"
-            class="mt-1 flex items-center gap-1 px-3 pb-1"
+            class="mt-3 flex items-center gap-1 px-3 pb-3"
           >
             <input
               v-model="joinInput"
