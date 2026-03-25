@@ -324,12 +324,12 @@
                 {{ entry.channel === '*status' ? 'status' : entry.channel.replace(/^#/, '') }}
               </span>
               <!-- Right-aligned group: user count + server badge + leave -->
-              <div class="flex shrink-0 items-center gap-1.5">
+              <div class="ml-auto flex items-center gap-1.5">
                 <span
-                  v-if="entry.channel !== '*status' && entry.userCount > 0"
+                  v-if="entry.channel !== '*status'"
                   class="text-[10px] text-slate-500"
                 >
-                  {{ entry.userCount }}
+                  {{ entry.userCount || '' }}
                 </span>
                 <span
                   v-if="store.connectedServers.length > 1"
@@ -338,6 +338,7 @@
                 >
                   {{ serverAbbr(entry.serverName) }}
                 </span>
+                <!-- Leave button — always rendered for consistent width, invisible for status -->
                 <InfoTooltip
                   v-if="entry.channel !== '*status'"
                   text="Leave channel"
@@ -359,6 +360,10 @@
                     </svg>
                   </button>
                 </InfoTooltip>
+                <div
+                  v-else
+                  class="w-4"
+                />
               </div>
             </div>
 
