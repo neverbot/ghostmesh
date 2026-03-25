@@ -136,11 +136,20 @@
     }
   }
 
+  /** Re-scroll after CSS animation completes (image preview expand). */
+  function onAnimationEnd(e) {
+    if (e.animationName === 'preview-appear' && autoScroll && !suppressMarkRead) {
+      doScroll('smooth');
+      markCurrentAsRead();
+    }
+  }
+
   onMounted(() => {
     const el = scrollContainer.value;
     if (el) {
       el.addEventListener('load', onImageLoad, true);
       el.addEventListener('scroll', onScroll, { passive: true });
+      el.addEventListener('animationend', onAnimationEnd, true);
       lastScrollHeight = el.scrollHeight;
       mutationObserver = new MutationObserver(() => checkScrollHeightChange());
       mutationObserver.observe(el, { childList: true, subtree: true, characterData: true });
@@ -152,6 +161,7 @@
     if (el) {
       el.removeEventListener('load', onImageLoad, true);
       el.removeEventListener('scroll', onScroll);
+      el.removeEventListener('animationend', onAnimationEnd, true);
     }
     if (mutationObserver) {
       mutationObserver.disconnect();
