@@ -1,15 +1,46 @@
 <script setup>
-  import { ref } from 'vue';
+  import { ref, computed } from 'vue';
 
   const props = defineProps({
     text: { type: String, required: true },
     delay: { type: Number, default: 0 },
+    maxWidth: { type: Number, default: 300 },
   });
 
   const visible = ref(false);
   const x = ref(0);
   const y = ref(0);
   let timer = null;
+
+  /** Tooltip position clamped to viewport. */
+  const tooltipStyle = computed(() => {
+    const margin = 8;
+    const tooltipW = props.maxWidth;
+    const tooltipH = 60; // estimated max height
+
+    let left = x.value + 12;
+    let top = y.value - 8;
+
+    // Clamp right edge
+    if (left + tooltipW > window.innerWidth - margin) {
+      left = x.value - tooltipW - 12;
+      if (left < margin) left = margin;
+    }
+
+    // Clamp bottom edge
+    if (top + tooltipH > window.innerHeight - margin) {
+      top = y.value - tooltipH - 8;
+    }
+
+    // Clamp top edge
+    if (top < margin) top = margin;
+
+    return {
+      left: left + 'px',
+      top: top + 'px',
+      maxWidth: tooltipW + 'px',
+    };
+  });
 
   /** @param {MouseEvent} e */
   function onEnter(e) {
@@ -58,8 +89,8 @@
       >
         <div
           v-if="visible"
-          class="pointer-events-none fixed z-[100] whitespace-nowrap rounded-md bg-surface-tooltip px-2.5 py-1 text-xs text-text-tooltip shadow-lg"
-          :style="{ left: x + 12 + 'px', top: y - 8 + 'px' }"
+          class="pointer-events-none fixed z-[100] rounded-md bg-surface-tooltip px-2.5 py-1.5 text-xs leading-relaxed text-text-tooltip shadow-lg"
+          :style="tooltipStyle"
         >
           {{ text }}
         </div>

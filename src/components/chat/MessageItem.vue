@@ -43,6 +43,17 @@
     return formatPlainContent(stripFormatting(props.message.content));
   });
 
+  /** CSS classes for the message bubble. */
+  const bubbleClass = computed(() => {
+    if (isOwn.value && props.message.warning) {
+      return 'rounded-tr-sm bg-bubble-warning text-white';
+    }
+    if (isOwn.value) {
+      return 'rounded-tr-sm bg-emerald-500 text-white';
+    }
+    return 'rounded-tl-sm bg-slate-100 text-slate-800';
+  });
+
   /** Whether the message contains an image URL. */
   const hasImage = computed(() => {
     const text = props.message.content || '';
@@ -92,12 +103,8 @@
         {{ message.nick }}
       </span>
       <div
-        class="rounded-2xl px-4 py-2 text-sm leading-relaxed"
-        :class="
-          isOwn
-            ? 'rounded-tr-sm bg-emerald-500 text-white'
-            : 'rounded-tl-sm bg-slate-100 text-slate-800'
-        "
+        class="rounded-2xl px-4 py-2 text-sm leading-relaxed transition-colors duration-500"
+        :class="bubbleClass"
       >
         <span v-html="renderedHtml || plainHtml" />
       </div>

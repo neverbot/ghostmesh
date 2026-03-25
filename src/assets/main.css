@@ -36,6 +36,9 @@
   --color-accent-dark: var(--color-emerald-600);
   --color-accent-bg: color-mix(in srgb, var(--color-emerald-500) 20%, transparent);
 
+  /* === Semantic colors — message bubbles === */
+  --color-bubble-warning: color-mix(in srgb, var(--color-emerald-500) 60%, transparent);
+
   /* === Semantic colors — status === */
   --color-status-online: var(--color-emerald-400);
   --color-status-offline: var(--color-slate-600);
