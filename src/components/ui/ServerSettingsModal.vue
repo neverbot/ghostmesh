@@ -20,6 +20,21 @@
   const userPrefs = useUserPrefsStore();
   const activeTab = ref('general');
 
+  /**
+   * Format a timestamp as relative time (e.g. "2 hours ago").
+   * @param {number} ts — epoch ms
+   * @returns {string}
+   */
+  function timeAgo(ts) {
+    const seconds = Math.floor((Date.now() - ts) / 1000);
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  }
+
   const form = ref({});
 
   // Load form values when opening
@@ -303,7 +318,7 @@
           >
             <p class="text-[10px] text-slate-500">
               Users you have blocked. Their messages are hidden and DM attempts are ignored. These
-              settings apply across all servers.
+              settings apply across all servers. Entries are automatically removed after 24 hours.
             </p>
 
             <!-- Hidden messages -->
@@ -331,14 +346,19 @@
               </div>
               <div class="flex max-h-32 flex-col gap-1 overflow-y-auto">
                 <div
-                  v-for="nick in userPrefs.hiddenUsers"
-                  :key="'hidden:' + nick"
+                  v-for="entry in userPrefs.hiddenUsers"
+                  :key="'hidden:' + entry.nick"
                   class="flex items-center justify-between rounded-md bg-slate-700/30 px-3 py-1.5"
                 >
-                  <span class="text-xs text-slate-300">{{ nick }}</span>
+                  <div class="flex flex-col">
+                    <span class="text-xs text-slate-300">{{ entry.nick }}</span>
+                    <span class="text-[9px] text-slate-500">
+                      {{ timeAgo(entry.addedAt) }}
+                    </span>
+                  </div>
                   <button
                     class="text-[10px] text-red-400 transition-colors hover:text-red-300"
-                    @click="userPrefs.toggleUserHidden(nick)"
+                    @click="userPrefs.toggleUserHidden(entry.nick)"
                   >
                     Unblock
                   </button>
@@ -374,14 +394,19 @@
               </div>
               <div class="flex max-h-32 flex-col gap-1 overflow-y-auto">
                 <div
-                  v-for="nick in userPrefs.hiddenPreviews"
-                  :key="'preview:' + nick"
+                  v-for="entry in userPrefs.hiddenPreviews"
+                  :key="'preview:' + entry.nick"
                   class="flex items-center justify-between rounded-md bg-slate-700/30 px-3 py-1.5"
                 >
-                  <span class="text-xs text-slate-300">{{ nick }}</span>
+                  <div class="flex flex-col">
+                    <span class="text-xs text-slate-300">{{ entry.nick }}</span>
+                    <span class="text-[9px] text-slate-500">
+                      {{ timeAgo(entry.addedAt) }}
+                    </span>
+                  </div>
                   <button
                     class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
-                    @click="userPrefs.togglePreviewHidden(nick)"
+                    @click="userPrefs.togglePreviewHidden(entry.nick)"
                   >
                     Remove
                   </button>

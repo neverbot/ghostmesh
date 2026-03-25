@@ -4,6 +4,9 @@ import config from '@/config.js';
 
 const STORAGE_KEY = config.storageKeys.userPrefs;
 
+/** Entries older than this (ms) are purged when a new entry is added. */
+const EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
 /**
  * Load user prefs from localStorage.
  * @returns {object}
@@ -34,13 +37,38 @@ function normalize(nick) {
   return (nick || '').toLowerCase();
 }
 
+/**
+ * Migrate old format (string[]) to new format ({ nick, addedAt }[]).
+ * @param {any[]} arr
+ * @returns {{ nick: string, addedAt: number }[]}
+ */
+function migrateEntries(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.map((entry) => {
+    if (typeof entry === 'string') {
+      return { nick: entry, addedAt: Date.now() };
+    }
+    return entry;
+  });
+}
+
+/**
+ * Remove entries older than EXPIRY_MS.
+ * @param {{ nick: string, addedAt: number }[]} arr
+ * @returns {{ nick: string, addedAt: number }[]}
+ */
+function purgeExpired(arr) {
+  const cutoff = Date.now() - EXPIRY_MS;
+  return arr.filter((e) => e.addedAt > cutoff);
+}
+
 const useUserPrefsStore = defineStore('user-prefs', () => {
   const stored = loadFromStorage();
 
-  /** @type {import('vue').Ref<string[]>} nicks with previews disabled */
-  const hiddenPreviews = ref(stored.hiddenPreviews || []);
-  /** @type {import('vue').Ref<string[]>} nicks shadow-banned */
-  const hiddenUsers = ref(stored.hiddenUsers || []);
+  /** @type {import('vue').Ref<{ nick: string, addedAt: number }[]>} */
+  const hiddenPreviews = ref(migrateEntries(stored.hiddenPreviews));
+  /** @type {import('vue').Ref<{ nick: string, addedAt: number }[]>} */
+  const hiddenUsers = ref(migrateEntries(stored.hiddenUsers));
 
   // Persist on change
   watch(
@@ -55,18 +83,20 @@ const useUserPrefsStore = defineStore('user-prefs', () => {
    * @returns {boolean}
    */
   function isPreviewHidden(nick) {
-    return hiddenPreviews.value.includes(normalize(nick));
+    const n = normalize(nick);
+    return hiddenPreviews.value.some((e) => e.nick === n);
   }
 
   /**
-   * Toggle preview visibility for a nick.
+   * Toggle preview visibility for a nick. Purges expired entries on add.
    * @param {string} nick
    */
   function togglePreviewHidden(nick) {
     const n = normalize(nick);
-    const idx = hiddenPreviews.value.indexOf(n);
+    const idx = hiddenPreviews.value.findIndex((e) => e.nick === n);
     if (idx === -1) {
-      hiddenPreviews.value.push(n);
+      hiddenPreviews.value = purgeExpired(hiddenPreviews.value);
+      hiddenPreviews.value.push({ nick: n, addedAt: Date.now() });
     } else {
       hiddenPreviews.value.splice(idx, 1);
     }
@@ -78,26 +108,25 @@ const useUserPrefsStore = defineStore('user-prefs', () => {
    * @returns {boolean}
    */
   function isUserHidden(nick) {
-    return hiddenUsers.value.includes(normalize(nick));
+    const n = normalize(nick);
+    return hiddenUsers.value.some((e) => e.nick === n);
   }
 
   /**
-   * Toggle shadow ban for a nick.
+   * Toggle shadow ban for a nick. Purges expired entries on add.
    * @param {string} nick
    */
   function toggleUserHidden(nick) {
     const n = normalize(nick);
-    const idx = hiddenUsers.value.indexOf(n);
+    const idx = hiddenUsers.value.findIndex((e) => e.nick === n);
     if (idx === -1) {
-      hiddenUsers.value.push(n);
+      hiddenUsers.value = purgeExpired(hiddenUsers.value);
+      hiddenUsers.value.push({ nick: n, addedAt: Date.now() });
     } else {
       hiddenUsers.value.splice(idx, 1);
     }
   }
 
-  /**
-   * Clear all user prefs (for "Forget Me").
-   */
   /** Remove all hidden users. */
   function clearHiddenUsers() {
     hiddenUsers.value = [];
