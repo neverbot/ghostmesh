@@ -369,9 +369,9 @@
             <!-- Available channels -->
             <div
               v-for="ch in limitedAvailable()"
-              :key="`avail:${ch.serverId}:${ch.name}`"
+              :key="`avail:${ch._sid}:${ch.name}`"
               class="flex cursor-pointer items-center gap-2 rounded-lg py-1 pl-5 pr-3 text-slate-500 transition-colors hover:bg-slate-700/30 hover:text-slate-400"
-              @click="store.joinChannel(ch.serverId, ch.name)"
+              @click="store.joinChannel(ch._sid, ch.name)"
             >
               <span class="w-3 shrink-0 text-center text-[10px] opacity-40">#</span>
               <span class="min-w-0 flex-1 truncate text-xs">
@@ -381,7 +381,7 @@
                 v-if="store.connectedServers.length > 1"
                 class="shrink-0 rounded bg-slate-700/30 px-1 py-0.5 text-[8px] text-slate-600"
               >
-                {{ serverAbbr(ch.serverName) }}
+                {{ serverAbbr(ch._sname) }}
               </span>
               <span class="shrink-0 text-[10px] text-slate-600">
                 {{ ch.users }}

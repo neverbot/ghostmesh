@@ -125,33 +125,50 @@ const useIrcStore = defineStore('irc', () => {
 
   /**
    * All available channels (not joined) across all servers, with filters applied.
-   * Returns empty during LIST loading to avoid expensive recomputation on every batch.
+   * Returns empty during LIST loading. Data is pre-sorted in the store, so no
+   * sort is needed here — only filtering and early exit at the render limit.
    */
   const allAvailableChannels = computed(() => {
-    // While loading, return empty — channels will appear when loading finishes
     if (listLoadingServers.value.length > 0) return [];
 
     const result = [];
     const matcher = buildMatcher(filterText.value);
     const minUsers = filterMinUsers.value || 0;
     const serverFilter = filterServer.value;
+    const byName = sortBy.value === 'name';
+    const joined = joinedSet.value;
 
+    // Collect from all servers (pre-sorted per server)
+    const sources = [];
     for (const serverId of activeConnections.value) {
       if (serverFilter && serverId !== serverFilter) continue;
       const server = servers.value.find((s) => s.id === serverId);
       const serverName = server?.name || serverId;
-      for (const ch of availableChannels.value[serverId] || []) {
-        if (joinedSet.value.has(`${serverId}:${ch.name}`)) continue;
+      const list = availableChannels.value[serverId];
+      if (list) sources.push({ serverId, serverName, list });
+    }
+
+    // Merge-scan: for single server, just filter in order (already sorted)
+    // For multiple servers, simple concat + filter (sort was done per-server)
+    for (const src of sources) {
+      for (const ch of src.list) {
+        if (joined.has(`${src.serverId}:${ch.name}`)) continue;
         if (ch.users < minUsers) continue;
         if (!matcher(ch.name) && !matcher(ch.topic)) continue;
-        result.push({ serverId, serverName, ...ch });
+        // Attach metadata without spread — reuse the channel object
+        ch._sid = src.serverId;
+        ch._sname = src.serverName;
+        result.push(ch);
       }
     }
 
-    if (sortBy.value === 'name') {
-      result.sort((a, b) => a.name.localeCompare(b.name));
-    } else {
-      result.sort((a, b) => b.users - a.users);
+    // Sort only if multiple servers (single server data is pre-sorted)
+    if (sources.length > 1 || byName) {
+      if (byName) {
+        result.sort((a, b) => a.name.localeCompare(b.name));
+      } else {
+        result.sort((a, b) => b.users - a.users);
+      }
     }
     return result;
   });
@@ -358,12 +375,25 @@ const useIrcStore = defineStore('irc', () => {
    * Flush buffered channels into the reactive state.
    * @param {string} serverId
    */
-  function flushChannelBuffer(serverId) {
+  /**
+   * Flush buffered channels into the reactive state.
+   * @param {string} serverId
+   * @param {boolean} [final=false] — true when LIST is complete, triggers sort
+   */
+  function flushChannelBuffer(serverId, final = false) {
     const buf = channelBuffer[serverId];
-    if (!buf || buf.length === 0) return;
+    if (!buf || buf.length === 0) {
+      if (final && availableChannels.value[serverId]) {
+        availableChannels.value[serverId].sort((a, b) => b.users - a.users);
+      }
+      return;
+    }
     if (!availableChannels.value[serverId]) availableChannels.value[serverId] = [];
     availableChannels.value[serverId].push(...buf);
     channelBuffer[serverId] = [];
+    if (final) {
+      availableChannels.value[serverId].sort((a, b) => b.users - a.users);
+    }
   }
 
   /**

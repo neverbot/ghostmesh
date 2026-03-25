@@ -361,9 +361,13 @@ class IRCService extends EventEmitter {
         break;
 
       case '323': // RPL_LISTEND
-        this.store.flushChannelBuffer(serverId);
+      case '263': // RPL_TRYAGAIN — LIST was rate-limited
+        this.store.flushChannelBuffer(serverId, true);
         this.listLoading.delete(serverId);
         this.store.clearListLoading(serverId);
+        if (command === '263' && trailing) {
+          s.addSystemMessage(serverId, `[${command}] ${trailing}`);
+        }
         break;
 
       case 'NOTICE': {
