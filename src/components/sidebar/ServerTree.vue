@@ -303,8 +303,10 @@
             </button>
           </div>
 
-          <!-- Channel list (scrollable) -->
-          <div class="flex-1 overflow-y-auto">
+          <!-- Channel list (scrollable with fade) -->
+          <div
+            class="flex-1 overflow-y-auto [mask-image:linear-gradient(to_bottom,black_calc(100%-2rem),transparent)]"
+          >
             <!-- Joined channels -->
             <div
               v-for="entry in store.allJoinedChannels"

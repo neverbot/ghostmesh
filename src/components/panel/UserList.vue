@@ -16,7 +16,9 @@
       </span>
     </h3>
 
-    <div class="flex-1 overflow-y-auto">
+    <div
+      class="flex-1 overflow-y-auto [mask-image:linear-gradient(to_bottom,black_calc(100%-2rem),transparent)]"
+    >
       <div
         v-for="user in store.currentUsers"
         :key="user"

@@ -26,7 +26,8 @@
     <div class="relative flex min-w-0 flex-1 flex-col">
       <!-- Left collapse toggle -->
       <button
-        class="absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-r border-r border-slate-700 bg-slate-800 px-0.5 py-3 text-slate-500 transition-colors hover:text-slate-300"
+        class="absolute top-2.5 z-10 rounded border border-slate-700 bg-slate-800 px-1 py-2.5 text-slate-500 transition-colors hover:text-slate-300"
+        :class="leftCollapsed ? 'left-1' : '-left-2'"
         @click="leftCollapsed = !leftCollapsed"
       >
         <svg
@@ -47,7 +48,8 @@
       <!-- Right collapse toggle -->
       <button
         v-if="store.selectedChannel && store.selectedChannel !== '*status'"
-        class="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-l border-l border-slate-200 bg-slate-50 px-0.5 py-3 text-slate-400 transition-colors hover:text-slate-600"
+        class="absolute top-2.5 z-10 rounded border border-slate-200 bg-slate-50 px-1 py-2.5 text-slate-400 transition-colors hover:text-slate-600"
+        :class="rightCollapsed ? 'right-1' : '-right-2'"
         @click="rightCollapsed = !rightCollapsed"
       >
         <svg
