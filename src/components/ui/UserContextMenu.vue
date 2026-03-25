@@ -1,6 +1,7 @@
 <script setup>
-  import { ref, watch, nextTick } from 'vue';
+  import { ref, computed, watch, nextTick } from 'vue';
   import { useUserPrefsStore } from '@/stores/user-prefs.js';
+  import { useIrcStore } from '@/stores/irc.js';
 
   const props = defineProps({
     nick: { type: String, default: '' },
@@ -12,6 +13,13 @@
 
   const emit = defineEmits(['close', 'open-dm']);
   const prefs = useUserPrefsStore();
+  const store = useIrcStore();
+
+  /** Whether the context menu target is the current user. */
+  const isSelf = computed(() => {
+    const myNick = store.nicknamePerServer[props.serverId] || store.nickname;
+    return props.nick?.toLowerCase() === myNick?.toLowerCase();
+  });
   const menuEl = ref(null);
   const posX = ref(0);
   const posY = ref(0);
@@ -99,6 +107,7 @@
 
           <!-- Hide previews -->
           <button
+            v-if="!isSelf"
             class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-slate-300 transition-colors hover:bg-slate-700/60"
             @click="togglePreviews"
           >
@@ -120,6 +129,7 @@
 
           <!-- Hide messages (shadow ban) -->
           <button
+            v-if="!isSelf"
             class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-slate-700/60"
             :class="prefs.isUserHidden(nick) ? 'text-red-400' : 'text-slate-300'"
             @click="toggleHidden"

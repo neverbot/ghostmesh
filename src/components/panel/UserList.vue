@@ -6,6 +6,12 @@
 
   const store = useIrcStore();
 
+  /** Check if a nick is the current user. */
+  function isOwnNick(nick) {
+    const myNick = store.nicknamePerServer[store.selectedServerId] || store.nickname;
+    return nick?.toLowerCase() === myNick?.toLowerCase();
+  }
+
   const menuOpen = ref(false);
   const menuNick = ref('');
   const menuX = ref(0);
@@ -98,15 +104,22 @@
       <div
         v-for="user in filteredUsers"
         :key="user"
-        class="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-slate-100"
+        class="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors"
+        :class="isOwnNick(user) ? 'bg-emerald-50 hover:bg-emerald-100' : 'hover:bg-slate-100'"
         @click="onUserClick(user, $event)"
       >
         <div
-          class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-500"
+          class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
+          :class="isOwnNick(user) ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'"
         >
           {{ user[0].toUpperCase() }}
         </div>
-        <span class="truncate text-sm text-slate-600">{{ user }}</span>
+        <span
+          class="truncate text-sm"
+          :class="isOwnNick(user) ? 'font-medium text-emerald-700' : 'text-slate-600'"
+        >
+          {{ user }}
+        </span>
       </div>
 
       <!-- Filtered count -->

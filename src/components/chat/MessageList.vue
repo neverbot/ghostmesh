@@ -95,7 +95,7 @@
 
   /** Re-scroll when images load (if auto-scroll is active). */
   function onImageLoad() {
-    if (autoScroll) {
+    if (autoScroll && !suppressMarkRead) {
       doScroll('instant');
       markCurrentAsRead();
     }
@@ -109,7 +109,6 @@
     if (near && !suppressMarkRead) {
       markCurrentAsRead();
     }
-    suppressMarkRead = false;
   }
 
   /** Scroll to bottom, re-enable auto-scroll, and mark as read. */
@@ -130,7 +129,7 @@
   /** Check if scrollHeight changed and re-scroll if in auto mode. */
   function checkScrollHeightChange() {
     const el = scrollContainer.value;
-    if (!el || !autoScroll) return;
+    if (!el || !autoScroll || suppressMarkRead) return;
     if (el.scrollHeight !== lastScrollHeight) {
       lastScrollHeight = el.scrollHeight;
       el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
@@ -187,6 +186,10 @@
     nextTick(() => {
       if (!el) return;
       suppressMarkRead = true;
+      // Allow marking as read again after DOM settles
+      setTimeout(() => {
+        suppressMarkRead = false;
+      }, 200);
       const saved = scrollPositions[newKey];
       if (saved !== undefined) {
         // Restore saved position and auto-scroll state
