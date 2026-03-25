@@ -12,7 +12,7 @@
     message: { type: Object, required: true },
   });
 
-  const emit = defineEmits(['user-click']);
+  const emit = defineEmits(['user-click', 'message-seen']);
 
   const store = useIrcStore();
   const settingsStore = useServerSettingsStore();
@@ -31,6 +31,14 @@
       (entries) => {
         if (entries[0].isIntersecting && !previewReady.value) {
           previewReady.value = true;
+          // Notify parent that this message has been seen (for unread tracking)
+          if (props.message.type === 'message') {
+            emit('message-seen', {
+              serverId: props.message.serverId,
+              channel: props.message.channel,
+              timestamp: props.message.timestamp,
+            });
+          }
           observer.disconnect();
           observer = null;
         }

@@ -56,11 +56,11 @@ const useIrcStore = defineStore('irc', () => {
   const dmOnline = ref({});
 
   /**
-   * Number of messages the user has "read" per channel key.
-   * Unread count = messages[key].length - readCounts[key].
+   * Timestamp of the last message the user has seen per channel key.
+   * Messages with timestamp > this value are considered unread.
    * @type {import('vue').Ref<Record<string, number>>}
    */
-  const readCounts = ref({});
+  const lastReadTimestamp = ref({});
 
   /** @type {import('vue').Ref<Record<string, string[]>>} joined channels per server */
   const channels = ref({});
@@ -435,30 +435,38 @@ const useIrcStore = defineStore('irc', () => {
    * @param {string} channel
    * @returns {number}
    */
+  /**
+   * Get the unread message count for a channel.
+   * Only counts user messages (type === 'message') with timestamp after last read.
+   * @param {string} serverId
+   * @param {string} channel
+   * @returns {number}
+   */
   function unreadCount(serverId, channel) {
     const key = `${serverId}:${channel}`;
     const msgs = messages.value[key] || [];
-    const read = readCounts.value[key] || 0;
-    // Only count user messages (not system/join/part/quit/nick) as unread
+    const lastRead = lastReadTimestamp.value[key] || 0;
     let count = 0;
-    for (let i = read; i < msgs.length; i++) {
-      if (msgs[i].type === 'message') count++;
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const msg = msgs[i];
+      if (msg.timestamp <= lastRead) break;
+      if (msg.type === 'message') count++;
     }
     return count;
   }
 
   /**
-   * Mark a channel as read up to a given count.
-   * Since reading a message marks all previous as read, we just store the high-water mark.
+   * Mark a channel as read up to a given timestamp.
+   * Only advances forward (high-water mark).
    * @param {string} serverId
    * @param {string} channel
-   * @param {number} count — messages read (usually messages.length when at scroll bottom)
+   * @param {number} timestamp — epoch ms
    */
-  function markRead(serverId, channel, count) {
+  function markReadUpTo(serverId, channel, timestamp) {
     const key = `${serverId}:${channel}`;
-    const current = readCounts.value[key] || 0;
-    if (count > current) {
-      readCounts.value[key] = count;
+    const current = lastReadTimestamp.value[key] || 0;
+    if (timestamp > current) {
+      lastReadTimestamp.value[key] = timestamp;
     }
   }
 
@@ -821,8 +829,7 @@ const useIrcStore = defineStore('irc', () => {
     getService().sendMessage(selectedServerId.value, selectedChannel.value, content);
     addMessage(selectedServerId.value, selectedChannel.value, nickname.value, content, 'message');
     // Own messages should not increase unread count
-    const key = `${selectedServerId.value}:${selectedChannel.value}`;
-    readCounts.value[key] = (messages.value[key] || []).length;
+    markReadUpTo(selectedServerId.value, selectedChannel.value, Date.now());
   }
 
   /**
@@ -1009,7 +1016,7 @@ const useIrcStore = defineStore('irc', () => {
     changeNick,
     changeNickGlobal,
     unreadCount,
-    markRead,
+    markReadUpTo,
     dismissConnectionError,
     restoreSession,
     cleanup,

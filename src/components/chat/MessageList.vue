@@ -83,40 +83,43 @@
     });
   }
 
-  /** Mark current channel as read up to its message count. */
-  function markCurrentAsRead() {
+  /**
+   * Called when a MessageItem's IntersectionObserver fires (message becomes visible).
+   * Updates the last-read timestamp for the channel.
+   * @param {{ serverId: string, channel: string, timestamp: Date }} payload
+   */
+  function onMessageSeen(payload) {
+    if (suppressMarkRead) return;
+    const ts = payload.timestamp instanceof Date ? payload.timestamp.getTime() : payload.timestamp;
+    store.markReadUpTo(payload.serverId, payload.channel, ts);
+  }
+
+  /** Mark all messages in current channel as read (used when scrolling to bottom). */
+  function markAllCurrentAsRead() {
     if (!store.selectedServerId || !store.selectedChannel) return;
-    const key = selectedKey.value;
-    const msgs = store.messages[key];
-    if (msgs) {
-      store.markRead(store.selectedServerId, store.selectedChannel, msgs.length);
-    }
+    store.markReadUpTo(store.selectedServerId, store.selectedChannel, Date.now());
   }
 
   /** Re-scroll when images load (if auto-scroll is active). */
   function onImageLoad() {
     if (autoScroll && !suppressMarkRead) {
       doScroll('smooth');
-      markCurrentAsRead();
     }
   }
 
-  /**
-   * On scroll (any source), update button visibility and mark-as-read.
-   * Does NOT change autoScroll — only user interaction does that.
-   */
+  /** On scroll (any source), update button visibility. */
   function onScroll() {
     const near = isNearBottom();
     showScrollBtn.value = !near;
+    // When at bottom, mark everything as read
     if (near && !suppressMarkRead) {
-      markCurrentAsRead();
+      markAllCurrentAsRead();
     }
   }
 
   /**
    * User actively scrolled (wheel/touch). If they scroll away from bottom,
    * disable auto-scroll. If they scroll back to bottom, re-enable it.
-   * Uses rAF to evaluate after the scroll position updates.
    */
   function onUserScroll() {
     requestAnimationFrame(() => {
@@ -128,13 +131,12 @@
   function scrollToBottom() {
     autoScroll = true;
     doScroll('smooth');
-    markCurrentAsRead();
+    markAllCurrentAsRead();
     showScrollBtn.value = false;
   }
 
   /**
-   * MutationObserver to detect DOM changes that affect scrollHeight
-   * (e.g. loading previews, hidden hints, retry buttons).
+   * MutationObserver to detect DOM changes that affect scrollHeight.
    */
   let mutationObserver = null;
   let lastScrollHeight = 0;
@@ -149,11 +151,13 @@
     }
   }
 
-  /** Re-scroll after CSS animation completes (image preview expand). */
+  /** Re-scroll after CSS animation completes + remove animation class to prevent replay. */
   function onAnimationEnd(e) {
-    if (e.animationName === 'preview-appear' && autoScroll && !suppressMarkRead) {
-      doScroll('smooth');
-      markCurrentAsRead();
+    if (e.animationName === 'preview-appear') {
+      e.target.classList.remove('animate-preview');
+      if (autoScroll && !suppressMarkRead) {
+        doScroll('smooth');
+      }
     }
   }
 
@@ -192,7 +196,6 @@
     () => {
       if (autoScroll) {
         doScroll('smooth');
-        markCurrentAsRead();
       }
     },
   );
@@ -228,7 +231,7 @@
         autoScroll = true;
         showScrollBtn.value = false;
         el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
-        markCurrentAsRead();
+        markAllCurrentAsRead();
       }
     });
   });
@@ -281,6 +284,7 @@
         :key="msg.id"
         :message="msg"
         @user-click="onUserClick"
+        @message-seen="onMessageSeen"
       />
     </div>
   </div>
