@@ -381,7 +381,8 @@ const useIrcStore = defineStore('irc', () => {
   function addMessage(serverId, channel, nick, content, type = 'message') {
     const key = `${serverId}:${channel}`;
     if (!messages.value[key]) messages.value[key] = [];
-    messages.value[key].push({
+    const arr = messages.value[key];
+    arr.push({
       id: crypto.randomUUID(),
       serverId,
       channel,
@@ -390,6 +391,11 @@ const useIrcStore = defineStore('irc', () => {
       timestamp: new Date(),
       type,
     });
+    // Trim old messages to stay within limit
+    const max = config.chat.maxMessages;
+    if (arr.length > max) {
+      arr.splice(0, arr.length - max);
+    }
   }
 
   /**

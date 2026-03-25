@@ -18,6 +18,12 @@ const config = {
     realname: 'GhostMesh IRC Client',
   },
 
+  /** Chat settings. */
+  chat: {
+    /** Maximum messages to keep per channel. Older messages are discarded. */
+    maxMessages: 1000,
+  },
+
   /** Channel LIST defaults. */
   list: {
     /** Maximum channels to render in the browse list. */

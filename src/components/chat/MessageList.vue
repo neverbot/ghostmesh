@@ -1,5 +1,5 @@
 <script setup>
-  import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
+  import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
   import { useIrcStore } from '@/stores/irc.js';
   import { useUserPrefsStore } from '@/stores/user-prefs.js';
   import MessageItem from './MessageItem.vue';
@@ -8,7 +8,6 @@
   const store = useIrcStore();
   const userPrefs = useUserPrefsStore();
   const scrollContainer = ref(null);
-  const scrollAnchor = ref(null);
 
   // Context menu state
   const menuOpen = ref(false);
@@ -37,6 +36,15 @@
     store.openDM(serverId, nick);
   }
 
+  /** Current channel key for v-show comparison. */
+  const selectedKey = computed(() => {
+    if (!store.selectedServerId || !store.selectedChannel) return null;
+    return `${store.selectedServerId}:${store.selectedChannel}`;
+  });
+
+  /** All channel keys that have messages. */
+  const messageKeys = computed(() => Object.keys(store.messages));
+
   /** Whether we should keep scrolling to bottom (set when a new message arrives near bottom). */
   let shouldStick = true;
 
@@ -50,18 +58,18 @@
     return el.scrollHeight - el.scrollTop - el.clientHeight < 150;
   }
 
-  /** Scroll to bottom instantly. */
+  /** Scroll to bottom. */
   function doScroll(behavior = 'smooth') {
     nextTick(() => {
-      if (scrollAnchor.value) {
-        scrollAnchor.value.scrollIntoView({ behavior });
+      const el = scrollContainer.value;
+      if (el) {
+        el.scrollTo({ top: el.scrollHeight, behavior });
       }
     });
   }
 
   /**
    * Re-scroll when images load (they change scrollHeight after the message was added).
-   * Uses the saved `shouldStick` flag from when the message arrived.
    */
   function onImageLoad() {
     if (shouldStick) {
@@ -80,7 +88,6 @@
   watch(
     () => store.currentMessages.length,
     () => {
-      // Capture scroll position BEFORE Vue renders the new message
       shouldStick = isNearBottom();
       if (shouldStick) {
         doScroll('smooth');
@@ -102,8 +109,10 @@
     ref="scrollContainer"
     class="flex-1 overflow-y-auto bg-white py-4 pr-6"
   >
+    <!-- Empty state (only when selected channel has no messages) -->
     <div
-      v-if="store.currentMessages.length === 0"
+      v-if="!selectedKey || store.currentMessages.length === 0"
+      v-show="!selectedKey || store.currentMessages.length === 0"
       class="flex h-full flex-col items-center justify-center text-slate-300"
     >
       <svg
@@ -126,16 +135,25 @@
       </p>
     </div>
 
-    <div class="flex flex-col gap-0.5">
+    <!--
+      All channels rendered simultaneously, only the selected one is visible.
+      This keeps MessageItem components alive so previews and IntersectionObserver
+      state survive channel switches.
+    -->
+    <div
+      v-for="key in messageKeys"
+      v-show="key === selectedKey"
+      :key="key"
+      class="flex flex-col gap-0.5"
+    >
       <MessageItem
-        v-for="msg in store.currentMessages"
+        v-for="msg in store.messages[key]"
         v-show="!userPrefs.isUserHidden(msg.nick)"
         :key="msg.id"
         :message="msg"
         @user-click="onUserClick"
       />
     </div>
-    <div ref="scrollAnchor" />
   </div>
 
   <UserContextMenu
