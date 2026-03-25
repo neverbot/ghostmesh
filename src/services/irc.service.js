@@ -313,6 +313,7 @@ class IRCService extends EventEmitter {
         break;
 
       case '323': // RPL_LISTEND
+        this.store.flushChannelBuffer(serverId);
         this.listLoading.delete(serverId);
         this.store.clearListLoading(serverId);
         break;

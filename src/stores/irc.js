@@ -338,16 +338,45 @@ const useIrcStore = defineStore('irc', () => {
    */
   function clearAvailableChannels(serverId) {
     availableChannels.value[serverId] = [];
+    // Clear any pending buffer
+    delete channelBuffer[serverId];
+  }
+
+  /** @type {Record<string, object[]>} buffer per server, flushed periodically */
+  const channelBuffer = {};
+  /** @type {Record<string, number>} flush timer per server */
+  const channelFlushTimers = {};
+
+  /**
+   * Flush buffered channels into the reactive state.
+   * @param {string} serverId
+   */
+  function flushChannelBuffer(serverId) {
+    const buf = channelBuffer[serverId];
+    if (!buf || buf.length === 0) return;
+    if (!availableChannels.value[serverId]) availableChannels.value[serverId] = [];
+    availableChannels.value[serverId].push(...buf);
+    channelBuffer[serverId] = [];
   }
 
   /**
    * Add a single available channel entry (called per RPL_LIST).
+   * Batches updates to avoid blocking the UI with thousands of reactive pushes.
    * @param {string} serverId
    * @param {{ name: string, users: number, topic: string }} channel
    */
   function addAvailableChannel(serverId, channel) {
-    if (!availableChannels.value[serverId]) availableChannels.value[serverId] = [];
-    availableChannels.value[serverId].push(channel);
+    if (!channelBuffer[serverId]) channelBuffer[serverId] = [];
+    channelBuffer[serverId].push(channel);
+    // Flush every 100 channels or schedule a timer flush
+    if (channelBuffer[serverId].length >= 100) {
+      flushChannelBuffer(serverId);
+    } else if (!channelFlushTimers[serverId]) {
+      channelFlushTimers[serverId] = setTimeout(() => {
+        flushChannelBuffer(serverId);
+        delete channelFlushTimers[serverId];
+      }, 500);
+    }
   }
 
   // --- Actions (delegate to service) ---
@@ -449,6 +478,7 @@ const useIrcStore = defineStore('irc', () => {
     removeUser,
     clearAvailableChannels,
     addAvailableChannel,
+    flushChannelBuffer,
     selectChannel,
   };
 
