@@ -4,9 +4,22 @@
   import MessageItem from './MessageItem.vue';
 
   const store = useIrcStore();
+  const scrollContainer = ref(null);
   const scrollAnchor = ref(null);
 
-  function scrollToBottom() {
+  /**
+   * Check if the user is scrolled near the bottom (within 100px).
+   * @returns {boolean}
+   */
+  function isNearBottom() {
+    const el = scrollContainer.value;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+  }
+
+  /** Scroll to the bottom only if already near the bottom. */
+  function scrollToBottomIfNeeded() {
+    if (!isNearBottom()) return;
     nextTick(() => {
       if (scrollAnchor.value) {
         scrollAnchor.value.scrollIntoView({ behavior: 'smooth' });
@@ -14,19 +27,31 @@
     });
   }
 
+  /** Force scroll to bottom (used on channel switch). */
+  function forceScrollToBottom() {
+    nextTick(() => {
+      if (scrollAnchor.value) {
+        scrollAnchor.value.scrollIntoView({ behavior: 'instant' });
+      }
+    });
+  }
+
   watch(
     () => store.currentMessages.length,
-    () => scrollToBottom(),
+    () => scrollToBottomIfNeeded(),
   );
 
   watch(
     () => store.selectedChannel,
-    () => scrollToBottom(),
+    () => forceScrollToBottom(),
   );
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto bg-white py-4 pr-6">
+  <div
+    ref="scrollContainer"
+    class="flex-1 overflow-y-auto bg-white py-4 pr-6"
+  >
     <div
       v-if="store.currentMessages.length === 0"
       class="flex h-full flex-col items-center justify-center text-slate-300"

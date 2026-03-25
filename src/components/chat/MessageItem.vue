@@ -3,7 +3,7 @@
   import { useIrcStore } from '@/stores/irc.js';
   import { useServerSettingsStore } from '@/stores/server-settings.js';
   import { parseFormatting, stripFormatting, hasFormatting } from '@/utils/mirc-format.js';
-  import { formatPlainContent, formatHtmlContent } from '@/utils/message-format.js';
+  import { formatPlainContent, formatHtmlContent } from '@/services/message.service.js';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
 
   const props = defineProps({
