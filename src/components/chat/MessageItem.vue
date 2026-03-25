@@ -1,5 +1,5 @@
 <script setup>
-  import { computed } from 'vue';
+  import { computed, ref, onMounted, onUnmounted } from 'vue';
   import { useIrcStore } from '@/stores/irc.js';
   import { useServerSettingsStore } from '@/stores/server-settings.js';
   import { parseFormatting, stripFormatting, hasFormatting } from '@/utils/mirc-format.js';
@@ -13,6 +13,35 @@
 
   const store = useIrcStore();
   const settingsStore = useServerSettingsStore();
+
+  /** Root element ref for IntersectionObserver. */
+  const messageEl = ref(null);
+  /** True once the message has been visible in the viewport. */
+  const previewReady = ref(false);
+
+  let observer = null;
+
+  onMounted(() => {
+    if (!messageEl.value) return;
+    observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !previewReady.value) {
+          previewReady.value = true;
+          observer.disconnect();
+          observer = null;
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(messageEl.value);
+  });
+
+  onUnmounted(() => {
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
+  });
 
   const isOwn = computed(() => props.message.nick === store.nickname);
   const isSystem = computed(() =>
@@ -36,14 +65,18 @@
   /** Rendered HTML content with mIRC formatting + URL linkification. */
   const renderedHtml = computed(() => {
     if (mircEnabled.value) {
-      return formatHtmlContent(parseFormatting(props.message.content));
+      return formatHtmlContent(parseFormatting(props.message.content), {
+        resolveImages: previewReady.value,
+      });
     }
     return null;
   });
 
   /** Plain text content with URLs linkified (no mIRC). */
   const plainHtml = computed(() => {
-    return formatPlainContent(stripFormatting(props.message.content));
+    return formatPlainContent(stripFormatting(props.message.content), {
+      resolveImages: previewReady.value,
+    });
   });
 
   /** CSS classes for the message bubble. */
@@ -57,8 +90,9 @@
     return 'rounded-tl-sm bg-slate-100 text-slate-800';
   });
 
-  /** Whether the message contains an image URL. */
+  /** Whether the message contains an image URL (only checks when preview ready). */
   const hasImage = computed(() => {
+    if (!previewReady.value) return false;
     const text = props.message.content || '';
     const urlMatch = text.match(/(?:https?:\/\/|www\.)[^\s<>"'()]+/gi);
     if (!urlMatch) return false;
@@ -73,6 +107,7 @@
   <!-- System messages -->
   <div
     v-if="isSystem"
+    ref="messageEl"
     class="flex items-stretch"
   >
     <!-- Timestamp gutter -->
@@ -89,6 +124,7 @@
   <!-- User messages -->
   <div
     v-else
+    ref="messageEl"
     class="flex gap-3 py-1.5 pl-6"
     :class="isOwn ? 'flex-row-reverse pr-6' : 'flex-row'"
   >

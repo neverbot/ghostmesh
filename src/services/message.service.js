@@ -10,6 +10,9 @@ import { imageProxyUrl, corsProxyUrl } from '@/services/proxy-services.js';
 /** Image file extensions to detect for inline preview. */
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif'];
 
+/** URLs that have already failed preview resolution — not retried during this session. */
+const failedPreviews = new Set();
+
 /** Regex to match URLs in text. */
 const URL_REGEX = /(?:https?:\/\/|www\.)[^\s<>"'()]+/gi;
 
@@ -120,9 +123,11 @@ async function resolveAsyncImage(asyncMarker, placeholderId) {
       img.className = 'my-1 block max-w-full rounded-lg';
       el.replaceWith(img);
     } else {
+      failedPreviews.add(asyncMarker);
       el.textContent = 'Image expired or unavailable';
     }
   } catch {
+    failedPreviews.add(asyncMarker);
     const el = document.getElementById(placeholderId);
     if (el) el.textContent = 'Preview failed';
   }
@@ -144,9 +149,10 @@ function escapeHtml(str) {
 /**
  * Replace URLs in a plain text segment with link/image HTML.
  * @param {string} text — plain text (no HTML)
+ * @param {{ resolveImages?: boolean }} [options]
  * @returns {string}
  */
-function linkifyText(text) {
+function linkifyText(text, { resolveImages = true } = {}) {
   let lastIndex = 0;
   let result = '';
 
@@ -164,11 +170,17 @@ function linkifyText(text) {
 
     // Determine image src: direct image URL, or resolved from hosting provider
     let imageSrc = null;
-    if (isImageUrl(rawUrl)) {
-      imageSrc = href;
-    } else {
-      const resolved = resolveImageProvider(href);
-      if (resolved) imageSrc = resolved.imageUrl;
+    if (resolveImages) {
+      if (isImageUrl(rawUrl)) {
+        imageSrc = href;
+      } else {
+        const resolved = resolveImageProvider(href);
+        if (resolved) imageSrc = resolved.imageUrl;
+      }
+      // Skip URLs that previously failed
+      if (imageSrc && failedPreviews.has(imageSrc)) {
+        imageSrc = null;
+      }
     }
 
     if (imageSrc && imageSrc.startsWith('async:')) {
@@ -197,19 +209,21 @@ function linkifyText(text) {
 /**
  * Process plain text content: escape HTML and linkify URLs.
  * @param {string} text — raw plain text
+ * @param {{ resolveImages?: boolean }} [options]
  * @returns {string} — safe HTML
  */
-function formatPlainContent(text) {
+function formatPlainContent(text, { resolveImages = true } = {}) {
   if (!text) return '';
-  return linkifyText(text);
+  return linkifyText(text, { resolveImages });
 }
 
 /**
  * Process HTML content (from mIRC parser): find URLs in text nodes and linkify them.
  * @param {string} html — HTML from parseFormatting()
+ * @param {{ resolveImages?: boolean }} [options]
  * @returns {string} — HTML with URLs linkified
  */
-function formatHtmlContent(html) {
+function formatHtmlContent(html, { resolveImages = true } = {}) {
   if (!html) return '';
   const parts = html.split(/(<[^>]+>)/);
   return parts
@@ -220,7 +234,7 @@ function formatHtmlContent(html) {
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
         .replace(/&quot;/g, '"');
-      return linkifyText(unescaped);
+      return linkifyText(unescaped, { resolveImages });
     })
     .join('');
 }
