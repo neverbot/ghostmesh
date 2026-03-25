@@ -350,12 +350,7 @@
                   :key="'hidden:' + entry.nick"
                   class="flex items-center justify-between rounded-md bg-slate-700/30 px-3 py-1.5"
                 >
-                  <div class="flex flex-col">
-                    <span class="text-xs text-slate-300">{{ entry.nick }}</span>
-                    <span class="text-[9px] text-slate-500">
-                      {{ timeAgo(entry.addedAt) }}
-                    </span>
-                  </div>
+                  <span class="text-xs text-slate-300">{{ entry.nick }}</span>
                   <button
                     class="text-[10px] text-red-400 transition-colors hover:text-red-300"
                     @click="userPrefs.toggleUserHidden(entry.nick)"
@@ -398,12 +393,7 @@
                   :key="'preview:' + entry.nick"
                   class="flex items-center justify-between rounded-md bg-slate-700/30 px-3 py-1.5"
                 >
-                  <div class="flex flex-col">
-                    <span class="text-xs text-slate-300">{{ entry.nick }}</span>
-                    <span class="text-[9px] text-slate-500">
-                      {{ timeAgo(entry.addedAt) }}
-                    </span>
-                  </div>
+                  <span class="text-xs text-slate-300">{{ entry.nick }}</span>
                   <button
                     class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
                     @click="userPrefs.togglePreviewHidden(entry.nick)"
