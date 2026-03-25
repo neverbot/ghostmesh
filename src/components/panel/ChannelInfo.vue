@@ -6,6 +6,12 @@
 
   const isPrivate = computed(() => store.isDM(store.selectedChannel));
 
+  const isSelfDM = computed(() => {
+    if (!isPrivate.value || !store.selectedChannel) return false;
+    const myNick = store.nicknamePerServer[store.selectedServerId] || store.nickname;
+    return store.selectedChannel.toLowerCase() === myNick?.toLowerCase();
+  });
+
   const channelName = computed(() => {
     if (!store.selectedChannel) return '';
     if (store.selectedChannel === '*status') return 'Status';
@@ -14,6 +20,7 @@
 
   const memberCount = computed(() => {
     if (isPrivate.value) {
+      if (isSelfDM.value) return 1;
       return store.isDMOnline(store.selectedServerId, store.selectedChannel) ? 2 : 1;
     }
     return store.currentUsers.length;
@@ -45,6 +52,12 @@
         class="text-xs italic text-slate-400"
       >
         No topic set
+      </p>
+      <p
+        v-else-if="isSelfDM"
+        class="text-xs italic text-slate-400"
+      >
+        This is a conversation with yourself. Use it as a notepad or to test chat features.
       </p>
       <p
         v-else
