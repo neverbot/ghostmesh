@@ -414,22 +414,22 @@
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Footer -->
-          <div class="mt-2 flex justify-end gap-2 border-t border-slate-700 px-5 py-3">
-            <button
-              class="rounded-lg px-4 py-1.5 text-xs text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-300"
-              @click="close"
-            >
-              Cancel
-            </button>
-            <button
-              class="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
-              @click="save"
-            >
-              Save
-            </button>
-          </div>
+        <!-- Footer -->
+        <div class="flex justify-end gap-2 border-t border-slate-700 px-5 py-3">
+          <button
+            class="rounded-lg px-4 py-1.5 text-xs text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-300"
+            @click="close"
+          >
+            Cancel
+          </button>
+          <button
+            class="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
+            @click="save"
+          >
+            Save
+          </button>
         </div>
       </div>
     </div>

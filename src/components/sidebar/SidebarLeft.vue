@@ -30,11 +30,11 @@
     <div class="flex flex-1 flex-col overflow-hidden px-2 pt-1">
       <ServerTree />
     </div>
-  </div>
 
-  <!-- User settings modal -->
-  <UserSettingsModal
-    :open="userSettingsOpen"
-    @close="userSettingsOpen = false"
-  />
+    <!-- User settings modal (teleports to body) -->
+    <UserSettingsModal
+      :open="userSettingsOpen"
+      @close="userSettingsOpen = false"
+    />
+  </div>
 </template>
