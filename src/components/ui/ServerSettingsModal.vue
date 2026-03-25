@@ -362,7 +362,7 @@
           </div>
 
           <!-- Footer -->
-          <div class="flex justify-end gap-2 border-t border-slate-700 px-5 py-3">
+          <div class="mt-2 flex justify-end gap-2 border-t border-slate-700 px-5 py-3">
             <button
               class="rounded-lg px-4 py-1.5 text-xs text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-300"
               @click="close"
