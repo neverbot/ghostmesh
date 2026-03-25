@@ -4,7 +4,6 @@ import { hasFormatting } from '@/utils/mirc-format.js';
 /** Default interval between automatic LIST refreshes (5 minutes). */
 const LIST_REFRESH_INTERVAL = 5 * 60 * 1000;
 
-
 /**
  * IRC protocol service. Manages WebSocket connections, parses IRC messages,
  * handles protocol commands, and periodically refreshes channel lists.
@@ -153,6 +152,10 @@ class IRCService extends EventEmitter {
   disconnect(serverId) {
     const connection = this.connections.get(serverId);
     if (!connection) return;
+    // Detach handlers before closing to prevent onclose from interfering with reconnection
+    connection.socket.onclose = null;
+    connection.socket.onerror = null;
+    connection.socket.onmessage = null;
     this.send(serverId, 'QUIT :Goodbye');
     connection.socket.close();
     this.cleanupConnection(serverId);
@@ -172,6 +175,8 @@ class IRCService extends EventEmitter {
   cleanupConnection(serverId) {
     this.connections.delete(serverId);
     this.stopListRefresh(serverId);
+    this.mircDetected.delete(serverId);
+    delete this.listWaitOverrides[serverId];
     const initTimer = this.initialListTimers.get(serverId);
     if (initTimer) {
       clearTimeout(initTimer);
@@ -285,7 +290,29 @@ class IRCService extends EventEmitter {
         if (/list/i.test(text)) {
           const waitMatch = text.match(/(\d+)\s*(?:s(?:ec(?:ond)?s?)?)\b/i);
           if (waitMatch) {
-            this.listWaitOverrides[serverId] = parseInt(waitMatch[1], 10) + 2;
+            const detected = parseInt(waitMatch[1], 10) + 2;
+            const current = this.listWaitOverrides[serverId] || 0;
+            if (detected > current) {
+              this.listWaitOverrides[serverId] = detected;
+              // Update stored setting only if user hasn't set a custom value
+              if (!this.serverSettings.settings[serverId]?.listDelay) {
+                this.serverSettings.updateSettings(serverId, { listDelay: detected });
+              }
+            }
+            // Reschedule pending LIST if timer is active (server told us to wait longer)
+            const pendingTimer = this.initialListTimers.get(serverId);
+            if (pendingTimer) {
+              clearTimeout(pendingTimer);
+              this.initialListTimers.delete(serverId);
+              const newTimer = setTimeout(() => {
+                this.initialListTimers.delete(serverId);
+                if (this.connections.has(serverId)) {
+                  this.requestList(serverId);
+                  this.startListRefresh(serverId);
+                }
+              }, detected * 1000);
+              this.initialListTimers.set(serverId, newTimer);
+            }
           }
         }
         break;
