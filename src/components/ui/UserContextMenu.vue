@@ -59,7 +59,12 @@
   }
 
   function toggleHidden() {
+    const wasHidden = prefs.isUserHidden(props.nick);
     prefs.toggleUserHidden(props.nick);
+    // When hiding a user, close any open DM channels with them
+    if (!wasHidden) {
+      store.closeDMsWithUser(props.nick);
+    }
     emit('close');
   }
 </script>

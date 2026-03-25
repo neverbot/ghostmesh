@@ -795,6 +795,27 @@ const useIrcStore = defineStore('irc', () => {
   }
 
   /**
+   * Close all DM channels with a user across all servers.
+   * If the active channel is one of them, switch to the first available channel.
+   * @param {string} nick
+   */
+  function closeDMsWithUser(nick) {
+    const n = nick.toLowerCase();
+    for (const serverId of activeConnections.value) {
+      const serverChannels = channels.value[serverId] || [];
+      const dmChannel = serverChannels.find((ch) => ch.toLowerCase() === n);
+      if (dmChannel) {
+        // If this DM is currently selected, switch away first
+        if (selectedServerId.value === serverId && selectedChannel.value === dmChannel) {
+          const firstChannel = serverChannels.find((ch) => ch !== dmChannel) || '*status';
+          selectChannel(serverId, firstChannel);
+        }
+        removeJoinedChannel(serverId, dmChannel);
+      }
+    }
+  }
+
+  /**
    * Send a message to the currently selected channel.
    * @param {string} content
    */
@@ -986,6 +1007,7 @@ const useIrcStore = defineStore('irc', () => {
     joinChannel,
     partChannel,
     openDM,
+    closeDMsWithUser,
     sendMessage,
     refreshChannelList,
     changeNick,
