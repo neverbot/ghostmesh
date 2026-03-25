@@ -26,14 +26,14 @@
     <div class="relative flex min-w-0 flex-1 flex-col">
       <!-- Left collapse toggle -->
       <button
-        class="absolute left-1 top-1/2 z-10 -translate-y-1/2 rounded-r-lg bg-slate-800/80 p-1 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+        class="absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-r border-r border-slate-700 bg-slate-800 px-0.5 py-3 text-slate-500 transition-colors hover:text-slate-300"
         @click="leftCollapsed = !leftCollapsed"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 16 16"
           fill="currentColor"
-          class="h-3.5 w-3.5 transition-transform"
+          class="h-3 w-3 transition-transform"
           :class="leftCollapsed ? 'rotate-180' : ''"
         >
           <path
@@ -47,14 +47,14 @@
       <!-- Right collapse toggle -->
       <button
         v-if="store.selectedChannel && store.selectedChannel !== '*status'"
-        class="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded-l-lg bg-slate-200/80 p-1 text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-600"
+        class="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-l border-l border-slate-200 bg-slate-50 px-0.5 py-3 text-slate-400 transition-colors hover:text-slate-600"
         @click="rightCollapsed = !rightCollapsed"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 16 16"
           fill="currentColor"
-          class="h-3.5 w-3.5 transition-transform"
+          class="h-3 w-3 transition-transform"
           :class="rightCollapsed ? 'rotate-180' : ''"
         >
           <path
