@@ -99,7 +99,7 @@ function handleImageError(img) {
       newImg.dataset.attempt = '0';
       newImg.alt = '';
       newImg.referrerPolicy = 'no-referrer';
-      newImg.className = 'my-1 block max-w-full rounded-lg';
+      newImg.className = 'mt-1 block max-w-full rounded-lg';
       newImg.loading = 'lazy';
       newImg.onerror = () => handleImageError(newImg);
       wrapper.replaceWith(newImg);
@@ -147,7 +147,7 @@ async function resolveAsyncImage(asyncMarker, placeholderId) {
     } else if (dataUrl) {
       const img = document.createElement('img');
       img.alt = '';
-      img.className = 'my-1 block max-w-full rounded-lg';
+      img.className = 'mt-1 block max-w-full rounded-lg';
       if (dataUrl.startsWith('data:')) {
         img.src = dataUrl;
       } else {
@@ -271,7 +271,7 @@ function linkifyText(text, { resolveImages = true } = {}) {
       });
     } else if (imageSrc) {
       const escapedSrc = escapeHtml(imageSrc);
-      result += `<img src="${escapedSrc}" data-original-src="${escapedSrc}" data-attempt="0" alt="" referrerpolicy="no-referrer" class="my-1 block max-w-full rounded-lg" loading="lazy" onerror="window.__ghostmeshImageError?.(this)" />`;
+      result += `<img src="${escapedSrc}" data-original-src="${escapedSrc}" data-attempt="0" alt="" referrerpolicy="no-referrer" class="mt-1 block max-w-full rounded-lg" loading="lazy" onerror="window.__ghostmeshImageError?.(this)" />`;
     }
 
     lastIndex = match.index + rawUrl.length;

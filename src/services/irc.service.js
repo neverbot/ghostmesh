@@ -466,6 +466,8 @@ class IRCService extends EventEmitter {
         const ourNick = connection?.config?.nickname || '';
         // Direct message: target is our nick, not a channel
         if (target.toLowerCase() === ourNick.toLowerCase()) {
+          // Self-DM echo: we already added the message locally in sendMessage
+          if (nick.toLowerCase() === ourNick.toLowerCase()) break;
           // Shadow ban: ignore DMs from hidden users
           if (this.userPrefs?.isUserHidden(nick)) break;
           // Create DM channel if it doesn't exist
