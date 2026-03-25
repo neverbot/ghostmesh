@@ -2,14 +2,12 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import IRCService from '@/services/irc.service.js';
 import { useServerSettingsStore } from '@/stores/server-settings.js';
+import defaultServers from '@/servers.js';
 
 const useIrcStore = defineStore('irc', () => {
   // --- State ---
 
-  const servers = ref([
-    { id: 'example-1', name: 'Example Network', host: 'wss://example.invalid' },
-    { id: 'example-2', name: 'Example Network', host: 'wss://example.invalid' },
-  ]);
+  const servers = ref([...defaultServers]);
 
   const activeConnections = ref([]);
   const selectedServerId = ref(null);
