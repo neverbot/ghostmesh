@@ -89,8 +89,12 @@ const useIrcStore = defineStore('irc', () => {
     const result = [];
     for (const serverId of activeConnections.value) {
       const server = servers.value.find((s) => s.id === serverId);
+      const serverName = server?.name || serverId;
       for (const channel of channels.value[serverId] || []) {
-        result.push({ serverId, serverName: server?.name || serverId, channel });
+        const key = `${serverId}:${channel}`;
+        const userList = users.value[key];
+        const userCount = userList ? userList.length : 0;
+        result.push({ serverId, serverName, channel, userCount });
       }
     }
     return result;

@@ -323,35 +323,43 @@
               <span class="min-w-0 flex-1 truncate text-sm">
                 {{ entry.channel === '*status' ? 'status' : entry.channel.replace(/^#/, '') }}
               </span>
-              <span
-                v-if="store.connectedServers.length > 1"
-                class="shrink-0 rounded bg-slate-700/60 px-1.5 py-0.5 text-[9px] text-slate-500"
-                :title="entry.serverName"
-              >
-                {{ serverAbbr(entry.serverName) }}
-              </span>
-              <!-- Leave channel -->
-              <InfoTooltip
-                v-if="entry.channel !== '*status'"
-                text="Leave channel"
-                :delay="500"
-              >
-                <button
-                  class="shrink-0 rounded p-0.5 text-transparent transition-colors hover:bg-slate-600 hover:text-red-400 group-hover/ch:text-slate-500"
-                  @click.stop="store.partChannel(entry.serverId, entry.channel)"
+              <!-- Right-aligned group: user count + server badge + leave -->
+              <div class="flex shrink-0 items-center gap-1.5">
+                <span
+                  v-if="entry.channel !== '*status' && entry.userCount > 0"
+                  class="text-[10px] text-slate-500"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 16 16"
-                    fill="currentColor"
-                    class="h-3 w-3"
+                  {{ entry.userCount }}
+                </span>
+                <span
+                  v-if="store.connectedServers.length > 1"
+                  class="rounded bg-slate-700/60 px-1.5 py-0.5 text-[9px] text-slate-500"
+                  :title="entry.serverName"
+                >
+                  {{ serverAbbr(entry.serverName) }}
+                </span>
+                <InfoTooltip
+                  v-if="entry.channel !== '*status'"
+                  text="Leave channel"
+                  :delay="500"
+                >
+                  <button
+                    class="rounded p-0.5 text-transparent transition-colors hover:bg-slate-600 hover:text-red-400 group-hover/ch:text-slate-500"
+                    @click.stop="store.partChannel(entry.serverId, entry.channel)"
                   >
-                    <path
-                      d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"
-                    />
-                  </svg>
-                </button>
-              </InfoTooltip>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 16 16"
+                      fill="currentColor"
+                      class="h-3 w-3"
+                    >
+                      <path
+                        d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"
+                      />
+                    </svg>
+                  </button>
+                </InfoTooltip>
+              </div>
             </div>
 
             <!-- Separator if there are joined channels AND available channels -->
@@ -377,15 +385,17 @@
               <span class="min-w-0 flex-1 truncate text-xs">
                 {{ ch.name.replace(/^#/, '') }}
               </span>
-              <span
-                v-if="store.connectedServers.length > 1"
-                class="shrink-0 rounded bg-slate-700/30 px-1 py-0.5 text-[8px] text-slate-600"
-              >
-                {{ serverAbbr(ch._sname) }}
-              </span>
-              <span class="shrink-0 text-[10px] text-slate-600">
-                {{ ch.users }}
-              </span>
+              <div class="flex shrink-0 items-center gap-1.5">
+                <span class="text-[10px] text-slate-600">
+                  {{ ch.users }}
+                </span>
+                <span
+                  v-if="store.connectedServers.length > 1"
+                  class="rounded bg-slate-700/30 px-1 py-0.5 text-[8px] text-slate-600"
+                >
+                  {{ serverAbbr(ch._sname) }}
+                </span>
+              </div>
             </div>
 
             <!-- Truncation notice -->
