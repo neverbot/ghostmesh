@@ -14,45 +14,45 @@ Reference: [RFC 1459](https://datatracker.ietf.org/doc/html/rfc1459), [RFC 2812]
 
 ## Connection & Registration
 
-| Command         | Description                    | Status | Notes                                                             |
-| --------------- | ------------------------------ | ------ | ----------------------------------------------------------------- |
-| `PASS`          | Set connection password        | —      |                                                                   |
+| Command         | Description                    | Status | Notes                                                                                           |
+| --------------- | ------------------------------ | ------ | ----------------------------------------------------------------------------------------------- |
+| `PASS`          | Set connection password        | —      |                                                                                                 |
 | `NICK`          | Set/change nickname            | Done   | Sent on connect; live change via user/server settings; handles 432/433/436 errors with fallback |
-| `USER`          | Register username and realname | Done   | Sent on connect from `config.js`                                  |
-| `QUIT`          | Disconnect from server         | Done   | Sent on disconnect; socket handlers detached before close         |
-| `PING` / `PONG` | Keep-alive                     | Done   | Auto PONG response, processed immediately (never queued)          |
+| `USER`          | Register username and realname | Done   | Sent on connect from `config.js`                                                                |
+| `QUIT`          | Disconnect from server         | Done   | Sent on disconnect; socket handlers detached before close                                       |
+| `PING` / `PONG` | Keep-alive                     | Done   | Auto PONG response, processed immediately (never queued)                                        |
 
 ## Channel Operations
 
-| Command  | Description              | Status | Notes                                                                   |
-| -------- | ------------------------ | ------ | ----------------------------------------------------------------------- |
-| `JOIN`   | Join a channel           | Done   | Via sidebar input or channel list click; auto-selects joined channel    |
-| `PART`   | Leave a channel          | Done   | Via leave button on joined channels; `*status` cannot be left           |
-| `LIST`   | List available channels  | Done   | Auto-requested after registration; periodic refresh; batched processing |
-| `TOPIC`  | Get/set channel topic    | Partial| Receives topic (332); displayed in channel info panel; no UI to set     |
-| `NAMES`  | List users in a channel  | Done   | Handled via 353/366 replies; populates user list panel                  |
-| `INVITE` | Invite user to a channel | —      |                                                                         |
-| `KICK`   | Kick user from a channel | —      |                                                                         |
+| Command  | Description              | Status  | Notes                                                                   |
+| -------- | ------------------------ | ------- | ----------------------------------------------------------------------- |
+| `JOIN`   | Join a channel           | Done    | Via sidebar input or channel list click; auto-selects joined channel    |
+| `PART`   | Leave a channel          | Done    | Via leave button on joined channels; `*status` cannot be left           |
+| `LIST`   | List available channels  | Done    | Auto-requested after registration; periodic refresh; batched processing |
+| `TOPIC`  | Get/set channel topic    | Partial | Receives topic (332); displayed in channel info panel; no UI to set     |
+| `NAMES`  | List users in a channel  | Done    | Handled via 353/366 replies; populates user list panel                  |
+| `INVITE` | Invite user to a channel | —       |                                                                         |
+| `KICK`   | Kick user from a channel | Done    | Shows who was kicked, by whom, and reason; removes user from channel    |
 
 ## Sending Messages
 
-| Command   | Description                          | Status  | Notes                                                    |
-| --------- | ------------------------------------ | ------- | -------------------------------------------------------- |
+| Command   | Description                          | Status  | Notes                                                             |
+| --------- | ------------------------------------ | ------- | ----------------------------------------------------------------- |
 | `PRIVMSG` | Send message to channel or user      | Done    | Channel + DM support; DM creates private channel with sender nick |
-| `NOTICE`  | Send notice (no auto-reply expected) | Partial | Received and displayed as system message; cannot send    |
+| `NOTICE`  | Send notice (no auto-reply expected) | Partial | Received and displayed as system message; cannot send             |
 
 ## Server Queries
 
-| Command   | Description                       | Status  | Notes                                                         |
-| --------- | --------------------------------- | ------- | ------------------------------------------------------------- |
-| `MOTD`    | Request Message of the Day        | Done    | 372/375 stripped of `- ` prefix; preserves ASCII art          |
-| `LUSERS`  | Request server/network user stats | Partial | Numeric replies (251-255, 265-266) shown in status            |
-| `VERSION` | Request server version            | Partial | 002 reply shown in status                                     |
-| `STATS`   | Request server statistics         | —       |                                                               |
-| `LINKS`   | List servers in network           | —       |                                                               |
-| `TIME`    | Request server time               | —       |                                                               |
-| `INFO`    | Request server info               | —       |                                                               |
-| `ADMIN`   | Request admin info                | —       |                                                               |
+| Command   | Description                       | Status  | Notes                                                |
+| --------- | --------------------------------- | ------- | ---------------------------------------------------- |
+| `MOTD`    | Request Message of the Day        | Done    | 372/375 stripped of `- ` prefix; preserves ASCII art |
+| `LUSERS`  | Request server/network user stats | Partial | Numeric replies (251-255, 265-266) shown in status   |
+| `VERSION` | Request server version            | Partial | 002 reply shown in status                            |
+| `STATS`   | Request server statistics         | —       |                                                      |
+| `LINKS`   | List servers in network           | —       |                                                      |
+| `TIME`    | Request server time               | —       |                                                      |
+| `INFO`    | Request server info               | —       |                                                      |
+| `ADMIN`   | Request admin info                | —       |                                                      |
 
 ## User Queries
 
@@ -83,33 +83,33 @@ Reference: [RFC 1459](https://datatracker.ietf.org/doc/html/rfc1459), [RFC 2812]
 
 ## Numeric Replies Handled
 
-| Code    | Name               | Status                               | Notes                                                |
-| ------- | ------------------ | ------------------------------------ | ---------------------------------------------------- |
-| `001`   | RPL_WELCOME        | Done                                 | Shown in status                                      |
-| `002`   | RPL_YOURHOST       | Done                                 | Shown in status                                      |
-| `003`   | RPL_CREATED        | Done                                 | Shown in status                                      |
-| `005`   | RPL_ISUPPORT       | Partial                              | Shown in status; not parsed for capabilities         |
-| `251`   | RPL_LUSERCLIENT    | Done                                 | Shown in status                                      |
-| `252`   | RPL_LUSEROP        | Done                                 | Shown in status                                      |
-| `253`   | RPL_LUSERUNKNOWN   | Done                                 | Shown in status                                      |
-| `254`   | RPL_LUSERCHANNELS  | Done                                 | Shown in status                                      |
-| `255`   | RPL_LUSERME        | Done                                 | Shown in status                                      |
-| `265`   | RPL_LOCALUSERS     | Done                                 | Shown in status                                      |
-| `266`   | RPL_GLOBALUSERS    | Done                                 | Shown in status                                      |
-| `321`   | RPL_LISTSTART      | Done                                 | No-op                                                |
-| `322`   | RPL_LIST           | Done                                 | Queued + batched to prevent UI blocking              |
-| `323`   | RPL_LISTEND        | Done                                 | Flushes buffer, clears loading state                 |
-| `332`   | RPL_TOPIC          | Done                                 | Sets channel topic in store                          |
-| `353`   | RPL_NAMREPLY       | Done                                 | Populates channel user list                          |
-| `366`   | RPL_ENDOFNAMES     | Done                                 | No-op (users already accumulated)                    |
-| `372`   | RPL_MOTD           | Done                                 | Stripped `- ` prefix, preserves ASCII art             |
-| `375`   | RPL_MOTDSTART      | Done                                 | Stripped `- ` prefix                                 |
-| `376`   | RPL_ENDOFMOTD      | Done                                 | Triggers delayed LIST request + periodic refresh     |
-| `422`   | ERR_NOMOTD         | Done                                 | Same as 376 (triggers LIST)                          |
-| `432`   | ERR_ERRONEUSNICKNAME | Done                               | During registration: fallback nick; post: revert     |
-| `433`   | ERR_NICKNAMEINUSE  | Done                                 | During registration: fallback nick; post: revert     |
-| `436`   | ERR_NICKCOLLISION  | Done                                 | During registration: fallback nick; post: revert     |
-| Other   | Unhandled numerics | Shown as `[code] trailing` in status |                                                      |
+| Code  | Name                 | Status                               | Notes                                            |
+| ----- | -------------------- | ------------------------------------ | ------------------------------------------------ |
+| `001` | RPL_WELCOME          | Done                                 | Shown in status                                  |
+| `002` | RPL_YOURHOST         | Done                                 | Shown in status                                  |
+| `003` | RPL_CREATED          | Done                                 | Shown in status                                  |
+| `005` | RPL_ISUPPORT         | Partial                              | Shown in status; not parsed for capabilities     |
+| `251` | RPL_LUSERCLIENT      | Done                                 | Shown in status                                  |
+| `252` | RPL_LUSEROP          | Done                                 | Shown in status                                  |
+| `253` | RPL_LUSERUNKNOWN     | Done                                 | Shown in status                                  |
+| `254` | RPL_LUSERCHANNELS    | Done                                 | Shown in status                                  |
+| `255` | RPL_LUSERME          | Done                                 | Shown in status                                  |
+| `265` | RPL_LOCALUSERS       | Done                                 | Shown in status                                  |
+| `266` | RPL_GLOBALUSERS      | Done                                 | Shown in status                                  |
+| `321` | RPL_LISTSTART        | Done                                 | No-op                                            |
+| `322` | RPL_LIST             | Done                                 | Queued + batched to prevent UI blocking          |
+| `323` | RPL_LISTEND          | Done                                 | Flushes buffer, clears loading state             |
+| `332` | RPL_TOPIC            | Done                                 | Sets channel topic in store                      |
+| `353` | RPL_NAMREPLY         | Done                                 | Populates channel user list                      |
+| `366` | RPL_ENDOFNAMES       | Done                                 | No-op (users already accumulated)                |
+| `372` | RPL_MOTD             | Done                                 | Stripped `- ` prefix, preserves ASCII art        |
+| `375` | RPL_MOTDSTART        | Done                                 | Stripped `- ` prefix                             |
+| `376` | RPL_ENDOFMOTD        | Done                                 | Triggers delayed LIST request + periodic refresh |
+| `422` | ERR_NOMOTD           | Done                                 | Same as 376 (triggers LIST)                      |
+| `432` | ERR_ERRONEUSNICKNAME | Done                                 | During registration: fallback nick; post: revert |
+| `433` | ERR_NICKNAMEINUSE    | Done                                 | During registration: fallback nick; post: revert |
+| `436` | ERR_NICKCOLLISION    | Done                                 | During registration: fallback nick; post: revert |
+| Other | Unhandled numerics   | Shown as `[code] trailing` in status |                                                  |
 
 ## Implementation Notes
 
