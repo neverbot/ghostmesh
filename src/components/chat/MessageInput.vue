@@ -1,9 +1,20 @@
 <script setup>
-  import { ref, computed } from 'vue';
+  import { ref, computed, watch, nextTick } from 'vue';
   import { useIrcStore } from '@/stores/irc.js';
 
   const store = useIrcStore();
   const text = ref('');
+  const inputEl = ref(null);
+
+  // Auto-focus input when switching channels
+  watch(
+    () => store.selectedChannel,
+    (ch) => {
+      if (ch && ch !== '*status') {
+        nextTick(() => inputEl.value?.focus());
+      }
+    },
+  );
 
   const emit = defineEmits(['send']);
 
@@ -21,6 +32,7 @@
   <div class="border-t border-slate-200 bg-white px-5 py-4">
     <div class="flex items-center gap-3">
       <input
+        ref="inputEl"
         v-model="text"
         type="text"
         :placeholder="isDisabled ? 'Select a channel to chat...' : 'Write your message...'"
