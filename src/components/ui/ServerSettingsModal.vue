@@ -2,6 +2,7 @@
   import { ref, computed, watch, nextTick } from 'vue';
   import { useServerSettingsStore } from '@/stores/server-settings.js';
   import { useIrcStore } from '@/stores/irc.js';
+  import { useUserPrefsStore } from '@/stores/user-prefs.js';
 
   const backdrop = ref(null);
 
@@ -15,6 +16,7 @@
 
   const settingsStore = useServerSettingsStore();
   const ircStore = useIrcStore();
+  const userPrefs = useUserPrefsStore();
   const activeTab = ref('general');
 
   const form = ref({});
@@ -108,7 +110,7 @@
         <!-- Tabs -->
         <div class="flex border-b border-slate-700 px-5">
           <button
-            v-for="tab in ['general', 'user', 'formatting']"
+            v-for="tab in ['general', 'user', 'formatting', 'blocked']"
             :key="tab"
             class="border-b-2 px-3 py-2.5 text-xs font-medium capitalize transition-colors"
             :class="
@@ -291,6 +293,67 @@
               <ul class="mt-1 list-inside list-disc text-[10px] text-slate-500">
                 <li>Hex color codes (\x04RRGGBB)</li>
               </ul>
+            </div>
+          </div>
+          <!-- Blocked tab -->
+          <div
+            v-if="activeTab === 'blocked'"
+            class="flex flex-col gap-4"
+          >
+            <p class="text-[10px] text-slate-500">
+              Users you have blocked. Their messages are hidden and DM attempts are ignored. These
+              settings apply across all servers.
+            </p>
+
+            <!-- Hidden messages -->
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-slate-300">Hidden messages</label>
+              <div
+                v-if="userPrefs.hiddenUsers.length === 0"
+                class="text-[10px] italic text-slate-500"
+              >
+                No users blocked
+              </div>
+              <div
+                v-for="nick in userPrefs.hiddenUsers"
+                :key="'hidden:' + nick"
+                class="flex items-center justify-between rounded-md bg-slate-700/30 px-3 py-1.5"
+              >
+                <span class="text-xs text-slate-300">{{ nick }}</span>
+                <button
+                  class="text-[10px] text-red-400 transition-colors hover:text-red-300"
+                  @click="userPrefs.toggleUserHidden(nick)"
+                >
+                  Unblock
+                </button>
+              </div>
+            </div>
+
+            <!-- Hidden previews -->
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-slate-300">Hidden previews</label>
+              <p class="text-[10px] text-slate-500">
+                Messages from these users show links but no image previews.
+              </p>
+              <div
+                v-if="userPrefs.hiddenPreviews.length === 0"
+                class="text-[10px] italic text-slate-500"
+              >
+                No users with hidden previews
+              </div>
+              <div
+                v-for="nick in userPrefs.hiddenPreviews"
+                :key="'preview:' + nick"
+                class="flex items-center justify-between rounded-md bg-slate-700/30 px-3 py-1.5"
+              >
+                <span class="text-xs text-slate-300">{{ nick }}</span>
+                <button
+                  class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
+                  @click="userPrefs.togglePreviewHidden(nick)"
+                >
+                  Remove
+                </button>
+              </div>
             </div>
           </div>
         </div>
