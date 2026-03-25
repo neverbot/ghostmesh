@@ -99,7 +99,10 @@
               <span class="truncate text-[10px] text-slate-600">{{ server.host }}</span>
             </div>
             <!-- Settings gear -->
-            <InfoTooltip text="Server settings">
+            <InfoTooltip
+              text="Server settings"
+              :delay="500"
+            >
               <button
                 class="hidden rounded p-1 text-slate-500 transition-colors hover:bg-slate-600 hover:text-slate-300 group-hover:block"
                 @click.stop="openSettings(server)"
@@ -122,6 +125,7 @@
             <InfoTooltip
               v-if="store.isConnected(server.id)"
               text="Disconnect from server"
+              :delay="500"
             >
               <button
                 class="hidden rounded p-1 text-slate-500 transition-colors hover:bg-slate-600 hover:text-red-400 group-hover:block"
@@ -174,6 +178,7 @@
         <InfoTooltip
           v-if="store.connectedServers.length > 0"
           text="Refresh channel list from all servers"
+          :delay="500"
         >
           <button
             class="rounded p-1 text-slate-600 transition-colors hover:text-slate-400"
@@ -198,6 +203,7 @@
         <InfoTooltip
           v-if="store.connectedServers.length > 0"
           text="Filter and sort channels"
+          :delay="500"
         >
           <button
             class="rounded p-1 transition-colors"
@@ -300,7 +306,7 @@
               "
               @click="store.selectChannel(entry.serverId, entry.channel)"
             >
-              <span class="w-3 shrink-0 text-center text-[11px] opacity-60">
+              <span class="w-3 shrink-0 text-center text-[10px] opacity-60">
                 {{ entry.channel === '*status' ? '~' : '#' }}
               </span>
               <span class="min-w-0 flex-1 truncate text-sm">

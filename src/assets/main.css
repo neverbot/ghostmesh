@@ -1,9 +1,55 @@
 @import 'tailwindcss';
 
-/* Custom scrollbar — thin, styled to match dark/light contexts */
+/*
+ * GhostMesh Design Tokens
+ *
+ * All semantic colors, font sizes, and spacing are defined here as CSS variables.
+ * Tailwind 4 exposes them as utilities automatically via @theme.
+ * Components should use these tokens instead of hardcoded values.
+ */
+@theme {
+  /* === Semantic colors — surfaces === */
+  --color-surface-sidebar: var(--color-slate-800);
+  --color-surface-chat: var(--color-white);
+  --color-surface-panel: var(--color-slate-50);
+  --color-surface-modal: var(--color-slate-800);
+  --color-surface-tooltip: var(--color-slate-900);
+  --color-surface-input: color-mix(in srgb, var(--color-slate-700) 50%, transparent);
+  --color-surface-hover: color-mix(in srgb, var(--color-slate-700) 40%, transparent);
+
+  /* === Semantic colors — borders === */
+  --color-border-subtle: var(--color-slate-700);
+  --color-border-input: var(--color-slate-600);
+
+  /* === Semantic colors — text === */
+  --color-text-primary: var(--color-white);
+  --color-text-secondary: var(--color-slate-300);
+  --color-text-muted: var(--color-slate-400);
+  --color-text-dimmed: var(--color-slate-500);
+  --color-text-faint: var(--color-slate-600);
+  --color-text-tooltip: var(--color-slate-200);
+  --color-text-system: var(--color-slate-400);
+
+  /* === Semantic colors — accent === */
+  --color-accent: var(--color-emerald-500);
+  --color-accent-light: var(--color-emerald-400);
+  --color-accent-dark: var(--color-emerald-600);
+  --color-accent-bg: color-mix(in srgb, var(--color-emerald-500) 20%, transparent);
+
+  /* === Semantic colors — status === */
+  --color-status-online: var(--color-emerald-400);
+  --color-status-offline: var(--color-slate-600);
+  --color-status-error: var(--color-red-400);
+
+  /* === Scrollbar === */
+  --color-scrollbar: color-mix(in srgb, var(--color-slate-500) 40%, transparent);
+  --color-scrollbar-hover: color-mix(in srgb, var(--color-slate-500) 60%, transparent);
+}
+
+/* === Scrollbar === */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgb(100 116 139 / 0.4) transparent; /* slate-500/40 */
+  scrollbar-color: var(--color-scrollbar) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -16,22 +62,21 @@
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: rgb(100 116 139 / 0.4);
+  background-color: var(--color-scrollbar);
   border-radius: 3px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background-color: rgb(100 116 139 / 0.6);
+  background-color: var(--color-scrollbar-hover);
 }
 
-/* Custom form controls — override native appearance */
+/* === Form controls === */
 select,
 input[type='number'] {
   appearance: none;
   -webkit-appearance: none;
 }
 
-/* Select arrow */
 select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%2394a3b8'%3E%3Cpath fill-rule='evenodd' d='M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z' clip-rule='evenodd'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -40,7 +85,6 @@ select {
   padding-right: 2rem;
 }
 
-/* Number input — hide native spinners */
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
