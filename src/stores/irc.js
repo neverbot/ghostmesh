@@ -208,6 +208,29 @@ const useIrcStore = defineStore('irc', () => {
    */
   function removeConnection(serverId) {
     activeConnections.value = activeConnections.value.filter((id) => id !== serverId);
+
+    // Clean up all data for this server
+    const serverChannels = channels.value[serverId] || [];
+    for (const ch of serverChannels) {
+      const key = `${serverId}:${ch}`;
+      delete messages.value[key];
+      delete users.value[key];
+      delete topics.value[key];
+    }
+    delete channels.value[serverId];
+    delete availableChannels.value[serverId];
+
+    // Switch selection if we were viewing this server
+    if (selectedServerId.value === serverId) {
+      const remaining = activeConnections.value;
+      if (remaining.length > 0) {
+        selectedServerId.value = remaining[0];
+        selectedChannel.value = (channels.value[remaining[0]] || [])[0] || null;
+      } else {
+        selectedServerId.value = null;
+        selectedChannel.value = null;
+      }
+    }
   }
 
   /**

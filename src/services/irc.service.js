@@ -234,6 +234,7 @@ class IRCService extends EventEmitter {
     connection.socket.onmessage = null;
     this.send(serverId, 'QUIT :Goodbye');
     connection.socket.close();
+    this.store.removeConnection(serverId);
     this.cleanupConnection(serverId);
   }
 

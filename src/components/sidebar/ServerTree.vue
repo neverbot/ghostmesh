@@ -105,7 +105,7 @@
               :delay="500"
             >
               <button
-                class="hidden rounded p-1 text-slate-500 transition-colors hover:bg-slate-600 hover:text-slate-300 group-hover:block"
+                class="rounded p-1 text-transparent transition-colors hover:bg-slate-600 hover:text-slate-300 group-hover:text-slate-500"
                 @click.stop="openSettings(server)"
               >
                 <svg
@@ -129,7 +129,7 @@
               :delay="500"
             >
               <button
-                class="hidden rounded p-1 text-slate-500 transition-colors hover:bg-slate-600 hover:text-red-400 group-hover:block"
+                class="rounded p-1 text-transparent transition-colors hover:bg-slate-600 hover:text-red-400 group-hover:text-slate-500"
                 @click.stop="store.disconnectFromServer(server.id)"
               >
                 <svg
