@@ -3,6 +3,8 @@
  * Handles URL detection, linkification, and image preview with anti-hotlinking fallback.
  */
 
+import config from '@/config.js';
+
 /** Image file extensions to detect for inline preview. */
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif'];
 
@@ -66,6 +68,16 @@ function handleImageError(img) {
     // First failure: try via image-proxy.invalid proxy
     img.dataset.attempt = '1';
     img.src = proxyUrl(img.dataset.originalSrc);
+    img.onload = () => {
+      // Proxy succeeded — add caption if configured
+      if (config.images.showProxyCaption && !img.dataset.captionAdded) {
+        img.dataset.captionAdded = '1';
+        const caption = document.createElement('span');
+        caption.className = 'block text-right text-[9px] text-slate-400 italic -mt-0.5 mb-1';
+        caption.textContent = 'Served through image-proxy.invalid';
+        img.insertAdjacentElement('afterend', caption);
+      }
+    };
   } else {
     // Proxy also failed — hide the image
     // TODO: future fallbacks could be added here before hiding

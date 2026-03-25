@@ -16,6 +16,12 @@ const config = {
     browseLimit: 200,
   },
 
+  /** Image preview settings. */
+  images: {
+    /** Show a caption on images served through the proxy. Temporary for testing. */
+    showProxyCaption: true,
+  },
+
   /** Per-server settings defaults (overridden by localStorage). */
   serverDefaults: {
     /** Seconds to wait after connecting before requesting LIST. */
