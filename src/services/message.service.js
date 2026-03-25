@@ -4,6 +4,7 @@
  */
 
 import config from '@/config.js';
+import { resolveImageProvider } from '@/services/image-providers.js';
 
 /** Image file extensions to detect for inline preview. */
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif'];
@@ -124,8 +125,18 @@ function linkifyText(text) {
 
     result += `<a href="${escapedHref}" target="_blank" rel="noopener" class="underline break-all opacity-80 hover:opacity-100">${escapedDisplay}</a>`;
 
+    // Determine image src: direct image URL, or resolved from hosting provider
+    let imageSrc = null;
     if (isImageUrl(rawUrl)) {
-      result += `<img src="${escapedHref}" data-original-src="${escapedHref}" data-attempt="0" alt="" referrerpolicy="no-referrer" class="my-1 block max-w-full rounded-lg" loading="lazy" onerror="window.__ghostmeshImageError?.(this)" />`;
+      imageSrc = href;
+    } else {
+      const resolved = resolveImageProvider(href);
+      if (resolved) imageSrc = resolved.imageUrl;
+    }
+
+    if (imageSrc) {
+      const escapedSrc = escapeHtml(imageSrc);
+      result += `<img src="${escapedSrc}" data-original-src="${escapedSrc}" data-attempt="0" alt="" referrerpolicy="no-referrer" class="my-1 block max-w-full rounded-lg" loading="lazy" onerror="window.__ghostmeshImageError?.(this)" />`;
     }
 
     lastIndex = match.index + rawUrl.length;

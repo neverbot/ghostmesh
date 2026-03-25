@@ -4,6 +4,7 @@
   import { useServerSettingsStore } from '@/stores/server-settings.js';
   import { parseFormatting, stripFormatting, hasFormatting } from '@/utils/mirc-format.js';
   import { formatPlainContent, formatHtmlContent, isImageUrl } from '@/services/message.service.js';
+  import { resolveImageProvider } from '@/services/image-providers.js';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
 
   const props = defineProps({
@@ -58,7 +59,11 @@
   const hasImage = computed(() => {
     const text = props.message.content || '';
     const urlMatch = text.match(/(?:https?:\/\/|www\.)[^\s<>"'()]+/gi);
-    return urlMatch ? urlMatch.some((u) => isImageUrl(u)) : false;
+    if (!urlMatch) return false;
+    return urlMatch.some((u) => {
+      const normalized = u.startsWith('www.') ? `https://${u}` : u;
+      return isImageUrl(u) || resolveImageProvider(normalized) !== null;
+    });
   });
 </script>
 
