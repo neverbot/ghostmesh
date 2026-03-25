@@ -26,6 +26,10 @@ class IRCService extends EventEmitter {
     this.listLoading = new Set();
     /** @type {Set<string>} servers where mIRC formatting was detected */
     this.mircDetected = new Set();
+    /** @type {object[]} queue of parsed messages waiting to be processed */
+    this.messageQueue = [];
+    /** @type {number|null} rAF id for queue drain */
+    this.drainFrame = null;
   }
 
   /**
@@ -54,12 +58,16 @@ class IRCService extends EventEmitter {
 
     socket.onmessage = (event) => {
       const raw = event.data;
+      // PING must be answered immediately
       if (raw.startsWith('PING')) {
         this.send(serverId, `PONG ${raw.split(' ')[1]}`);
         return;
       }
       const parsed = this.parseMessage(raw, serverId);
-      if (parsed) this.handleMessage(parsed);
+      if (!parsed) return;
+      // Queue the message and schedule processing
+      this.messageQueue.push(parsed);
+      this.scheduleDrain();
     };
 
     socket.onerror = () => {
@@ -179,6 +187,32 @@ class IRCService extends EventEmitter {
     if (timer) {
       clearInterval(timer);
       this.listTimers.delete(serverId);
+    }
+  }
+
+  /** Schedule a drain of the message queue on the next animation frame. */
+  scheduleDrain() {
+    if (this.drainFrame) return;
+    this.drainFrame = requestAnimationFrame(() => {
+      this.drainFrame = null;
+      this.drainQueue();
+    });
+  }
+
+  /**
+   * Process queued messages in a time-boxed batch.
+   * Yields to the browser after 8ms so clicks and renders can happen.
+   */
+  drainQueue() {
+    const start = performance.now();
+    while (this.messageQueue.length > 0) {
+      const msg = this.messageQueue.shift();
+      this.handleMessage(msg);
+      // Yield after 8ms to keep UI responsive
+      if (performance.now() - start > 8) {
+        this.scheduleDrain();
+        return;
+      }
     }
   }
 
