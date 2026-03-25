@@ -140,11 +140,25 @@ async function resolveAsyncImage(asyncMarker, placeholderId) {
     const el = document.getElementById(placeholderId);
     if (!el) return;
 
-    if (dataUrl) {
+    if (dataUrl && dataUrl.startsWith('error:')) {
+      // Provider could not reach the content (proxy error, rate limit, etc.)
+      console.warn(`[GhostMesh] Async image proxy error: ${asyncMarker}`);
+      replaceWithRetry(el, asyncMarker, placeholderId, 'Could not fetch preview — click to retry');
+    } else if (dataUrl) {
       const img = document.createElement('img');
-      img.src = dataUrl;
       img.alt = '';
       img.className = 'my-1 block max-w-full rounded-lg';
+      if (dataUrl.startsWith('data:')) {
+        img.src = dataUrl;
+      } else {
+        // URL from provider — use fallback chain (no-referrer → proxy)
+        img.src = dataUrl;
+        img.dataset.originalSrc = dataUrl;
+        img.dataset.attempt = '0';
+        img.referrerPolicy = 'no-referrer';
+        img.loading = 'lazy';
+        img.onerror = () => handleImageError(img);
+      }
       el.replaceWith(img);
     } else {
       console.warn(`[GhostMesh] Async image not available: ${asyncMarker}`);

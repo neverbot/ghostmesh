@@ -47,10 +47,12 @@
 
   function togglePreviews() {
     prefs.togglePreviewHidden(props.nick);
+    emit('close');
   }
 
   function toggleHidden() {
     prefs.toggleUserHidden(props.nick);
+    emit('close');
   }
 </script>
 
