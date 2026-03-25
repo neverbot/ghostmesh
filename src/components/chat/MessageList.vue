@@ -16,6 +16,9 @@
   const menuX = ref(0);
   const menuY = ref(0);
 
+  /** Whether to show the "scroll to bottom" button. */
+  const showScrollBtn = ref(false);
+
   /** Saved scroll positions per channel key. */
   const scrollPositions = {};
 
@@ -91,9 +94,18 @@
 
   /** On user scroll, check if at bottom and mark as read. */
   function onScroll() {
-    if (isNearBottom()) {
+    const near = isNearBottom();
+    showScrollBtn.value = !near;
+    if (near) {
       markCurrentAsRead();
     }
+  }
+
+  /** Scroll to bottom and mark as read. */
+  function scrollToBottom() {
+    doScroll('smooth');
+    markCurrentAsRead();
+    showScrollBtn.value = false;
   }
 
   onMounted(() => {
@@ -201,6 +213,36 @@
       />
     </div>
   </div>
+
+  <!-- Scroll to bottom button -->
+  <Transition
+    enter-active-class="transition duration-200 ease-out"
+    enter-from-class="translate-y-2 opacity-0"
+    enter-to-class="translate-y-0 opacity-100"
+    leave-active-class="transition duration-150 ease-in"
+    leave-from-class="translate-y-0 opacity-100"
+    leave-to-class="translate-y-2 opacity-0"
+  >
+    <button
+      v-if="showScrollBtn"
+      class="absolute bottom-20 right-10 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-colors hover:bg-slate-50"
+      title="Scroll to bottom"
+      @click="scrollToBottom"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        class="h-4 w-4 text-slate-500"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </button>
+  </Transition>
 
   <UserContextMenu
     :nick="menuNick"

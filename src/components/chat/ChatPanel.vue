@@ -12,7 +12,7 @@
 </script>
 
 <template>
-  <div class="flex flex-1 flex-col overflow-hidden">
+  <div class="relative flex flex-1 flex-col overflow-hidden">
     <ChatHeader />
     <MessageList />
     <MessageInput @send="handleSend" />
