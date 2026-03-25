@@ -450,6 +450,14 @@ class IRCService extends EventEmitter {
         if (trailing) {
           s.addSystemMessage(serverId, `[${command}] ${trailing}`);
         }
+        // Server error numerics (4xx) — may relate to a message we just sent
+        const code = parseInt(command, 10);
+        if (code >= 400 && code < 500 && trailing) {
+          s.warnLastOwnMessage(
+            serverId,
+            `The server reported an error that may be related to this message: [${command}] ${trailing}`,
+          );
+        }
         break;
       }
     }

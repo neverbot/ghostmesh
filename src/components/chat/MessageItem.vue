@@ -101,7 +101,15 @@
       >
         <span v-html="renderedHtml || plainHtml" />
       </div>
-      <span class="text-[10px] text-slate-400">{{ timeString }}</span>
+      <div class="flex items-center gap-1.5">
+        <span class="text-[10px] text-slate-400">{{ timeString }}</span>
+        <InfoTooltip
+          v-if="message.warning"
+          :text="message.warning"
+        >
+          <span class="cursor-help text-amber-500">⚠</span>
+        </InfoTooltip>
+      </div>
     </div>
   </div>
 </template>

@@ -332,6 +332,27 @@ const useIrcStore = defineStore('irc', () => {
   }
 
   /**
+   * Mark the last own message in the current channel with a warning.
+   * Used when the server reports an error that may be related to a recent message.
+   * @param {string} serverId
+   * @param {string} warningText
+   */
+  function warnLastOwnMessage(serverId, warningText) {
+    const channel = selectedChannel.value;
+    if (!channel || selectedServerId.value !== serverId) return;
+    const key = `${serverId}:${channel}`;
+    const list = messages.value[key];
+    if (!list) return;
+    // Find the last own message (searching from the end)
+    for (let i = list.length - 1; i >= 0; i--) {
+      if (list[i].nick === nickname.value && list[i].type === 'message') {
+        list[i].warning = warningText;
+        break;
+      }
+    }
+  }
+
+  /**
    * Add a system message to the server's status channel (and current channel if same server).
    * @param {string} serverId
    * @param {string} content
@@ -575,6 +596,7 @@ const useIrcStore = defineStore('irc', () => {
     addJoinedChannel,
     removeJoinedChannel,
     addMessage,
+    warnLastOwnMessage,
     addSystemMessage,
     setTopic,
     addUser,
