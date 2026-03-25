@@ -180,11 +180,16 @@ const useIrcStore = defineStore('irc', () => {
   });
 
   /** Total count of available channels before filtering (for display). */
+  /** Total raw channel count across servers (unfiltered, excluding joined). */
   const totalAvailableCount = computed(() => {
     if (listLoadingServers.value.length > 0) return 0;
+    const joined = joinedSet.value;
     let count = 0;
     for (const serverId of activeConnections.value) {
-      count += (availableChannels.value[serverId] || []).length;
+      const list = availableChannels.value[serverId] || [];
+      for (const ch of list) {
+        if (!joined.has(`${serverId}:${ch.name}`)) count++;
+      }
     }
     return count;
   });
@@ -439,8 +444,8 @@ const useIrcStore = defineStore('irc', () => {
     channelBuffer[serverId] = [];
     if (final) {
       availableChannels.value[serverId].sort((a, b) => b.users - a.users);
-      triggerRef(availableChannels);
     }
+    triggerRef(availableChannels);
   }
 
   /**
