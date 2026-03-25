@@ -4,7 +4,7 @@
  */
 
 import config from '@/config.js';
-import { resolveImageProvider } from '@/services/image-providers.js';
+import { resolveImageProvider, providers } from '@/services/image-providers.js';
 
 /** Image file extensions to detect for inline preview. */
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif'];
@@ -92,6 +92,44 @@ if (typeof window !== 'undefined') {
 }
 
 /**
+ * Resolve an async image provider and replace the placeholder element.
+ * @param {string} asyncMarker — format: "async:providerName:id"
+ * @param {string} placeholderId — DOM id of the placeholder element
+ */
+async function resolveAsyncImage(asyncMarker, placeholderId) {
+  const parts = asyncMarker.split(':');
+  const providerName = parts[1];
+  const id = parts.slice(2).join(':');
+
+  const provider = providers.find(
+    (p) => p.name.toLowerCase().replace(/\s+/g, '-') === providerName && p.resolve,
+  );
+
+  const placeholder = document.getElementById(placeholderId);
+  if (!placeholder) return;
+
+  if (!provider) {
+    placeholder.textContent = 'Preview not available';
+    return;
+  }
+
+  try {
+    const dataUrl = await provider.resolve(id);
+    if (dataUrl && placeholder.parentNode) {
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.alt = '';
+      img.className = 'my-1 block max-w-full rounded-lg';
+      placeholder.replaceWith(img);
+    } else {
+      placeholder.textContent = 'Preview not available';
+    }
+  } catch {
+    placeholder.textContent = 'Preview failed';
+  }
+}
+
+/**
  * Escape HTML special characters.
  * @param {string} str
  * @returns {string}
@@ -134,7 +172,12 @@ function linkifyText(text) {
       if (resolved) imageSrc = resolved.imageUrl;
     }
 
-    if (imageSrc) {
+    if (imageSrc && imageSrc.startsWith('async:')) {
+      // Async provider — render placeholder, resolve in background
+      const placeholderId = `img-async-${Math.random().toString(36).slice(2, 8)}`;
+      result += `<div id="${placeholderId}" class="my-1 text-[10px] italic opacity-60">Loading preview...</div>`;
+      resolveAsyncImage(imageSrc, placeholderId);
+    } else if (imageSrc) {
       const escapedSrc = escapeHtml(imageSrc);
       result += `<img src="${escapedSrc}" data-original-src="${escapedSrc}" data-attempt="0" alt="" referrerpolicy="no-referrer" class="my-1 block max-w-full rounded-lg" loading="lazy" onerror="window.__ghostmeshImageError?.(this)" />`;
     }
