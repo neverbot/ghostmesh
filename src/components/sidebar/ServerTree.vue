@@ -1,6 +1,7 @@
 <script setup>
   import { ref } from 'vue';
   import { useIrcStore } from '@/stores/irc.js';
+  import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import ServerSettingsModal from '@/components/ui/ServerSettingsModal.vue';
 
   const store = useIrcStore();
@@ -98,42 +99,46 @@
               <span class="truncate text-[10px] text-slate-600">{{ server.host }}</span>
             </div>
             <!-- Settings gear -->
-            <button
-              class="hidden rounded p-1 text-slate-500 transition-colors hover:bg-slate-600 hover:text-slate-300 group-hover:block"
-              title="Settings"
-              @click.stop="openSettings(server)"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-                class="h-3 w-3"
+            <InfoTooltip text="Server settings">
+              <button
+                class="hidden rounded p-1 text-slate-500 transition-colors hover:bg-slate-600 hover:text-slate-300 group-hover:block"
+                @click.stop="openSettings(server)"
               >
-                <path
-                  fill-rule="evenodd"
-                  d="M6.955 1.45A.5.5 0 0 1 7.452 1h1.096a.5.5 0 0 1 .497.45l.17 1.699c.484.12.94.312 1.356.562l1.321-.916a.5.5 0 0 1 .67.033l.774.775a.5.5 0 0 1 .034.67l-.916 1.32c.25.417.443.873.563 1.357l1.699.17a.5.5 0 0 1 .45.497v1.096a.5.5 0 0 1-.45.497l-1.699.17c-.12.484-.312.94-.562 1.356l.916 1.321a.5.5 0 0 1-.034.67l-.774.774a.5.5 0 0 1-.67.033l-1.32-.916c-.417.25-.874.443-1.357.563l-.17 1.699a.5.5 0 0 1-.497.45H7.452a.5.5 0 0 1-.497-.45l-.17-1.699a4.973 4.973 0 0 1-1.356-.562l-1.321.916a.5.5 0 0 1-.67-.034l-.774-.774a.5.5 0 0 1-.034-.67l.916-1.32a4.971 4.971 0 0 1-.562-1.357l-1.699-.17A.5.5 0 0 1 1 8.548V7.452a.5.5 0 0 1 .45-.497l1.699-.17c.12-.484.312-.94.562-1.356l-.916-1.321a.5.5 0 0 1 .034-.67l.774-.774a.5.5 0 0 1 .67-.033l1.32.916c.417-.25.874-.443 1.357-.563l.17-1.699ZM8 10.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"
-                  clip-rule="evenodd"
-                />
-              </svg>
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                  class="h-3 w-3"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M6.955 1.45A.5.5 0 0 1 7.452 1h1.096a.5.5 0 0 1 .497.45l.17 1.699c.484.12.94.312 1.356.562l1.321-.916a.5.5 0 0 1 .67.033l.774.775a.5.5 0 0 1 .034.67l-.916 1.32c.25.417.443.873.563 1.357l1.699.17a.5.5 0 0 1 .45.497v1.096a.5.5 0 0 1-.45.497l-1.699.17c-.12.484-.312.94-.562 1.356l.916 1.321a.5.5 0 0 1-.034.67l-.774.774a.5.5 0 0 1-.67.033l-1.32-.916c-.417.25-.874.443-1.357.563l-.17 1.699a.5.5 0 0 1-.497.45H7.452a.5.5 0 0 1-.497-.45l-.17-1.699a4.973 4.973 0 0 1-1.356-.562l-1.321.916a.5.5 0 0 1-.67-.034l-.774-.774a.5.5 0 0 1-.034-.67l.916-1.32a4.971 4.971 0 0 1-.562-1.357l-1.699-.17A.5.5 0 0 1 1 8.548V7.452a.5.5 0 0 1 .45-.497l1.699-.17c.12-.484.312-.94.562-1.356l-.916-1.321a.5.5 0 0 1 .034-.67l.774-.774a.5.5 0 0 1 .67-.033l1.32.916c.417-.25.874-.443 1.357-.563l.17-1.699ZM8 10.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </button>
+            </InfoTooltip>
             <!-- Disconnect -->
-            <button
+            <InfoTooltip
               v-if="store.isConnected(server.id)"
-              class="hidden rounded p-1 text-slate-500 transition-colors hover:bg-slate-600 hover:text-red-400 group-hover:block"
-              title="Disconnect"
-              @click.stop="store.disconnectFromServer(server.id)"
+              text="Disconnect from server"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-                class="h-3 w-3"
+              <button
+                class="hidden rounded p-1 text-slate-500 transition-colors hover:bg-slate-600 hover:text-red-400 group-hover:block"
+                @click.stop="store.disconnectFromServer(server.id)"
               >
-                <path
-                  d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"
-                />
-              </svg>
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 16 16"
+                  fill="currentColor"
+                  class="h-3 w-3"
+                >
+                  <path
+                    d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"
+                  />
+                </svg>
+              </button>
+            </InfoTooltip>
           </div>
         </div>
       </div>
@@ -165,25 +170,52 @@
           Channels
         </button>
 
-        <!-- Filter toggle -->
-        <button
+        <!-- Refresh channels -->
+        <InfoTooltip
           v-if="store.connectedServers.length > 0"
-          class="rounded p-1 transition-colors"
-          :class="
-            showFilters ? 'bg-slate-700 text-slate-300' : 'text-slate-600 hover:text-slate-400'
-          "
-          title="Filters"
-          @click="showFilters = !showFilters"
+          text="Refresh channel list from all servers"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 16 16"
-            fill="currentColor"
-            class="h-3 w-3"
+          <button
+            class="rounded p-1 text-slate-600 transition-colors hover:text-slate-400"
+            @click="store.refreshChannelList()"
           >
-            <path d="M14 2H2l5 5.6V12l2 1V7.6L14 2Z" />
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              class="h-3 w-3"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M13.836 2.477a.75.75 0 0 1 .75.75v3.182a.75.75 0 0 1-.75.75h-3.182a.75.75 0 0 1 0-1.5h1.37l-.84-.841a4.5 4.5 0 0 0-7.08.681.75.75 0 0 1-1.3-.75 6 6 0 0 1 9.44-.908l.84.84V3.227a.75.75 0 0 1 .75-.75Zm-.911 7.5A.75.75 0 0 1 13.199 11a6 6 0 0 1-9.44.908l-.84-.84v1.456a.75.75 0 0 1-1.5 0V9.341a.75.75 0 0 1 .75-.75h3.182a.75.75 0 0 1 0 1.5h-1.37l.84.841a4.5 4.5 0 0 0 7.08-.681.75.75 0 0 1 1.024-.274Z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
+        </InfoTooltip>
+
+        <!-- Filter toggle -->
+        <InfoTooltip
+          v-if="store.connectedServers.length > 0"
+          text="Filter and sort channels"
+        >
+          <button
+            class="rounded p-1 transition-colors"
+            :class="
+              showFilters ? 'bg-slate-700 text-slate-300' : 'text-slate-600 hover:text-slate-400'
+            "
+            @click="showFilters = !showFilters"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              class="h-3 w-3"
+            >
+              <path d="M14 2H2l5 5.6V12l2 1V7.6L14 2Z" />
+            </svg>
+          </button>
+        </InfoTooltip>
       </div>
 
       <div

@@ -365,6 +365,13 @@ const useIrcStore = defineStore('irc', () => {
     addMessage(selectedServerId.value, selectedChannel.value, nickname.value, content, 'message');
   }
 
+  /** Request a fresh LIST from all connected servers. */
+  function refreshChannelList() {
+    for (const serverId of activeConnections.value) {
+      getService().requestList(serverId);
+    }
+  }
+
   /** Disconnect from all servers and clean up. */
   function cleanup() {
     getService().disconnectAll();
@@ -437,6 +444,7 @@ const useIrcStore = defineStore('irc', () => {
     disconnectFromServer,
     joinChannel,
     sendMessage,
+    refreshChannelList,
     cleanup,
   };
 });
