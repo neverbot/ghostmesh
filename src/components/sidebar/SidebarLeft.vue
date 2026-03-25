@@ -12,7 +12,7 @@
     <!-- Logo -->
     <div class="flex items-center gap-3 px-5 py-5">
       <img
-        src="/logo.svg"
+        :src="'/logo.svg'"
         alt="GhostMesh"
         class="h-9 w-9 rounded-lg"
       />
