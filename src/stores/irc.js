@@ -771,6 +771,11 @@ const useIrcStore = defineStore('irc', () => {
   function partChannel(serverId, channel) {
     if (!isConnected(serverId)) return;
     if (channel === '*status') return;
+    if (isDM(channel)) {
+      // DMs are local only — just remove the channel, don't send PART
+      removeJoinedChannel(serverId, channel);
+      return;
+    }
     getService().partChannel(serverId, channel);
   }
 
