@@ -14,7 +14,10 @@
     }
   }
 
-  onMounted(() => window.addEventListener('beforeunload', onBeforeUnload));
+  onMounted(() => {
+    window.addEventListener('beforeunload', onBeforeUnload);
+    store.restoreSession();
+  });
   onUnmounted(() => window.removeEventListener('beforeunload', onBeforeUnload));
 </script>
 

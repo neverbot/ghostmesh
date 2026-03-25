@@ -1,10 +1,38 @@
 import { defineStore } from 'pinia';
-import { ref, shallowRef, computed, triggerRef } from 'vue';
+import { ref, shallowRef, computed, triggerRef, watch } from 'vue';
 import IRCService from '@/services/irc.service.js';
 import { useServerSettingsStore } from '@/stores/server-settings.js';
 import { useUserSettingsStore } from '@/stores/user-settings.js';
 import { useUserPrefsStore } from '@/stores/user-prefs.js';
 import defaultServers from '@/servers.js';
+
+const SESSION_KEY = 'ghostmesh:session';
+
+/**
+ * Load saved session state from localStorage.
+ * @returns {{ serverIds: string[], channels: Record<string, string[]>, selected: { serverId: string, channel: string } | null } | null}
+ */
+function loadSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Save current session state to localStorage.
+ * @param {{ serverIds: string[], channels: Record<string, string[]>, selected: { serverId: string, channel: string } | null }} data
+ */
+function saveSession(data) {
+  localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+}
+
+/** Clear saved session from localStorage. */
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
 
 const useIrcStore = defineStore('irc', () => {
   // --- State ---
@@ -679,10 +707,74 @@ const useIrcStore = defineStore('irc', () => {
     }
   }
 
+  /** Save current session to localStorage. */
+  function persistSession() {
+    if (activeConnections.value.length === 0) {
+      clearSession();
+      return;
+    }
+    saveSession({
+      serverIds: [...activeConnections.value],
+      channels: { ...channels.value },
+      selected: selectedServerId.value
+        ? { serverId: selectedServerId.value, channel: selectedChannel.value }
+        : null,
+    });
+  }
+
+  /**
+   * Restore a saved session — reconnect to servers and rejoin channels.
+   * Called once on app startup.
+   */
+  function restoreSession() {
+    const session = loadSession();
+    if (!session || !session.serverIds?.length) return;
+
+    for (const serverId of session.serverIds) {
+      const server = servers.value.find((s) => s.id === serverId);
+      if (!server) continue;
+      // Store the channels to rejoin after connection
+      const channelsToJoin = (session.channels[serverId] || []).filter((ch) => ch !== '*status');
+      connectToServer(server);
+      // Rejoin channels after a delay (wait for registration)
+      if (channelsToJoin.length > 0) {
+        const check = setInterval(() => {
+          if (isConnected(serverId)) {
+            clearInterval(check);
+            for (const ch of channelsToJoin) {
+              if (isDM(ch)) {
+                // DMs: just recreate the local channel, don't send JOIN
+                addJoinedChannel(serverId, ch);
+              } else {
+                getService().joinChannel(serverId, ch);
+              }
+            }
+          }
+        }, 500);
+        // Safety: stop checking after 30s
+        setTimeout(() => clearInterval(check), 30000);
+      }
+    }
+
+    // Restore selection
+    if (session.selected) {
+      selectedServerId.value = session.selected.serverId;
+      selectedChannel.value = session.selected.channel;
+    }
+  }
+
   /** Disconnect from all servers and clean up. */
   function cleanup() {
     getService().disconnectAll();
+    clearSession();
   }
+
+  // Persist session on changes
+  watch(
+    [activeConnections, channels, () => selectedServerId.value, () => selectedChannel.value],
+    () => persistSession(),
+    { deep: true },
+  );
 
   // Store API for the service (avoids circular reactive deps)
   const storeApi = {
@@ -766,6 +858,7 @@ const useIrcStore = defineStore('irc', () => {
     refreshChannelList,
     changeNick,
     changeNickGlobal,
+    restoreSession,
     cleanup,
   };
 });
