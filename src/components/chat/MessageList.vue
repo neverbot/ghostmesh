@@ -7,9 +7,36 @@
   const scrollContainer = ref(null);
   const scrollAnchor = ref(null);
 
-  /** Re-scroll when images inside the chat load (they change scrollHeight). */
+  /** Whether we should keep scrolling to bottom (set when a new message arrives near bottom). */
+  let shouldStick = true;
+
+  /**
+   * Check if the user is scrolled near the bottom (within 150px).
+   * @returns {boolean}
+   */
+  function isNearBottom() {
+    const el = scrollContainer.value;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+  }
+
+  /** Scroll to bottom instantly. */
+  function doScroll(behavior = 'smooth') {
+    nextTick(() => {
+      if (scrollAnchor.value) {
+        scrollAnchor.value.scrollIntoView({ behavior });
+      }
+    });
+  }
+
+  /**
+   * Re-scroll when images load (they change scrollHeight after the message was added).
+   * Uses the saved `shouldStick` flag from when the message arrived.
+   */
   function onImageLoad() {
-    scrollToBottomIfNeeded();
+    if (shouldStick) {
+      doScroll('instant');
+    }
   }
 
   onMounted(() => {
@@ -20,43 +47,23 @@
     scrollContainer.value?.removeEventListener('load', onImageLoad, true);
   });
 
-  /**
-   * Check if the user is scrolled near the bottom (within 100px).
-   * @returns {boolean}
-   */
-  function isNearBottom() {
-    const el = scrollContainer.value;
-    if (!el) return true;
-    return el.scrollHeight - el.scrollTop - el.clientHeight < 100;
-  }
-
-  /** Scroll to the bottom only if already near the bottom. */
-  function scrollToBottomIfNeeded() {
-    if (!isNearBottom()) return;
-    nextTick(() => {
-      if (scrollAnchor.value) {
-        scrollAnchor.value.scrollIntoView({ behavior: 'smooth' });
-      }
-    });
-  }
-
-  /** Force scroll to bottom (used on channel switch). */
-  function forceScrollToBottom() {
-    nextTick(() => {
-      if (scrollAnchor.value) {
-        scrollAnchor.value.scrollIntoView({ behavior: 'instant' });
-      }
-    });
-  }
-
   watch(
     () => store.currentMessages.length,
-    () => scrollToBottomIfNeeded(),
+    () => {
+      // Capture scroll position BEFORE Vue renders the new message
+      shouldStick = isNearBottom();
+      if (shouldStick) {
+        doScroll('smooth');
+      }
+    },
   );
 
   watch(
     () => store.selectedChannel,
-    () => forceScrollToBottom(),
+    () => {
+      shouldStick = true;
+      doScroll('instant');
+    },
   );
 </script>
 
