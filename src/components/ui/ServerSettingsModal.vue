@@ -162,6 +162,55 @@
                 class="w-24 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-emerald-500"
               />
             </div>
+
+            <!-- Keepalive -->
+            <div class="flex flex-col gap-1">
+              <label class="flex items-center gap-2 text-xs font-medium text-slate-300">
+                <input
+                  v-model="form.keepalive"
+                  type="checkbox"
+                  class="rounded border-slate-600"
+                />
+                Send keepalive PING
+              </label>
+              <p class="text-[10px] text-slate-500">
+                Proactively ping the server to detect dead connections. Recommended for background
+                tabs.
+              </p>
+            </div>
+
+            <!-- Keepalive interval -->
+            <div
+              v-if="form.keepalive"
+              class="flex flex-col gap-1"
+            >
+              <label class="text-xs font-medium text-slate-300">
+                Keepalive interval (seconds)
+              </label>
+              <p class="text-[10px] text-slate-500">Seconds of inactivity before sending a PING.</p>
+              <input
+                v-model.number="form.keepaliveInterval"
+                type="number"
+                min="10"
+                max="300"
+                class="w-24 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <!-- Auto-reconnect -->
+            <div class="flex flex-col gap-1">
+              <label class="flex items-center gap-2 text-xs font-medium text-slate-300">
+                <input
+                  v-model="form.autoReconnect"
+                  type="checkbox"
+                  class="rounded border-slate-600"
+                />
+                Auto-reconnect on disconnect
+              </label>
+              <p class="text-[10px] text-slate-500">
+                Automatically reconnect with exponential backoff (up to 5 attempts).
+              </p>
+            </div>
           </div>
 
           <!-- User tab -->

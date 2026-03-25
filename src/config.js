@@ -30,6 +30,14 @@ const config = {
     listRefreshInterval: 300,
     /** mIRC formatting: null = auto-detect, true = always, false = never. */
     mircFormatting: null,
+    /** Send client PING to detect dead connections (true/false). */
+    keepalive: true,
+    /** Seconds of inactivity before sending a client PING. */
+    keepaliveInterval: 60,
+    /** Seconds to wait for PONG before considering connection dead. */
+    keepaliveTimeout: 120,
+    /** Auto-reconnect on disconnect (true/false). */
+    autoReconnect: true,
     /** Per-server nickname override (empty = use global). */
     nickname: '',
     /** Per-server username override (empty = use global). */

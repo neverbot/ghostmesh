@@ -32,6 +32,16 @@ class IRCService extends EventEmitter {
     this.mircDetected = new Set();
     /** @type {Set<string>} servers that completed registration (received 376/422) */
     this.registered = new Set();
+    /** @type {Map<string, number>} keepalive ping interval per server */
+    this.keepaliveTimers = new Map();
+    /** @type {Map<string, number>} last message received timestamp per server */
+    this.lastActivity = new Map();
+    /** @type {Map<string, object>} server config for reconnection */
+    this.serverConfigs = new Map();
+    /** @type {Map<string, number>} reconnection attempt count per server */
+    this.reconnectAttempts = new Map();
+    /** @type {Map<string, number>} reconnection timeout per server */
+    this.reconnectTimers = new Map();
     /** @type {object[]} queue of parsed messages waiting to be processed */
     this.messageQueue = [];
     /** @type {number|null} rAF id for queue drain */
@@ -55,15 +65,21 @@ class IRCService extends EventEmitter {
     const socket = new WebSocket(server.host);
     const connection = { socket, config: ircConfig };
 
+    // Store server config for potential reconnection
+    this.serverConfigs.set(serverId, server);
+
     socket.onopen = () => {
       this.connectedAt[serverId] = Date.now();
+      this.reconnectAttempts.delete(serverId);
       this.store.addConnection(serverId);
       this.send(serverId, `NICK ${ircConfig.nickname}`);
       this.send(serverId, `USER ${ircConfig.username} 0 * :${ircConfig.realname}`);
+      this.startKeepalive(serverId);
     };
 
     socket.onmessage = (event) => {
       const raw = event.data;
+      this.lastActivity.set(serverId, Date.now());
       // PING must be answered immediately
       if (raw.startsWith('PING')) {
         this.send(serverId, `PONG ${raw.split(' ')[1]}`);
@@ -85,12 +101,14 @@ class IRCService extends EventEmitter {
       this.store.removeConnection(serverId);
       this.store.addSystemMessage(serverId, `Error connecting to ${server.name}`);
       this.cleanupConnection(serverId);
+      this.scheduleReconnect(serverId);
     };
 
     socket.onclose = () => {
       this.store.removeConnection(serverId);
       this.store.addSystemMessage(serverId, `Disconnected from ${server.name}`);
       this.cleanupConnection(serverId);
+      this.scheduleReconnect(serverId);
     };
 
     this.connections.set(serverId, connection);
@@ -253,6 +271,7 @@ class IRCService extends EventEmitter {
     connection.socket.close();
     this.store.removeConnection(serverId);
     this.cleanupConnection(serverId);
+    this.cancelReconnect(serverId);
   }
 
   /** Disconnect from all servers. */
@@ -266,9 +285,117 @@ class IRCService extends EventEmitter {
    * Remove connection and stop its LIST timer.
    * @param {string} serverId
    */
+  /**
+   * Start keepalive PING timer for a server.
+   * Sends a client PING if no activity is received within the configured interval.
+   * @param {string} serverId
+   */
+  startKeepalive(serverId) {
+    this.stopKeepalive(serverId);
+    const settings = this.serverSettings.getSettings(serverId);
+    if (!settings.keepalive) return;
+
+    const intervalMs =
+      (settings.keepaliveInterval || config.serverDefaults.keepaliveInterval) * 1000;
+    const timeoutMs = (settings.keepaliveTimeout || config.serverDefaults.keepaliveTimeout) * 1000;
+
+    const timer = setInterval(() => {
+      const last = this.lastActivity.get(serverId) || 0;
+      const elapsed = Date.now() - last;
+
+      if (elapsed > timeoutMs) {
+        // No activity for too long — connection is dead
+        this.store.addSystemMessage(serverId, 'Connection timed out — reconnecting...');
+        const connection = this.connections.get(serverId);
+        if (connection) {
+          connection.socket.onclose = null;
+          connection.socket.onerror = null;
+          connection.socket.close();
+        }
+        this.store.removeConnection(serverId);
+        this.cleanupConnection(serverId);
+        this.scheduleReconnect(serverId);
+      } else if (elapsed > intervalMs) {
+        // Send a PING to keep the connection alive
+        this.send(serverId, `PING :ghostmesh`);
+      }
+    }, intervalMs);
+
+    this.keepaliveTimers.set(serverId, timer);
+  }
+
+  /**
+   * Stop keepalive timer for a server.
+   * @param {string} serverId
+   */
+  stopKeepalive(serverId) {
+    const timer = this.keepaliveTimers.get(serverId);
+    if (timer) {
+      clearInterval(timer);
+      this.keepaliveTimers.delete(serverId);
+    }
+  }
+
+  /**
+   * Schedule an automatic reconnection with exponential backoff.
+   * @param {string} serverId
+   */
+  scheduleReconnect(serverId) {
+    const server = this.serverConfigs.get(serverId);
+    if (!server) return;
+
+    const settings = this.serverSettings.getSettings(serverId);
+    if (!settings.autoReconnect) return;
+
+    // Cancel any existing reconnect timer
+    const existing = this.reconnectTimers.get(serverId);
+    if (existing) clearTimeout(existing);
+
+    const attempts = this.reconnectAttempts.get(serverId) || 0;
+    if (attempts >= 5) {
+      this.store.addSystemMessage(serverId, 'Reconnection failed after 5 attempts.');
+      this.reconnectAttempts.delete(serverId);
+      return;
+    }
+
+    // Exponential backoff: 2s, 4s, 8s, 16s, 32s
+    const delay = Math.pow(2, attempts + 1) * 1000;
+    this.store.addSystemMessage(
+      serverId,
+      `Reconnecting in ${delay / 1000}s (attempt ${attempts + 1}/5)...`,
+    );
+
+    const timer = setTimeout(() => {
+      this.reconnectTimers.delete(serverId);
+      this.reconnectAttempts.set(serverId, attempts + 1);
+      this.connect(server);
+    }, delay);
+
+    this.reconnectTimers.set(serverId, timer);
+  }
+
+  /**
+   * Cancel any pending reconnection for a server.
+   * @param {string} serverId
+   */
+  cancelReconnect(serverId) {
+    const timer = this.reconnectTimers.get(serverId);
+    if (timer) {
+      clearTimeout(timer);
+      this.reconnectTimers.delete(serverId);
+    }
+    this.reconnectAttempts.delete(serverId);
+  }
+
+  /**
+   * Clean up all state for a disconnected server.
+   * @param {string} serverId
+   */
   cleanupConnection(serverId) {
     this.connections.delete(serverId);
     this.stopListRefresh(serverId);
+    this.stopKeepalive(serverId);
+    this.lastActivity.delete(serverId);
     this.mircDetected.delete(serverId);
     this.registered.delete(serverId);
     this.listLoading.delete(serverId);
