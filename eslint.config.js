@@ -1,5 +1,6 @@
-import babelParser from '@babel/eslint-parser';
 import js from '@eslint/js';
+import tsPlugin from '@typescript-eslint/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
 import importPlugin from 'eslint-plugin-import';
 import eslintJsonc from 'eslint-plugin-jsonc';
 import prettier from 'eslint-plugin-prettier';
@@ -8,16 +9,10 @@ import globals from 'globals';
 import * as eslintJsoncParser from 'jsonc-eslint-parser';
 import vueParser from 'vue-eslint-parser';
 
-import viteConfig from './vite.config.js';
-
 export default [
   {
-    // global ignores
-    // folders can only be ignored at the global level, per-cfg you must do:
-    // '**/dist/**/*'
-    ignores: ['**/dist/', '**/public/', '**/node_modules/', 'vite.config.js'],
+    ignores: ['**/dist/', '**/public/', '**/node_modules/', 'vite.config.ts', 'eslint.config.js'],
   },
-  // general defaults
   js.configs.recommended,
   importPlugin.flatConfigs.recommended,
   {
@@ -27,51 +22,53 @@ export default [
     },
   },
   {
-    files: ['**/*.js'],
-    rules: {
-      'prettier/prettier': [
-        'error',
-        {},
-        {
-          usePrettierrc: true,
-        },
-      ],
-      'no-console': 'warn',
-      'import/extensions': [
-        'warn',
-        'always',
-        {
-          js: 'always',
-          json: 'always',
-        },
-      ],
-    },
+    files: ['**/*.ts'],
     plugins: {
       prettier,
       importPlugin,
-    },
-    settings: {
-      'import/resolver': {
-        vite: {
-          viteConfig,
-        },
-      },
+      '@typescript-eslint': tsPlugin,
     },
     languageOptions: {
-      parser: babelParser,
-      ecmaVersion: 2018,
+      parser: tsParser,
+      ecmaVersion: 'latest',
       sourceType: 'module',
       globals: {
         ...globals.browser,
       },
-      parserOptions: {
-        requireConfigFile: false,
-        allowImportExportEverywhere: true,
-
-        ecmaFeatures: {
-          experimentalObjectRestSpread: true,
-        },
+    },
+    settings: {
+      'import/resolver': {
+        typescript: true,
+        vite: true,
       },
+    },
+    rules: {
+      'prettier/prettier': ['error', {}, { usePrettierrc: true }],
+      'no-console': 'warn',
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'import/extensions': ['warn', 'always', { ts: 'always', json: 'always' }],
+      'import/no-unresolved': 'off',
+    },
+  },
+  {
+    files: ['**/*.js'],
+    plugins: {
+      prettier,
+      importPlugin,
+    },
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.browser,
+      },
+    },
+    rules: {
+      'prettier/prettier': ['error', {}, { usePrettierrc: true }],
+      'no-console': 'warn',
+      'import/extensions': ['warn', 'always', { js: 'always', json: 'always' }],
+      'import/no-unresolved': 'off',
     },
   },
   {
@@ -88,17 +85,10 @@ export default [
       },
     },
     rules: {
-      'prettier/prettier': [
-        'error',
-        {},
-        {
-          usePrettierrc: true,
-        },
-      ],
+      'prettier/prettier': ['error', {}, { usePrettierrc: true }],
       'no-console': 'warn',
     },
   },
-  // ...vue.configs['flat/essential'],
   ...vue.configs['flat/recommended'],
   {
     files: ['*.vue', '**/*.vue'],
@@ -106,13 +96,7 @@ export default [
       vue,
       prettier,
       importPlugin,
-    },
-    settings: {
-      'import/resolver': {
-        vite: {
-          viteConfig,
-        },
-      },
+      '@typescript-eslint': tsPlugin,
     },
     languageOptions: {
       parser: vueParser,
@@ -121,27 +105,17 @@ export default [
       globals: {
         ...globals.browser,
       },
+      parserOptions: {
+        parser: tsParser,
+      },
     },
-    // processor: vue.processors['.vue'],
     rules: {
-      'prettier/prettier': [
-        'error',
-        {},
-        {
-          usePrettierrc: true,
-        },
-      ],
+      'prettier/prettier': ['error', {}, { usePrettierrc: true }],
       'no-console': 'warn',
-      'import/extensions': [
-        'warn',
-        'always',
-        {
-          vue: 'always',
-        },
-      ],
-      // ...vue.configs.base.rules,
-      // ...vue.configs.essential.rules,
-      // ...vue.configs['strongly-recommended'].rules,
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      'import/extensions': ['warn', 'always', { vue: 'always', ts: 'always' }],
+      'import/no-unresolved': 'off',
       ...vue.configs.recommended.rules,
       'vue/multi-word-component-names': 'off',
       'vue/no-v-html': 'off',
