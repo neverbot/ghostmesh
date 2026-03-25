@@ -3,6 +3,7 @@
   import { useIrcStore } from '@/stores/irc.js';
   import { useServerSettingsStore } from '@/stores/server-settings.js';
   import { parseFormatting, stripFormatting, hasFormatting } from '@/utils/mirc-format.js';
+  import { formatPlainContent, formatHtmlContent } from '@/utils/message-format.js';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
 
   const props = defineProps({
@@ -29,13 +30,18 @@
     return settingsStore.isMircEnabled(serverId, detected);
   });
 
-  /** Rendered content: HTML if mIRC enabled, plain text otherwise. */
+  /** Rendered HTML content with mIRC formatting + URL linkification. */
   const renderedHtml = computed(() => {
-    if (mircEnabled.value) return parseFormatting(props.message.content);
+    if (mircEnabled.value) {
+      return formatHtmlContent(parseFormatting(props.message.content));
+    }
     return null;
   });
 
-  const plainContent = computed(() => stripFormatting(props.message.content));
+  /** Plain text content with URLs linkified (no mIRC). */
+  const plainHtml = computed(() => {
+    return formatPlainContent(stripFormatting(props.message.content));
+  });
 </script>
 
 <template>
@@ -50,16 +56,9 @@
     </InfoTooltip>
     <!-- Content -->
     <div
-      v-if="mircEnabled && renderedHtml"
       class="min-w-0 whitespace-pre-wrap font-mono text-xs leading-tight text-slate-400"
-      v-html="renderedHtml"
+      v-html="renderedHtml || plainHtml"
     />
-    <div
-      v-else
-      class="min-w-0 whitespace-pre-wrap font-mono text-xs leading-tight text-slate-400"
-    >
-      {{ plainContent }}
-    </div>
   </div>
 
   <!-- User messages -->
@@ -93,11 +92,7 @@
             : 'rounded-tl-sm bg-slate-100 text-slate-800'
         "
       >
-        <span
-          v-if="mircEnabled && renderedHtml"
-          v-html="renderedHtml"
-        />
-        <template v-else>{{ plainContent }}</template>
+        <span v-html="renderedHtml || plainHtml" />
       </div>
       <span class="text-[10px] text-slate-400">{{ timeString }}</span>
     </div>

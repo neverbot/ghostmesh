@@ -39,21 +39,17 @@ function escapeHtml(str) {
 }
 
 /**
- * Process message text: convert URLs to clickable links and image URLs to inline previews.
- * Returns HTML string.
- * @param {string} text — plain text (already mIRC-processed or stripped)
- * @returns {string}
+ * Replace URLs in a plain text segment with link/image HTML.
+ * @param {string} text — plain text (no HTML)
+ * @returns {string} — HTML string
  */
-function formatMessageContent(text) {
-  if (!text) return '';
-
+function linkifyText(text) {
   let lastIndex = 0;
   let result = '';
-  let match;
 
   URL_REGEX.lastIndex = 0;
+  let match;
   while ((match = URL_REGEX.exec(text)) !== null) {
-    // Add text before the URL
     result += escapeHtml(text.slice(lastIndex, match.index));
 
     const rawUrl = match[0];
@@ -62,21 +58,54 @@ function formatMessageContent(text) {
     const escapedDisplay = escapeHtml(rawUrl);
 
     if (isImageUrl(rawUrl)) {
-      // Image: clickable link + inline preview
-      result += `<a href="${escapedHref}" target="_blank" rel="noopener" class="text-emerald-500 underline">${escapedDisplay}</a>`;
-      result += `<img src="${escapedHref}" alt="" class="mt-1 max-h-48 max-w-full rounded-lg object-contain" loading="lazy" />`;
+      result += `<a href="${escapedHref}" target="_blank" rel="noopener" class="underline break-all opacity-80 hover:opacity-100">${escapedDisplay}</a>`;
+      result += `<img src="${escapedHref}" alt="" class="my-1 block max-h-48 max-w-xs rounded-lg object-contain" loading="lazy" onerror="this.style.display='none'" />`;
     } else {
-      // Regular link
-      result += `<a href="${escapedHref}" target="_blank" rel="noopener" class="text-emerald-500 underline hover:text-emerald-400">${escapedDisplay}</a>`;
+      result += `<a href="${escapedHref}" target="_blank" rel="noopener" class="underline break-all opacity-80 hover:opacity-100">${escapedDisplay}</a>`;
     }
 
     lastIndex = match.index + rawUrl.length;
   }
 
-  // Add remaining text
   result += escapeHtml(text.slice(lastIndex));
-
   return result;
+}
+
+/**
+ * Process plain text content: escape HTML and linkify URLs.
+ * Use for messages without mIRC formatting.
+ * @param {string} text — raw plain text
+ * @returns {string} — safe HTML
+ */
+function formatPlainContent(text) {
+  if (!text) return '';
+  return linkifyText(text);
+}
+
+/**
+ * Process HTML content (from mIRC parser): find URLs in text nodes and linkify them.
+ * Preserves existing HTML tags from mIRC formatting.
+ * @param {string} html — HTML from parseFormatting()
+ * @returns {string} — HTML with URLs linkified
+ */
+function formatHtmlContent(html) {
+  if (!html) return '';
+  // Split into tags and text segments, only linkify text segments
+  const parts = html.split(/(<[^>]+>)/);
+  return parts
+    .map((part) => {
+      // Skip HTML tags
+      if (part.startsWith('<')) return part;
+      // Process text nodes (already escaped by mIRC parser)
+      // Unescape → linkify (which re-escapes)
+      const unescaped = part
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"');
+      return linkifyText(unescaped);
+    })
+    .join('');
 }
 
 /**
@@ -90,4 +119,4 @@ function hasUrls(text) {
   return URL_REGEX.test(text);
 }
 
-export { formatMessageContent, hasUrls, isImageUrl };
+export { formatPlainContent, formatHtmlContent, hasUrls, isImageUrl };
