@@ -187,6 +187,15 @@ class IRCService extends EventEmitter {
   }
 
   /**
+   * Check if a server has completed IRC registration (received 376/422).
+   * @param {string} serverId
+   * @returns {boolean}
+   */
+  isRegistered(serverId) {
+    return this.registered.has(serverId);
+  }
+
+  /**
    * Request a channel list from a server.
    * Skips if already loading or wait time not elapsed.
    * @param {string} serverId

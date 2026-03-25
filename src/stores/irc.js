@@ -810,17 +810,17 @@ const useIrcStore = defineStore('irc', () => {
       // Store the channels to rejoin after connection
       const channelsToJoin = (session.channels[serverId] || []).filter((ch) => ch !== '*status');
       connectToServer(server);
-      // Rejoin channels after a delay (wait for registration)
+      // Rejoin channels after registration completes (376/422)
       if (channelsToJoin.length > 0) {
+        const service = getService();
         const check = setInterval(() => {
-          if (isConnected(serverId)) {
+          if (service.isRegistered(serverId)) {
             clearInterval(check);
             for (const ch of channelsToJoin) {
               if (isDM(ch)) {
-                // DMs: just recreate the local channel, don't send JOIN
                 addJoinedChannel(serverId, ch);
               } else {
-                getService().joinChannel(serverId, ch);
+                service.joinChannel(serverId, ch);
               }
             }
           }
