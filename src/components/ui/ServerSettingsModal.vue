@@ -1,6 +1,8 @@
 <script setup>
-  import { ref, computed, watch } from 'vue';
+  import { ref, computed, watch, nextTick } from 'vue';
   import { useServerSettingsStore } from '@/stores/server-settings.js';
+
+  const backdrop = ref(null);
 
   const props = defineProps({
     serverId: { type: String, required: true },
@@ -22,9 +24,20 @@
       if (val) {
         const s = settingsStore.getSettings(props.serverId);
         form.value = { ...s };
+        nextTick(() => backdrop.value?.focus());
       }
     },
     { immediate: true },
+  );
+
+  // Live-update listDelay if auto-detected while modal is open
+  watch(
+    () => settingsStore.settings[props.serverId]?.listDelay,
+    (newVal) => {
+      if (props.open && newVal !== undefined && !form.value.listDelayManual) {
+        form.value.listDelay = newVal;
+      }
+    },
   );
 
   const mircStatus = computed(() => {
@@ -55,7 +68,10 @@
   <Teleport to="body">
     <div
       v-if="open"
+      ref="backdrop"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      tabindex="0"
+      @keydown.escape="close"
       @click.self="close"
     >
       <div class="w-full max-w-md rounded-xl bg-slate-800 shadow-2xl">
