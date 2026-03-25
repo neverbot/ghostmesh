@@ -143,8 +143,8 @@
               <input
                 v-model="form.nickname"
                 type="text"
-                placeholder="ghostmesh_XXX (random)"
-                class="w-48 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
+                placeholder="ghostmesh_xxx (random)"
+                class="w-56 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
               />
             </div>
 
@@ -158,7 +158,7 @@
                 v-model="form.username"
                 type="text"
                 placeholder="ghostmesh"
-                class="w-48 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
+                class="w-56 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
               />
             </div>
 
@@ -220,7 +220,7 @@
                 type="password"
                 disabled
                 placeholder="Coming soon"
-                class="w-48 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-500 outline-none"
+                class="w-56 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-500 outline-none"
               />
             </div>
 
