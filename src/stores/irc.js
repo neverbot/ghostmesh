@@ -126,9 +126,15 @@ const useIrcStore = defineStore('irc', () => {
   const currentUsers = computed(() => {
     if (!selectedServerId.value || !selectedChannel.value) return [];
     const list = users.value[`${selectedServerId.value}:${selectedChannel.value}`];
-    return list
-      ? [...list].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
-      : [];
+    if (!list) return [];
+    const myNick = nicknamePerServer.value[selectedServerId.value] || nickname.value;
+    const sorted = [...list].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    // Move own nick to the top
+    const myIdx = sorted.findIndex((n) => n.toLowerCase() === myNick?.toLowerCase());
+    if (myIdx > 0) {
+      sorted.unshift(sorted.splice(myIdx, 1)[0]);
+    }
+    return sorted;
   });
 
   const currentTopic = computed(() => {
