@@ -469,7 +469,7 @@ class IRCService extends EventEmitter {
           // Self-DM echo: we already added the message locally in sendMessage
           if (nick.toLowerCase() === ourNick.toLowerCase()) break;
           // Shadow ban: ignore DMs from hidden users
-          if (this.userPrefs?.isUserHidden(nick)) break;
+          if (this.userPrefs?.isUserHidden(serverId, nick)) break;
           // Create DM channel if it doesn't exist
           const serverChannels = s.channels[serverId] || [];
           if (!serverChannels.includes(nick)) {

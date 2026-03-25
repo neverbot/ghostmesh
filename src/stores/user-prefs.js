@@ -29,33 +29,37 @@ function saveToStorage(data) {
 }
 
 /**
- * Normalize a nick to lowercase for case-insensitive comparison.
+ * Build a key from serverId + nick for lookups.
+ * @param {string} serverId
  * @param {string} nick
  * @returns {string}
  */
-function normalize(nick) {
-  return (nick || '').toLowerCase();
+function makeKey(serverId, nick) {
+  return `${serverId}:${(nick || '').toLowerCase()}`;
 }
 
 /**
- * Migrate old format (string[]) to new format ({ nick, addedAt }[]).
+ * Migrate old format entries (without serverId) to new format.
+ * Old: { nick, addedAt } or string → New: { serverId, nick, addedAt }
+ * Old entries without serverId are dropped (no way to know which server).
  * @param {any[]} arr
- * @returns {{ nick: string, addedAt: number }[]}
+ * @returns {{ serverId: string, nick: string, addedAt: number }[]}
  */
 function migrateEntries(arr) {
   if (!Array.isArray(arr)) return [];
-  return arr.map((entry) => {
-    if (typeof entry === 'string') {
-      return { nick: entry, addedAt: Date.now() };
-    }
-    return entry;
-  });
+  return arr
+    .map((entry) => {
+      if (typeof entry === 'string') return null; // old format, drop
+      if (!entry.serverId) return null; // old format without server, drop
+      return entry;
+    })
+    .filter(Boolean);
 }
 
 /**
  * Remove entries older than EXPIRY_MS.
- * @param {{ nick: string, addedAt: number }[]} arr
- * @returns {{ nick: string, addedAt: number }[]}
+ * @param {{ serverId: string, nick: string, addedAt: number }[]} arr
+ * @returns {{ serverId: string, nick: string, addedAt: number }[]}
  */
 function purgeExpired(arr) {
   const cutoff = Date.now() - EXPIRY_MS;
@@ -65,9 +69,9 @@ function purgeExpired(arr) {
 const useUserPrefsStore = defineStore('user-prefs', () => {
   const stored = loadFromStorage();
 
-  /** @type {import('vue').Ref<{ nick: string, addedAt: number }[]>} */
+  /** @type {import('vue').Ref<{ serverId: string, nick: string, addedAt: number }[]>} */
   const hiddenPreviews = ref(migrateEntries(stored.hiddenPreviews));
-  /** @type {import('vue').Ref<{ nick: string, addedAt: number }[]>} */
+  /** @type {import('vue').Ref<{ serverId: string, nick: string, addedAt: number }[]>} */
   const hiddenUsers = ref(migrateEntries(stored.hiddenUsers));
 
   // Persist on change
@@ -78,63 +82,99 @@ const useUserPrefsStore = defineStore('user-prefs', () => {
   );
 
   /**
-   * Check if previews are hidden for a nick.
+   * Check if previews are hidden for a nick on a server.
+   * @param {string} serverId
    * @param {string} nick
    * @returns {boolean}
    */
-  function isPreviewHidden(nick) {
-    const n = normalize(nick);
-    return hiddenPreviews.value.some((e) => e.nick === n);
+  function isPreviewHidden(serverId, nick) {
+    const key = makeKey(serverId, nick);
+    return hiddenPreviews.value.some((e) => `${e.serverId}:${e.nick}` === key);
   }
 
   /**
-   * Toggle preview visibility for a nick. Purges expired entries on add.
+   * Toggle preview visibility for a nick on a server.
+   * @param {string} serverId
    * @param {string} nick
    */
-  function togglePreviewHidden(nick) {
-    const n = normalize(nick);
-    const idx = hiddenPreviews.value.findIndex((e) => e.nick === n);
+  function togglePreviewHidden(serverId, nick) {
+    const key = makeKey(serverId, nick);
+    const idx = hiddenPreviews.value.findIndex((e) => `${e.serverId}:${e.nick}` === key);
     if (idx === -1) {
       hiddenPreviews.value = purgeExpired(hiddenPreviews.value);
-      hiddenPreviews.value.push({ nick: n, addedAt: Date.now() });
+      hiddenPreviews.value.push({
+        serverId,
+        nick: (nick || '').toLowerCase(),
+        addedAt: Date.now(),
+      });
     } else {
       hiddenPreviews.value.splice(idx, 1);
     }
   }
 
   /**
-   * Check if a user is shadow-banned (messages hidden).
+   * Check if a user is shadow-banned on a server.
+   * @param {string} serverId
    * @param {string} nick
    * @returns {boolean}
    */
-  function isUserHidden(nick) {
-    const n = normalize(nick);
-    return hiddenUsers.value.some((e) => e.nick === n);
+  function isUserHidden(serverId, nick) {
+    const key = makeKey(serverId, nick);
+    return hiddenUsers.value.some((e) => `${e.serverId}:${e.nick}` === key);
   }
 
   /**
-   * Toggle shadow ban for a nick. Purges expired entries on add.
+   * Toggle shadow ban for a nick on a server.
+   * @param {string} serverId
    * @param {string} nick
    */
-  function toggleUserHidden(nick) {
-    const n = normalize(nick);
-    const idx = hiddenUsers.value.findIndex((e) => e.nick === n);
+  function toggleUserHidden(serverId, nick) {
+    const key = makeKey(serverId, nick);
+    const idx = hiddenUsers.value.findIndex((e) => `${e.serverId}:${e.nick}` === key);
     if (idx === -1) {
       hiddenUsers.value = purgeExpired(hiddenUsers.value);
-      hiddenUsers.value.push({ nick: n, addedAt: Date.now() });
+      hiddenUsers.value.push({
+        serverId,
+        nick: (nick || '').toLowerCase(),
+        addedAt: Date.now(),
+      });
     } else {
       hiddenUsers.value.splice(idx, 1);
     }
   }
 
-  /** Remove all hidden users. */
-  function clearHiddenUsers() {
-    hiddenUsers.value = [];
+  /**
+   * Get hidden users for a specific server.
+   * @param {string} serverId
+   * @returns {{ serverId: string, nick: string, addedAt: number }[]}
+   */
+  function hiddenUsersForServer(serverId) {
+    return hiddenUsers.value.filter((e) => e.serverId === serverId);
   }
 
-  /** Remove all hidden previews. */
-  function clearHiddenPreviews() {
-    hiddenPreviews.value = [];
+  /**
+   * Get hidden previews for a specific server.
+   * @param {string} serverId
+   * @returns {{ serverId: string, nick: string, addedAt: number }[]}
+   */
+  function hiddenPreviewsForServer(serverId) {
+    return hiddenPreviews.value.filter((e) => e.serverId === serverId);
+  }
+
+  /**
+   * Remove all hidden users for a server.
+   * @param {string} serverId
+   */
+  function clearHiddenUsers(serverId) {
+    hiddenUsers.value = hiddenUsers.value.filter((e) => e.serverId !== serverId);
+  }
+
+  /**
+   * Remove all hidden previews for a server.
+   * @param {string} serverId
+   */
+  function clearHiddenPreviews(serverId) {
+    hiddenPreviews.value = hiddenPreviews.value.filter((e) => e.serverId !== serverId);
   }
 
   /** Clear all user prefs (for "Forget Me"). */
@@ -151,6 +191,8 @@ const useUserPrefsStore = defineStore('user-prefs', () => {
     togglePreviewHidden,
     isUserHidden,
     toggleUserHidden,
+    hiddenUsersForServer,
+    hiddenPreviewsForServer,
     clearHiddenUsers,
     clearHiddenPreviews,
     clearAll,

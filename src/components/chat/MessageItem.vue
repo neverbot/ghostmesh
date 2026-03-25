@@ -68,7 +68,8 @@
 
   /** Whether previews are allowed for this message's author. */
   const canResolveImages = computed(
-    () => previewReady.value && !userPrefs.isPreviewHidden(props.message.nick),
+    () =>
+      previewReady.value && !userPrefs.isPreviewHidden(props.message.serverId, props.message.nick),
   );
 
   /** Rendered HTML content with mIRC formatting + URL linkification. */
