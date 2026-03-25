@@ -63,7 +63,7 @@
     prefs.toggleUserHidden(props.nick);
     // When hiding a user, close any open DM channels with them
     if (!wasHidden) {
-      store.closeDMsWithUser(props.nick);
+      store.closeDMsWithUser(props.serverId, props.nick);
     }
     emit('close');
   }
