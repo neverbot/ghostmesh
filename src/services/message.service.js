@@ -5,7 +5,7 @@
 
 import config from '@/config.js';
 import { resolveImageProvider, providers } from '@/services/image-providers.js';
-import { imageProxyUrl, corsProxyUrl } from '@/services/proxy-services.js';
+import { imageProxyUrl, fetchWithProxy } from '@/services/proxy-services.js';
 
 /** Image file extensions to detect for inline preview. */
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif'];
@@ -136,7 +136,7 @@ async function resolveAsyncImage(asyncMarker, placeholderId) {
   }
 
   try {
-    const dataUrl = await provider.resolve(id, { corsProxyUrl });
+    const dataUrl = await provider.resolve(id, { fetchWithProxy });
     const el = document.getElementById(placeholderId);
     if (!el) return;
 

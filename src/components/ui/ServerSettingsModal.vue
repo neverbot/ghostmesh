@@ -314,7 +314,7 @@
               >
                 No users blocked
               </div>
-              <div class="max-h-32 overflow-y-auto">
+              <div class="flex max-h-32 flex-col gap-1 overflow-y-auto">
                 <div
                   v-for="nick in userPrefs.hiddenUsers"
                   :key="'hidden:' + nick"
@@ -343,7 +343,7 @@
               >
                 No users with hidden previews
               </div>
-              <div class="max-h-32 overflow-y-auto">
+              <div class="flex max-h-32 flex-col gap-1 overflow-y-auto">
                 <div
                   v-for="nick in userPrefs.hiddenPreviews"
                   :key="'preview:' + nick"
