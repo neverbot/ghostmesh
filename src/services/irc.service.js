@@ -326,8 +326,8 @@ class IRCService extends EventEmitter {
             const current = this.listWaitOverrides[serverId] || 0;
             if (detected > current) {
               this.listWaitOverrides[serverId] = detected;
-              // Update stored setting only if user hasn't set a custom value
-              if (!this.serverSettings.settings[serverId]?.listDelay) {
+              // Update stored setting unless user has manually set a value
+              if (!this.serverSettings.settings[serverId]?.listDelayManual) {
                 this.serverSettings.updateSettings(serverId, { listDelay: detected });
               }
             }

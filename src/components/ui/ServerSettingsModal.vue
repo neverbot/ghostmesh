@@ -36,7 +36,13 @@
   });
 
   function save() {
-    settingsStore.updateSettings(props.serverId, { ...form.value });
+    const data = { ...form.value };
+    // Mark listDelay as manually set if user changed it
+    const current = settingsStore.getSettings(props.serverId);
+    if (data.listDelay !== current.listDelay) {
+      data.listDelayManual = true;
+    }
+    settingsStore.updateSettings(props.serverId, data);
     emit('close');
   }
 
