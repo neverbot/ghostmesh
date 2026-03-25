@@ -3,6 +3,7 @@
   import { useServerSettingsStore } from '@/stores/server-settings.js';
   import { useIrcStore } from '@/stores/irc.js';
   import { useUserPrefsStore } from '@/stores/user-prefs.js';
+  import InfoTooltip from '@/components/ui/InfoTooltip.vue';
 
   const backdrop = ref(null);
 
@@ -307,7 +308,21 @@
 
             <!-- Hidden messages -->
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-slate-300">Hidden messages</label>
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-medium text-slate-300">Hidden messages</label>
+                <InfoTooltip
+                  v-if="userPrefs.hiddenUsers.length > 0"
+                  text="Unblock all users"
+                  :delay="300"
+                >
+                  <button
+                    class="text-[10px] text-red-400 transition-colors hover:text-red-300"
+                    @click="userPrefs.clearHiddenUsers()"
+                  >
+                    Remove all
+                  </button>
+                </InfoTooltip>
+              </div>
               <div
                 v-if="userPrefs.hiddenUsers.length === 0"
                 class="text-[10px] italic text-slate-500"
@@ -333,7 +348,21 @@
 
             <!-- Hidden previews -->
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-slate-300">Hidden previews</label>
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-medium text-slate-300">Hidden previews</label>
+                <InfoTooltip
+                  v-if="userPrefs.hiddenPreviews.length > 0"
+                  text="Restore all previews"
+                  :delay="300"
+                >
+                  <button
+                    class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
+                    @click="userPrefs.clearHiddenPreviews()"
+                  >
+                    Remove all
+                  </button>
+                </InfoTooltip>
+              </div>
               <p class="text-[10px] text-slate-500">
                 Messages from these users show links but no image previews.
               </p>

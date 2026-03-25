@@ -13,7 +13,9 @@
   });
 
   const memberCount = computed(() => {
-    if (isPrivate.value) return 2;
+    if (isPrivate.value) {
+      return store.isDMOnline(store.selectedServerId, store.selectedChannel) ? 2 : 1;
+    }
     return store.currentUsers.length;
   });
 </script>

@@ -98,6 +98,17 @@ const useUserPrefsStore = defineStore('user-prefs', () => {
   /**
    * Clear all user prefs (for "Forget Me").
    */
+  /** Remove all hidden users. */
+  function clearHiddenUsers() {
+    hiddenUsers.value = [];
+  }
+
+  /** Remove all hidden previews. */
+  function clearHiddenPreviews() {
+    hiddenPreviews.value = [];
+  }
+
+  /** Clear all user prefs (for "Forget Me"). */
   function clearAll() {
     hiddenPreviews.value = [];
     hiddenUsers.value = [];
@@ -111,6 +122,8 @@ const useUserPrefsStore = defineStore('user-prefs', () => {
     togglePreviewHidden,
     isUserHidden,
     toggleUserHidden,
+    clearHiddenUsers,
+    clearHiddenPreviews,
     clearAll,
   };
 });
