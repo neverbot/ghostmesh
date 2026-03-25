@@ -98,10 +98,32 @@ const useIrcStore = defineStore('irc', () => {
     return set;
   });
 
+  /**
+   * Build a text matcher from filter input. Supports * and ? wildcards.
+   * Plain text without wildcards does a substring match.
+   * @param {string} filter
+   * @returns {(text: string) => boolean}
+   */
+  function buildMatcher(filter) {
+    if (!filter) return () => true;
+    const lower = filter.toLowerCase();
+    const hasWildcard = lower.includes('*') || lower.includes('?');
+    if (!hasWildcard) {
+      return (text) => text.toLowerCase().includes(lower);
+    }
+    // Convert glob to regex: * -> .*, ? -> ., escape the rest
+    const pattern = lower
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*/g, '.*')
+      .replace(/\?/g, '.');
+    const re = new RegExp(`^${pattern}$`);
+    return (text) => re.test(text.toLowerCase());
+  }
+
   /** All available channels (not joined) across all servers, with filters applied. */
   const allAvailableChannels = computed(() => {
     const result = [];
-    const text = filterText.value.toLowerCase();
+    const matcher = buildMatcher(filterText.value);
     const minUsers = filterMinUsers.value || 0;
     const serverFilter = filterServer.value;
 
@@ -112,8 +134,7 @@ const useIrcStore = defineStore('irc', () => {
       for (const ch of availableChannels.value[serverId] || []) {
         if (joinedSet.value.has(`${serverId}:${ch.name}`)) continue;
         if (ch.users < minUsers) continue;
-        if (text && !ch.name.toLowerCase().includes(text) && !ch.topic.toLowerCase().includes(text))
-          continue;
+        if (!matcher(ch.name) && !matcher(ch.topic)) continue;
         result.push({ serverId, serverName, ...ch });
       }
     }
