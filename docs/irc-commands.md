@@ -14,45 +14,45 @@ Reference: [RFC 1459](https://datatracker.ietf.org/doc/html/rfc1459), [RFC 2812]
 
 ## Connection & Registration
 
-| Command         | Description                    | Status | Notes                                           |
-| --------------- | ------------------------------ | ------ | ----------------------------------------------- |
-| `PASS`          | Set connection password        | —      |                                                 |
-| `NICK`          | Set/change nickname            | Done   | Sent on connect; no runtime nick change support |
-| `USER`          | Register username and realname | Done   | Sent on connect                                 |
-| `QUIT`          | Disconnect from server         | Done   | Sent on disconnect with default message         |
-| `PING` / `PONG` | Keep-alive                     | Done   | Auto PONG response in service layer             |
+| Command         | Description                    | Status | Notes                                                             |
+| --------------- | ------------------------------ | ------ | ----------------------------------------------------------------- |
+| `PASS`          | Set connection password        | —      |                                                                   |
+| `NICK`          | Set/change nickname            | Done   | Sent on connect from config; per-server override in settings      |
+| `USER`          | Register username and realname | Done   | Sent on connect from `config.js`                                  |
+| `QUIT`          | Disconnect from server         | Done   | Sent on disconnect; socket handlers detached before close         |
+| `PING` / `PONG` | Keep-alive                     | Done   | Auto PONG response, processed immediately (never queued)          |
 
 ## Channel Operations
 
-| Command  | Description              | Status  | Notes                                                  |
-| -------- | ------------------------ | ------- | ------------------------------------------------------ |
-| `JOIN`   | Join a channel           | Done    | Via UI input; auto-selects joined channel              |
-| `PART`   | Leave a channel          | Partial | Handler exists but no UI to trigger it                 |
-| `LIST`   | List available channels  | Done    | Auto-requested on connect; results stored in store     |
-| `TOPIC`  | Get/set channel topic    | Partial | Receives topic (332); no UI to set topic               |
-| `NAMES`  | List users in a channel  | Partial | Handled via 353/366 replies; no explicit NAMES command |
-| `INVITE` | Invite user to a channel | —       |                                                        |
-| `KICK`   | Kick user from a channel | —       |                                                        |
+| Command  | Description              | Status | Notes                                                                   |
+| -------- | ------------------------ | ------ | ----------------------------------------------------------------------- |
+| `JOIN`   | Join a channel           | Done   | Via sidebar input or channel list click; auto-selects joined channel    |
+| `PART`   | Leave a channel          | Done   | Via leave button on joined channels; `*status` cannot be left           |
+| `LIST`   | List available channels  | Done   | Auto-requested after registration; periodic refresh; batched processing |
+| `TOPIC`  | Get/set channel topic    | Partial| Receives topic (332); displayed in channel info panel; no UI to set     |
+| `NAMES`  | List users in a channel  | Done   | Handled via 353/366 replies; populates user list panel                  |
+| `INVITE` | Invite user to a channel | —      |                                                                         |
+| `KICK`   | Kick user from a channel | —      |                                                                         |
 
 ## Sending Messages
 
-| Command   | Description                          | Status | Notes                           |
-| --------- | ------------------------------------ | ------ | ------------------------------- |
-| `PRIVMSG` | Send message to channel or user      | Done   | Channel messages via chat input |
-| `NOTICE`  | Send notice (no auto-reply expected) | —      |                                 |
+| Command   | Description                          | Status  | Notes                                                    |
+| --------- | ------------------------------------ | ------- | -------------------------------------------------------- |
+| `PRIVMSG` | Send message to channel or user      | Done    | Channel messages via chat input; disabled on `*status`   |
+| `NOTICE`  | Send notice (no auto-reply expected) | Partial | Received and displayed as system message; cannot send    |
 
 ## Server Queries
 
-| Command   | Description                       | Status  | Notes                                         |
-| --------- | --------------------------------- | ------- | --------------------------------------------- |
-| `MOTD`    | Request Message of the Day        | Partial | Displayed via numeric replies (375, 372, 376) |
-| `LUSERS`  | Request server/network user stats | —       | Numeric replies shown in status               |
-| `VERSION` | Request server version            | —       |                                               |
-| `STATS`   | Request server statistics         | —       |                                               |
-| `LINKS`   | List servers in network           | —       |                                               |
-| `TIME`    | Request server time               | —       |                                               |
-| `INFO`    | Request server info               | —       |                                               |
-| `ADMIN`   | Request admin info                | —       |                                               |
+| Command   | Description                       | Status  | Notes                                                         |
+| --------- | --------------------------------- | ------- | ------------------------------------------------------------- |
+| `MOTD`    | Request Message of the Day        | Done    | 372/375 stripped of `- ` prefix; preserves ASCII art          |
+| `LUSERS`  | Request server/network user stats | Partial | Numeric replies (251-255, 265-266) shown in status            |
+| `VERSION` | Request server version            | Partial | 002 reply shown in status                                     |
+| `STATS`   | Request server statistics         | —       |                                                               |
+| `LINKS`   | List servers in network           | —       |                                                               |
+| `TIME`    | Request server time               | —       |                                                               |
+| `INFO`    | Request server info               | —       |                                                               |
+| `ADMIN`   | Request admin info                | —       |                                                               |
 
 ## User Queries
 
@@ -83,15 +83,51 @@ Reference: [RFC 1459](https://datatracker.ietf.org/doc/html/rfc1459), [RFC 2812]
 
 ## Numeric Replies Handled
 
-| Code  | Name               | Status                               |
-| ----- | ------------------ | ------------------------------------ |
-| `321` | RPL_LISTSTART      | Done                                 |
-| `322` | RPL_LIST           | Done                                 |
-| `323` | RPL_LISTEND        | Done                                 |
-| `332` | RPL_TOPIC          | Done                                 |
-| `353` | RPL_NAMREPLY       | Done                                 |
-| `366` | RPL_ENDOFNAMES     | Done                                 |
-| `372` | RPL_MOTD           | Partial (shown as system message)    |
-| `375` | RPL_MOTDSTART      | Partial (shown as system message)    |
-| `376` | RPL_ENDOFMOTD      | Partial (shown as system message)    |
-| Other | Unhandled numerics | Shown as `[code] trailing` in status |
+| Code    | Name               | Status                               | Notes                                                |
+| ------- | ------------------ | ------------------------------------ | ---------------------------------------------------- |
+| `001`   | RPL_WELCOME        | Done                                 | Shown in status                                      |
+| `002`   | RPL_YOURHOST       | Done                                 | Shown in status                                      |
+| `003`   | RPL_CREATED        | Done                                 | Shown in status                                      |
+| `005`   | RPL_ISUPPORT       | Partial                              | Shown in status; not parsed for capabilities         |
+| `251`   | RPL_LUSERCLIENT    | Done                                 | Shown in status                                      |
+| `252`   | RPL_LUSEROP        | Done                                 | Shown in status                                      |
+| `253`   | RPL_LUSERUNKNOWN   | Done                                 | Shown in status                                      |
+| `254`   | RPL_LUSERCHANNELS  | Done                                 | Shown in status                                      |
+| `255`   | RPL_LUSERME        | Done                                 | Shown in status                                      |
+| `265`   | RPL_LOCALUSERS     | Done                                 | Shown in status                                      |
+| `266`   | RPL_GLOBALUSERS    | Done                                 | Shown in status                                      |
+| `321`   | RPL_LISTSTART      | Done                                 | No-op                                                |
+| `322`   | RPL_LIST           | Done                                 | Queued + batched to prevent UI blocking              |
+| `323`   | RPL_LISTEND        | Done                                 | Flushes buffer, clears loading state                 |
+| `332`   | RPL_TOPIC          | Done                                 | Sets channel topic in store                          |
+| `353`   | RPL_NAMREPLY       | Done                                 | Populates channel user list                          |
+| `366`   | RPL_ENDOFNAMES     | Done                                 | No-op (users already accumulated)                    |
+| `372`   | RPL_MOTD           | Done                                 | Stripped `- ` prefix, preserves ASCII art             |
+| `375`   | RPL_MOTDSTART      | Done                                 | Stripped `- ` prefix                                 |
+| `376`   | RPL_ENDOFMOTD      | Done                                 | Triggers delayed LIST request + periodic refresh     |
+| `422`   | ERR_NOMOTD         | Done                                 | Same as 376 (triggers LIST)                          |
+| Other   | Unhandled numerics | Shown as `[code] trailing` in status |                                                      |
+
+## Implementation Notes
+
+### LIST Performance
+
+Large servers like Example Network return 6000+ channels. To prevent UI blocking:
+
+- **Message queuing**: Only RPL_LIST (322) messages are queued; all other commands are processed immediately.
+- **Time-boxed drain**: Queued messages are processed in batches of ~8ms per animation frame.
+- **Store batching**: Channels are buffered (500 per batch or 500ms timer) before flushing to reactive state.
+- **Deferred computed**: The `allAvailableChannels` computed returns `[]` during loading and only recomputes once loading finishes.
+- **Render limit**: Only 200 channels are rendered in the sidebar (configurable in `config.js`).
+
+### LIST Timing
+
+- Default delay after connecting: 5 seconds (configurable per server in settings).
+- Auto-detection: If the server sends a NOTICE about LIST wait time (e.g., Example's "wait 15s"), the delay is updated automatically.
+- Periodic refresh: Every 300 seconds by default (configurable per server).
+- Guards: Refresh is blocked if LIST is already loading or minimum wait time hasn't elapsed.
+
+### Reconnection
+
+- Socket `onclose`/`onerror` handlers are detached before `socket.close()` to prevent the old socket's close event from interfering with a new connection.
+- mIRC detection, LIST wait overrides, connection timestamps, and loading state are all cleaned up on disconnect.
