@@ -317,51 +317,10 @@
             class="flex flex-col gap-4"
           >
             <p class="text-[10px] text-slate-500">
-              Users you have blocked on this server. Their messages are hidden and DM attempts are
-              ignored. Entries are automatically removed after 24 hours.
+              User restrictions on this server. Entries are automatically removed after 24 hours.
             </p>
 
-            <!-- Hidden messages -->
-            <div class="flex flex-col gap-1">
-              <div class="flex items-center justify-between">
-                <label class="text-xs font-medium text-slate-300">Hidden messages</label>
-                <InfoTooltip
-                  v-if="userPrefs.hiddenUsersForServer(serverId).length > 0"
-                  text="Unblock all users"
-                  :delay="300"
-                >
-                  <button
-                    class="text-[10px] text-red-400 transition-colors hover:text-red-300"
-                    @click="userPrefs.clearHiddenUsers(serverId)"
-                  >
-                    Remove all
-                  </button>
-                </InfoTooltip>
-              </div>
-              <div
-                v-if="userPrefs.hiddenUsersForServer(serverId).length === 0"
-                class="text-[10px] italic text-slate-500"
-              >
-                No users blocked
-              </div>
-              <div class="flex max-h-32 flex-col gap-1 overflow-y-auto">
-                <div
-                  v-for="entry in userPrefs.hiddenUsersForServer(serverId)"
-                  :key="'hidden:' + entry.nick"
-                  class="flex items-center justify-between rounded-md bg-slate-700/30 px-3 py-1.5"
-                >
-                  <span class="text-xs text-slate-300">{{ entry.nick }}</span>
-                  <button
-                    class="text-[10px] text-red-400 transition-colors hover:text-red-300"
-                    @click="userPrefs.toggleUserHidden(serverId, entry.nick)"
-                  >
-                    Unblock
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Hidden previews -->
+            <!-- Hidden previews (first) -->
             <div class="flex flex-col gap-1">
               <div class="flex items-center justify-between">
                 <label class="text-xs font-medium text-slate-300">Hidden previews</label>
@@ -399,6 +358,49 @@
                     @click="userPrefs.togglePreviewHidden(serverId, entry.nick)"
                   >
                     Remove
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Blocked users (second) -->
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-medium text-slate-300">Blocked users</label>
+                <InfoTooltip
+                  v-if="userPrefs.blockedUsersForServer(serverId).length > 0"
+                  text="Unblock all users"
+                  :delay="300"
+                >
+                  <button
+                    class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
+                    @click="userPrefs.clearBlockedUsers(serverId)"
+                  >
+                    Remove all
+                  </button>
+                </InfoTooltip>
+              </div>
+              <p class="text-[10px] text-slate-500">
+                Messages from blocked users are hidden and DM attempts are ignored.
+              </p>
+              <div
+                v-if="userPrefs.blockedUsersForServer(serverId).length === 0"
+                class="text-[10px] italic text-slate-500"
+              >
+                No users blocked
+              </div>
+              <div class="flex max-h-32 flex-col gap-1 overflow-y-auto">
+                <div
+                  v-for="entry in userPrefs.blockedUsersForServer(serverId)"
+                  :key="'blocked:' + entry.nick"
+                  class="flex items-center justify-between rounded-md bg-slate-700/30 px-3 py-1.5"
+                >
+                  <span class="text-xs text-slate-300">{{ entry.nick }}</span>
+                  <button
+                    class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
+                    @click="userPrefs.toggleUserBlocked(serverId, entry.nick)"
+                  >
+                    Unblock
                   </button>
                 </div>
               </div>

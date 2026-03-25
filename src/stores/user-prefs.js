@@ -72,12 +72,12 @@ const useUserPrefsStore = defineStore('user-prefs', () => {
   /** @type {import('vue').Ref<{ serverId: string, nick: string, addedAt: number }[]>} */
   const hiddenPreviews = ref(migrateEntries(stored.hiddenPreviews));
   /** @type {import('vue').Ref<{ serverId: string, nick: string, addedAt: number }[]>} */
-  const hiddenUsers = ref(migrateEntries(stored.hiddenUsers));
+  const blockedUsers = ref(migrateEntries(stored.blockedUsers));
 
   // Persist on change
   watch(
-    [hiddenPreviews, hiddenUsers],
-    () => saveToStorage({ hiddenPreviews: hiddenPreviews.value, hiddenUsers: hiddenUsers.value }),
+    [hiddenPreviews, blockedUsers],
+    () => saveToStorage({ hiddenPreviews: hiddenPreviews.value, blockedUsers: blockedUsers.value }),
     { deep: true },
   );
 
@@ -113,14 +113,14 @@ const useUserPrefsStore = defineStore('user-prefs', () => {
   }
 
   /**
-   * Check if a user is shadow-banned on a server.
+   * Check if a user is blocked on a server.
    * @param {string} serverId
    * @param {string} nick
    * @returns {boolean}
    */
-  function isUserHidden(serverId, nick) {
+  function isUserBlocked(serverId, nick) {
     const key = makeKey(serverId, nick);
-    return hiddenUsers.value.some((e) => `${e.serverId}:${e.nick}` === key);
+    return blockedUsers.value.some((e) => `${e.serverId}:${e.nick}` === key);
   }
 
   /**
@@ -128,28 +128,28 @@ const useUserPrefsStore = defineStore('user-prefs', () => {
    * @param {string} serverId
    * @param {string} nick
    */
-  function toggleUserHidden(serverId, nick) {
+  function toggleUserBlocked(serverId, nick) {
     const key = makeKey(serverId, nick);
-    const idx = hiddenUsers.value.findIndex((e) => `${e.serverId}:${e.nick}` === key);
+    const idx = blockedUsers.value.findIndex((e) => `${e.serverId}:${e.nick}` === key);
     if (idx === -1) {
-      hiddenUsers.value = purgeExpired(hiddenUsers.value);
-      hiddenUsers.value.push({
+      blockedUsers.value = purgeExpired(blockedUsers.value);
+      blockedUsers.value.push({
         serverId,
         nick: (nick || '').toLowerCase(),
         addedAt: Date.now(),
       });
     } else {
-      hiddenUsers.value.splice(idx, 1);
+      blockedUsers.value.splice(idx, 1);
     }
   }
 
   /**
-   * Get hidden users for a specific server.
+   * Get blocked users for a specific server.
    * @param {string} serverId
    * @returns {{ serverId: string, nick: string, addedAt: number }[]}
    */
-  function hiddenUsersForServer(serverId) {
-    return hiddenUsers.value.filter((e) => e.serverId === serverId);
+  function blockedUsersForServer(serverId) {
+    return blockedUsers.value.filter((e) => e.serverId === serverId);
   }
 
   /**
@@ -162,11 +162,11 @@ const useUserPrefsStore = defineStore('user-prefs', () => {
   }
 
   /**
-   * Remove all hidden users for a server.
+   * Remove all blocked users for a server.
    * @param {string} serverId
    */
-  function clearHiddenUsers(serverId) {
-    hiddenUsers.value = hiddenUsers.value.filter((e) => e.serverId !== serverId);
+  function clearBlockedUsers(serverId) {
+    blockedUsers.value = blockedUsers.value.filter((e) => e.serverId !== serverId);
   }
 
   /**
@@ -180,20 +180,20 @@ const useUserPrefsStore = defineStore('user-prefs', () => {
   /** Clear all user prefs (for "Forget Me"). */
   function clearAll() {
     hiddenPreviews.value = [];
-    hiddenUsers.value = [];
+    blockedUsers.value = [];
     localStorage.removeItem(STORAGE_KEY);
   }
 
   return {
     hiddenPreviews,
-    hiddenUsers,
+    blockedUsers,
     isPreviewHidden,
     togglePreviewHidden,
-    isUserHidden,
-    toggleUserHidden,
-    hiddenUsersForServer,
+    isUserBlocked,
+    toggleUserBlocked,
+    blockedUsersForServer,
     hiddenPreviewsForServer,
-    clearHiddenUsers,
+    clearBlockedUsers,
     clearHiddenPreviews,
     clearAll,
   };

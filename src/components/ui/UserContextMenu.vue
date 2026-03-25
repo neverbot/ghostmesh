@@ -58,11 +58,11 @@
     emit('close');
   }
 
-  function toggleHidden() {
-    const wasHidden = prefs.isUserHidden(props.serverId, props.nick);
-    prefs.toggleUserHidden(props.serverId, props.nick);
-    // When hiding a user, close any open DM channels with them
-    if (!wasHidden) {
+  function toggleBlocked() {
+    const wasBlocked = prefs.isUserBlocked(props.serverId, props.nick);
+    prefs.toggleUserBlocked(props.serverId, props.nick);
+    // When blocking a user, close any open DM channels with them
+    if (!wasBlocked) {
       store.closeDMsWithUser(props.serverId, props.nick);
     }
     emit('close');
@@ -132,16 +132,16 @@
             {{ prefs.isPreviewHidden(serverId, nick) ? '✓ Previews hidden' : 'Hide previews' }}
           </button>
 
-          <!-- Hide messages (shadow ban) -->
+          <!-- Block user (shadow ban) -->
           <button
             v-if="!isSelf"
             class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-slate-700/60"
-            :class="prefs.isUserHidden(serverId, nick) ? 'text-red-400' : 'text-slate-300'"
-            @click="toggleHidden"
+            :class="prefs.isUserBlocked(serverId, nick) ? 'text-red-400' : 'text-slate-300'"
+            @click="toggleBlocked"
           >
             <svg
               class="h-3.5 w-3.5"
-              :class="prefs.isUserHidden(serverId, nick) ? 'text-red-400' : 'text-slate-400'"
+              :class="prefs.isUserBlocked(serverId, nick) ? 'text-red-400' : 'text-slate-400'"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -153,7 +153,7 @@
                 d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636"
               />
             </svg>
-            {{ prefs.isUserHidden(serverId, nick) ? '✓ Messages hidden' : 'Hide messages' }}
+            {{ prefs.isUserBlocked(serverId, nick) ? '✓ User blocked' : 'Block user' }}
           </button>
         </div>
       </div>

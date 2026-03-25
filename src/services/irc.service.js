@@ -14,7 +14,7 @@ class IRCService extends EventEmitter {
    * @param {object} store — store API with mutation methods
    * @param {object} serverSettings — server settings store API
    * @param {object} userSettings — user settings store API
-   * @param {object} userPrefs — user prefs store API (hidden users, etc.)
+   * @param {object} userPrefs — user prefs store API (blocked users, etc.)
    */
   constructor(store, serverSettings, userSettings, userPrefs) {
     super();
@@ -468,8 +468,8 @@ class IRCService extends EventEmitter {
         if (target.toLowerCase() === ourNick.toLowerCase()) {
           // Self-DM echo: we already added the message locally in sendMessage
           if (nick.toLowerCase() === ourNick.toLowerCase()) break;
-          // Shadow ban: ignore DMs from hidden users
-          if (this.userPrefs?.isUserHidden(serverId, nick)) break;
+          // Shadow ban: ignore DMs from blocked users
+          if (this.userPrefs?.isUserBlocked(serverId, nick)) break;
           // Create DM channel if it doesn't exist
           const serverChannels = s.channels[serverId] || [];
           if (!serverChannels.includes(nick)) {

@@ -280,7 +280,7 @@
     >
       <MessageItem
         v-for="msg in store.messages[key]"
-        v-show="!userPrefs.isUserHidden(msg.serverId, msg.nick)"
+        v-show="!userPrefs.isUserBlocked(msg.serverId, msg.nick)"
         :key="msg.id"
         :message="msg"
         @user-click="onUserClick"
