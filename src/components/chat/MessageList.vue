@@ -116,11 +116,31 @@
     showScrollBtn.value = false;
   }
 
+  /**
+   * MutationObserver to detect DOM changes that affect scrollHeight
+   * (e.g. loading previews, hidden hints, retry buttons).
+   */
+  let mutationObserver = null;
+  let lastScrollHeight = 0;
+
+  /** Check if scrollHeight changed and re-scroll if in auto mode. */
+  function checkScrollHeightChange() {
+    const el = scrollContainer.value;
+    if (!el || !autoScroll) return;
+    if (el.scrollHeight !== lastScrollHeight) {
+      lastScrollHeight = el.scrollHeight;
+      el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
+    }
+  }
+
   onMounted(() => {
     const el = scrollContainer.value;
     if (el) {
       el.addEventListener('load', onImageLoad, true);
       el.addEventListener('scroll', onScroll, { passive: true });
+      lastScrollHeight = el.scrollHeight;
+      mutationObserver = new MutationObserver(() => checkScrollHeightChange());
+      mutationObserver.observe(el, { childList: true, subtree: true, characterData: true });
     }
   });
 
@@ -129,6 +149,10 @@
     if (el) {
       el.removeEventListener('load', onImageLoad, true);
       el.removeEventListener('scroll', onScroll);
+    }
+    if (mutationObserver) {
+      mutationObserver.disconnect();
+      mutationObserver = null;
     }
   });
 
