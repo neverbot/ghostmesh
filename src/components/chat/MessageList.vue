@@ -225,7 +225,7 @@
   >
     <button
       v-if="showScrollBtn"
-      class="absolute bottom-24 right-8 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-colors hover:bg-slate-50"
+      class="absolute bottom-24 right-5 flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-colors hover:bg-slate-50"
       title="Scroll to bottom"
       @click="scrollToBottom"
     >
