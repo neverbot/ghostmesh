@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, shallowRef, computed, triggerRef } from 'vue';
 import IRCService from '@/services/irc.service.js';
 import { useServerSettingsStore } from '@/stores/server-settings.js';
 import defaultServers from '@/servers.js';
@@ -16,8 +16,13 @@ const useIrcStore = defineStore('irc', () => {
 
   /** @type {import('vue').Ref<Record<string, string[]>>} joined channels per server */
   const channels = ref({});
-  /** @type {import('vue').Ref<Record<string, {name:string,users:number,topic:string}[]>>} */
-  const availableChannels = ref({});
+  /**
+   * Available channels per server. Uses shallowRef — Vue only tracks the ref itself,
+   * not the thousands of channel objects inside. Trigger reactivity with triggerRef()
+   * after mutations, or by replacing the whole value.
+   * @type {import('vue').ShallowRef<Record<string, {name:string,users:number,topic:string}[]>>}
+   */
+  const availableChannels = shallowRef({});
   /** @type {import('vue').Ref<Record<string, object[]>>} messages per serverId:channel key */
   const messages = ref({});
   /** @type {import('vue').Ref<Record<string, string[]>>} user lists per serverId:channel key */
@@ -219,6 +224,7 @@ const useIrcStore = defineStore('irc', () => {
     }
     delete channels.value[serverId];
     delete availableChannels.value[serverId];
+    triggerRef(availableChannels);
 
     // Switch selection if we were viewing this server
     if (selectedServerId.value === serverId) {
@@ -385,8 +391,8 @@ const useIrcStore = defineStore('irc', () => {
    */
   function clearAvailableChannels(serverId) {
     availableChannels.value[serverId] = [];
-    // Clear any pending buffer
     delete channelBuffer[serverId];
+    // No triggerRef here — during loading the computed returns [] anyway
   }
 
   /** @type {Record<string, object[]>} buffer per server, flushed periodically */
@@ -397,10 +403,6 @@ const useIrcStore = defineStore('irc', () => {
   /**
    * Flush buffered channels into the reactive state.
    * @param {string} serverId
-   */
-  /**
-   * Flush buffered channels into the reactive state.
-   * @param {string} serverId
    * @param {boolean} [final=false] — true when LIST is complete, triggers sort
    */
   function flushChannelBuffer(serverId, final = false) {
@@ -408,6 +410,7 @@ const useIrcStore = defineStore('irc', () => {
     if (!buf || buf.length === 0) {
       if (final && availableChannels.value[serverId]) {
         availableChannels.value[serverId].sort((a, b) => b.users - a.users);
+        triggerRef(availableChannels);
       }
       return;
     }
@@ -416,6 +419,7 @@ const useIrcStore = defineStore('irc', () => {
     channelBuffer[serverId] = [];
     if (final) {
       availableChannels.value[serverId].sort((a, b) => b.users - a.users);
+      triggerRef(availableChannels);
     }
   }
 
