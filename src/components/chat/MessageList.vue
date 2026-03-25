@@ -31,6 +31,9 @@
   /** Previous channel key for saving scroll on switch. */
   let prevKey = null;
 
+  /** Suppress onScroll mark-as-read during channel switch. */
+  let suppressMarkRead = false;
+
   /**
    * Handle user-click from a MessageItem.
    * @param {{ nick: string, serverId: string, x: number, y: number }} payload
@@ -103,9 +106,10 @@
     const near = isNearBottom();
     autoScroll = near;
     showScrollBtn.value = !near;
-    if (near) {
+    if (near && !suppressMarkRead) {
       markCurrentAsRead();
     }
+    suppressMarkRead = false;
   }
 
   /** Scroll to bottom, re-enable auto-scroll, and mark as read. */
@@ -182,6 +186,7 @@
 
     nextTick(() => {
       if (!el) return;
+      suppressMarkRead = true;
       const saved = scrollPositions[newKey];
       if (saved !== undefined) {
         // Restore saved position and auto-scroll state

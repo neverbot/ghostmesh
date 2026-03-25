@@ -173,10 +173,13 @@
         {{ message.nick }}
       </span>
       <div
-        class="rounded-2xl px-4 py-2 text-sm leading-relaxed transition-colors duration-500"
+        class="rounded-2xl p-3 text-sm leading-relaxed transition-colors duration-500"
         :class="bubbleClass"
       >
-        <span v-html="renderedHtml || plainHtml" />
+        <span
+          :class="isOwn ? '[&_img]:ml-auto' : ''"
+          v-html="renderedHtml || plainHtml"
+        />
       </div>
       <div class="flex items-center gap-1.5">
         <span class="text-[10px] text-slate-400">{{ timeString }}</span>
