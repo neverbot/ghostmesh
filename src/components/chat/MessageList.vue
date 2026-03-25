@@ -101,14 +101,27 @@
     }
   }
 
-  /** On user scroll, toggle auto-scroll mode based on position. */
+  /**
+   * On scroll (any source), update button visibility and mark-as-read.
+   * Does NOT change autoScroll — only user interaction does that.
+   */
   function onScroll() {
     const near = isNearBottom();
-    autoScroll = near;
     showScrollBtn.value = !near;
     if (near && !suppressMarkRead) {
       markCurrentAsRead();
     }
+  }
+
+  /**
+   * User actively scrolled (wheel/touch). If they scroll away from bottom,
+   * disable auto-scroll. If they scroll back to bottom, re-enable it.
+   * Uses rAF to evaluate after the scroll position updates.
+   */
+  function onUserScroll() {
+    requestAnimationFrame(() => {
+      autoScroll = isNearBottom();
+    });
   }
 
   /** Scroll to bottom, re-enable auto-scroll, and mark as read. */
@@ -149,6 +162,8 @@
     if (el) {
       el.addEventListener('load', onImageLoad, true);
       el.addEventListener('scroll', onScroll, { passive: true });
+      el.addEventListener('wheel', onUserScroll, { passive: true });
+      el.addEventListener('touchstart', onUserScroll, { passive: true });
       el.addEventListener('animationend', onAnimationEnd, true);
       lastScrollHeight = el.scrollHeight;
       mutationObserver = new MutationObserver(() => checkScrollHeightChange());
@@ -161,6 +176,8 @@
     if (el) {
       el.removeEventListener('load', onImageLoad, true);
       el.removeEventListener('scroll', onScroll);
+      el.removeEventListener('wheel', onUserScroll);
+      el.removeEventListener('touchstart', onUserScroll);
       el.removeEventListener('animationend', onAnimationEnd, true);
     }
     if (mutationObserver) {
