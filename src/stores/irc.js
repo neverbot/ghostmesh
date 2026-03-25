@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import IRCService from '@/services/irc.service.js';
 import { useServerSettingsStore } from '@/stores/server-settings.js';
 import defaultServers from '@/servers.js';
@@ -120,8 +120,27 @@ const useIrcStore = defineStore('irc', () => {
     return (text) => re.test(text.toLowerCase());
   }
 
-  /** All available channels (not joined) across all servers, with filters applied. */
-  const allAvailableChannels = computed(() => {
+  /** Whether any server is currently loading a channel list. */
+  const isListLoading = computed(() => listLoadingServers.value.length > 0);
+
+  /** Cached available channels — only recomputed when not loading. */
+  let cachedAvailable = [];
+  let cachedAvailableDirty = true;
+
+  // Mark cache dirty when dependencies change (but don't recompute yet)
+  watch(
+    [availableChannels, filterText, filterMinUsers, filterServer, sortBy, channels],
+    () => {
+      cachedAvailableDirty = true;
+    },
+    { deep: true },
+  );
+
+  /**
+   * Recompute the available channels list.
+   * @returns {object[]}
+   */
+  function computeAvailableChannels() {
     const result = [];
     const matcher = buildMatcher(filterText.value);
     const minUsers = filterMinUsers.value || 0;
@@ -145,13 +164,29 @@ const useIrcStore = defineStore('irc', () => {
       result.sort((a, b) => b.users - a.users);
     }
     return result;
-  });
+  }
 
-  /** Whether any server is currently loading a channel list. */
-  const isListLoading = computed(() => listLoadingServers.value.length > 0);
+  /** All available channels, skipping recomputation while LIST is loading. */
+  const allAvailableChannels = computed(() => {
+    // Access reactive deps so Vue tracks them
+    const loading = listLoadingServers.value.length > 0;
+
+    if (loading && cachedAvailable.length > 0) {
+      // During loading, return cached to avoid expensive recalc
+      return cachedAvailable;
+    }
+
+    if (cachedAvailableDirty || !loading) {
+      cachedAvailable = computeAvailableChannels();
+      cachedAvailableDirty = false;
+    }
+    return cachedAvailable;
+  });
 
   /** Total count of available channels before filtering (for display). */
   const totalAvailableCount = computed(() => {
+    // Skip during loading to avoid iterating thousands of items
+    if (listLoadingServers.value.length > 0) return cachedAvailable.length;
     let count = 0;
     for (const serverId of activeConnections.value) {
       count += (availableChannels.value[serverId] || []).length;
@@ -369,7 +404,7 @@ const useIrcStore = defineStore('irc', () => {
     if (!channelBuffer[serverId]) channelBuffer[serverId] = [];
     channelBuffer[serverId].push(channel);
     // Flush every 100 channels or schedule a timer flush
-    if (channelBuffer[serverId].length >= 100) {
+    if (channelBuffer[serverId].length >= 500) {
       flushChannelBuffer(serverId);
     } else if (!channelFlushTimers[serverId]) {
       channelFlushTimers[serverId] = setTimeout(() => {
