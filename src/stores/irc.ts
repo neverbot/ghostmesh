@@ -11,14 +11,37 @@ import defaultServers from '@/servers.ts';
 import type {
   AvailableChannel,
   ChatMessage,
-  DisplayChannel,
   IrcStoreApi,
-  JoinedChannelEntry,
   MessageType,
-  OpenSettingsRequest,
   ServerConfig,
-  SessionData,
-} from '@/types/index.ts';
+} from '@/types.ts';
+
+// ─── IRC store types ──────────────────────────────────────────────────────────
+
+/** Extended channel info for display in the unified channel list. */
+interface DisplayChannel extends AvailableChannel {
+  _sid: string;
+  _sname: string;
+}
+
+interface JoinedChannelEntry {
+  serverId: string;
+  serverName: string;
+  channel: string;
+  userCount: number;
+  isDM: boolean;
+}
+
+interface SessionData {
+  serverIds: string[];
+  channels: Record<string, string[]>;
+  selected: { serverId: string; channel: string } | null;
+}
+
+interface OpenSettingsRequest {
+  serverId: string;
+  tab: string;
+}
 
 const SESSION_KEY: string = config.storageKeys.session;
 
@@ -970,4 +993,5 @@ const useIrcStore = defineStore('irc', () => {
   };
 });
 
+export type { DisplayChannel, JoinedChannelEntry, SessionData, OpenSettingsRequest };
 export { useIrcStore };

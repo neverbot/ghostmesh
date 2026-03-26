@@ -1,4 +1,51 @@
-import type { AppConfig } from '@/types/index.ts';
+// ─── Config types ─────────────────────────────────────────────────────────────
+
+interface StorageKeys {
+  userSettings: string;
+  serverSettings: string;
+  userPrefs: string;
+  session: string;
+}
+
+interface IrcDefaults {
+  nickname: string;
+  username: string;
+  realname: string;
+}
+
+interface ChatConfig {
+  maxMessages: number;
+}
+
+interface ListConfig {
+  browseLimit: number;
+}
+
+interface ImagesConfig {
+  showProxyCaption: boolean;
+}
+
+interface ServerDefaults {
+  listDelay: number;
+  listRefreshInterval: number;
+  mircFormatting: boolean | null;
+  keepalive: boolean;
+  keepaliveInterval: number;
+  keepaliveTimeout: number;
+  autoReconnect: boolean;
+  nickname: string;
+  username: string;
+  realname: string;
+}
+
+interface AppConfig {
+  storageKeys: StorageKeys;
+  irc: IrcDefaults;
+  chat: ChatConfig;
+  list: ListConfig;
+  images: ImagesConfig;
+  serverDefaults: ServerDefaults;
+}
 
 /**
  * Global application defaults.
@@ -63,4 +110,13 @@ const config: AppConfig = {
   },
 };
 
+export type {
+  AppConfig,
+  StorageKeys,
+  IrcDefaults,
+  ChatConfig,
+  ListConfig,
+  ImagesConfig,
+  ServerDefaults,
+};
 export default config;

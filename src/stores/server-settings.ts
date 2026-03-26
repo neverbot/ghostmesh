@@ -2,7 +2,14 @@ import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import type { Ref } from 'vue';
 import config from '@/config.ts';
-import type { ServerDefaults, ServerSettingsEntry } from '@/types/index.ts';
+import type { ServerDefaults } from '@/config.ts';
+
+// ─── Server settings types ───────────────────────────────────────────────────
+
+interface ServerSettingsEntry extends ServerDefaults {
+  listDelayManual?: boolean;
+  mircDetected?: boolean;
+}
 
 const STORAGE_KEY: string = config.storageKeys.serverSettings;
 const DEFAULTS: ServerDefaults = config.serverDefaults;
@@ -97,4 +104,5 @@ const useServerSettingsStore = defineStore('server-settings', () => {
   };
 });
 
+export type { ServerSettingsEntry };
 export { useServerSettingsStore };

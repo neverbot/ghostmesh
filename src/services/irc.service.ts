@@ -1,15 +1,30 @@
 import EventEmitter from '@/utils/event-emitter.ts';
 import { hasFormatting } from '@/utils/mirc-format.ts';
 import config from '@/config.ts';
-import type {
-  IRCConnection,
-  IRCConnectionConfig,
-  ParsedMessage,
-  IrcStoreApi,
-  AvailableChannel,
-  ServerConfig,
-  ServerSettingsEntry,
-} from '@/types/index.ts';
+import type { IrcStoreApi, AvailableChannel, ServerConfig } from '@/types.ts';
+import type { ServerSettingsEntry } from '@/stores/server-settings.ts';
+
+// ─── IRC protocol types ──────────────────────────────────────────────────────
+
+interface ParsedMessage {
+  serverId: string;
+  prefix: string | undefined;
+  command: string;
+  params: string[];
+  trailing: string | undefined;
+  raw: string;
+}
+
+interface IRCConnectionConfig {
+  nickname: string;
+  username: string;
+  realname: string;
+}
+
+interface IRCConnection {
+  socket: WebSocket;
+  config: IRCConnectionConfig;
+}
 
 /** Channel prefixes per IRC spec. Names without these are DMs or special. */
 const CHANNEL_PREFIXES: string[] = ['#', '&', '!', '+'];
@@ -805,5 +820,12 @@ class IRCService extends EventEmitter {
   }
 }
 
-export type { ServerSettingsApi, UserSettingsApi, UserPrefsApi };
+export type {
+  ServerSettingsApi,
+  UserSettingsApi,
+  UserPrefsApi,
+  IRCConnection,
+  IRCConnectionConfig,
+  ParsedMessage,
+};
 export default IRCService;

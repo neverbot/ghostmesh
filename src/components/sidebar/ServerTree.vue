@@ -4,7 +4,7 @@
   import { useIrcStore } from '@/stores/irc.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import ServerSettingsModal from '@/components/ui/ServerSettingsModal.vue';
-  import type { ServerConfig } from '@/types/index.ts';
+  import type { ServerConfig } from '@/types.ts';
 
   const store = useIrcStore();
   const serversCollapsed = ref(false);

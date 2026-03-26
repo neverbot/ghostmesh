@@ -2,7 +2,14 @@ import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import type { Ref } from 'vue';
 import config from '@/config.ts';
-import type { UserPrefEntry } from '@/types/index.ts';
+
+// ─── User pref types ─────────────────────────────────────────────────────────
+
+interface UserPrefEntry {
+  serverId: string;
+  nick: string;
+  addedAt: number;
+}
 
 const STORAGE_KEY: string = config.storageKeys.userPrefs;
 
@@ -190,4 +197,5 @@ const useUserPrefsStore = defineStore('user-prefs', () => {
   };
 });
 
+export type { UserPrefEntry };
 export { useUserPrefsStore };

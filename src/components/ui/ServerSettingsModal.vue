@@ -4,7 +4,7 @@
   import { useIrcStore } from '@/stores/irc.ts';
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
-  import type { ServerSettingsEntry } from '@/types/index.ts';
+  import type { ServerSettingsEntry } from '@/stores/server-settings.ts';
 
   const backdrop = ref<HTMLElement | null>(null);
 

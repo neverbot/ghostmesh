@@ -7,7 +7,7 @@
   import { formatPlainContent, formatHtmlContent, isImageUrl } from '@/services/message.service.ts';
   import { resolveImageProvider } from '@/services/image-providers.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
-  import type { ChatMessage, UserClickPayload } from '@/types/index.ts';
+  import type { ChatMessage, UserClickPayload } from '@/types.ts';
 
   const props = defineProps<{
     message: ChatMessage;

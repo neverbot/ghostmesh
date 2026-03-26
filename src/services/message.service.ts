@@ -4,7 +4,7 @@
  */
 
 import config from '@/config.ts';
-import type { ImageProvider, ImageProviderResult } from '@/types/index.ts';
+import type { ImageProvider, ImageProviderResult } from '@/services/image-providers.ts';
 import { resolveImageProvider, providers } from '@/services/image-providers.ts';
 import { imageProxyUrl, fetchWithProxy } from '@/services/proxy-services.ts';
 

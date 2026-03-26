@@ -4,7 +4,7 @@
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
   import MessageItem from './MessageItem.vue';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
-  import type { UserClickPayload } from '@/types/index.ts';
+  import type { UserClickPayload } from '@/types.ts';
 
   const store = useIrcStore();
   const userPrefs = useUserPrefsStore();

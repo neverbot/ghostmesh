@@ -3,7 +3,7 @@
   import { useUserSettingsStore } from '@/stores/user-settings.ts';
   import { useIrcStore } from '@/stores/irc.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
-  import type { UserProfile } from '@/types/index.ts';
+  import type { UserProfile } from '@/stores/user-settings.ts';
 
   const backdrop = ref<HTMLElement | null>(null);
 

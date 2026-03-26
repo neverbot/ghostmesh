@@ -2,7 +2,16 @@ import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
 import type { Ref } from 'vue';
 import config from '@/config.ts';
-import type { UserProfile, ServerSettingsEntry } from '@/types/index.ts';
+import type { ServerSettingsEntry } from '@/stores/server-settings.ts';
+
+// ─── User profile types ──────────────────────────────────────────────────────
+
+interface UserProfile {
+  nickname: string;
+  username: string;
+  realname: string;
+  avatarColor: string;
+}
 
 const STORAGE_KEY: string = config.storageKeys.userSettings;
 
@@ -121,4 +130,5 @@ const useUserSettingsStore = defineStore('user-settings', () => {
   };
 });
 
+export type { UserProfile };
 export { useUserSettingsStore };
