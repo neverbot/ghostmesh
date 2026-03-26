@@ -3,6 +3,7 @@ import { ref, shallowRef, computed, triggerRef, watch } from 'vue';
 import type { Ref, ShallowRef, ComputedRef } from 'vue';
 import config from '@/config.ts';
 import IRCService from '@/services/irc.service.ts';
+import type { ServerSettingsApi } from '@/services/irc.service.ts';
 import { useServerSettingsStore } from '@/stores/server-settings.ts';
 import { useUserSettingsStore } from '@/stores/user-settings.ts';
 import { useUserPrefsStore } from '@/stores/user-prefs.ts';
@@ -98,7 +99,12 @@ const useIrcStore = defineStore('irc', () => {
       const serverSettings = useServerSettingsStore();
       const userSettings = useUserSettingsStore();
       const userPrefs = useUserPrefsStore();
-      ircService = new IRCService(storeApi, serverSettings, userSettings, userPrefs);
+      ircService = new IRCService(
+        storeApi,
+        serverSettings as ServerSettingsApi,
+        userSettings,
+        userPrefs,
+      );
     }
     return ircService;
   }
@@ -427,7 +433,7 @@ const useIrcStore = defineStore('irc', () => {
     let count: number = 0;
     for (let i = msgs.length - 1; i >= 0; i--) {
       const msg: ChatMessage = msgs[i];
-      if (msg.timestamp <= lastRead) break;
+      if (msg.timestamp.getTime() <= lastRead) break;
       if (msg.type === 'message') count++;
     }
     return count;

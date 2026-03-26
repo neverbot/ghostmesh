@@ -4,7 +4,7 @@
   import { useIrcStore } from '@/stores/irc.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import ServerSettingsModal from '@/components/ui/ServerSettingsModal.vue';
-  import type { ServerConfig, OpenSettingsRequest } from '@/types/index.ts';
+  import type { ServerConfig } from '@/types/index.ts';
 
   const store = useIrcStore();
   const serversCollapsed = ref(false);
@@ -410,8 +410,7 @@
                 </span>
                 <span
                   v-if="
-                    entry.channel !== '*status' &&
-                      store.unreadCount(entry.serverId, entry.channel) === 0
+                    entry.channel !== '*status' && !store.unreadCount(entry.serverId, entry.channel)
                   "
                   class="text-[10px] text-slate-500"
                 >

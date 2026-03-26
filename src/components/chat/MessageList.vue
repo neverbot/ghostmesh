@@ -29,9 +29,6 @@
   /** Saved scroll positions per channel key. */
   const scrollPositions: Record<string, number> = {};
 
-  /** Previous channel key for saving scroll on switch. */
-  let prevKey: string | null = null;
-
   /** Suppress onScroll mark-as-read during channel switch. */
   let suppressMarkRead = false;
 
@@ -75,7 +72,7 @@
   }
 
   /** Scroll to bottom. */
-  function doScroll(behavior: ScrollBehavior = 'smooth') {
+  function doScroll(behavior: 'auto' | 'smooth' = 'smooth') {
     nextTick(() => {
       const el = scrollContainer.value;
       if (el) {
@@ -224,8 +221,6 @@
     if (oldKey && el) {
       scrollPositions[oldKey] = el.scrollTop;
     }
-
-    prevKey = newKey;
 
     if (!newKey) return;
 

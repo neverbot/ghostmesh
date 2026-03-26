@@ -5,11 +5,13 @@
 
   const store = useIrcStore();
 
-  const isPrivate = computed(() => store.isDM(store.selectedChannel));
+  const isPrivate = computed(() =>
+    store.selectedChannel ? store.isDM(store.selectedChannel) : false,
+  );
 
   const isSelfDM = computed(() => {
     if (!isPrivate.value || !store.selectedChannel) return false;
-    const myNick = store.nicknamePerServer[store.selectedServerId] || store.nickname;
+    const myNick = store.nicknamePerServer[store.selectedServerId!] || store.nickname;
     return store.selectedChannel.toLowerCase() === myNick?.toLowerCase();
   });
 
@@ -22,7 +24,7 @@
   const memberCount = computed(() => {
     if (isPrivate.value) {
       if (isSelfDM.value) return 1;
-      return store.isDMOnline(store.selectedServerId, store.selectedChannel) ? 2 : 1;
+      return store.isDMOnline(store.selectedServerId!, store.selectedChannel!) ? 2 : 1;
     }
     return store.currentUsers.length;
   });
@@ -30,7 +32,7 @@
   const isOnline = computed(() => {
     if (!isPrivate.value) return true;
     if (isSelfDM.value) return true;
-    return store.isDMOnline(store.selectedServerId, store.selectedChannel);
+    return store.isDMOnline(store.selectedServerId!, store.selectedChannel!);
   });
 
   // Context menu

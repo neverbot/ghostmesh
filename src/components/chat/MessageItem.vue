@@ -43,7 +43,7 @@
               timestamp: props.message.timestamp,
             });
           }
-          observer.disconnect();
+          observer?.disconnect();
           observer = null;
         }
       },

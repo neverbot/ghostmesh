@@ -38,8 +38,9 @@ export default [
     },
     settings: {
       'import/resolver': {
-        typescript: true,
-        vite: true,
+        typescript: {
+          alwaysTryTypes: true,
+        },
       },
     },
     rules: {
@@ -49,6 +50,10 @@ export default [
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'import/extensions': ['warn', 'always', { ts: 'always', json: 'always' }],
       'import/no-unresolved': 'off',
+      'import/namespace': 'off',
+      'import/default': 'off',
+      'import/named': 'off',
+      'import/no-named-as-default-member': 'off',
     },
   },
   {

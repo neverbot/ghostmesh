@@ -9,6 +9,6 @@
 <template>
   <div class="flex w-64 flex-col border-l border-slate-200 bg-slate-50 px-5 pt-5">
     <ChannelInfo />
-    <UserList v-if="!store.isDM(store.selectedChannel)" />
+    <UserList v-if="store.selectedChannel && !store.isDM(store.selectedChannel)" />
   </div>
 </template>

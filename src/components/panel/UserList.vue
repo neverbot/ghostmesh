@@ -8,7 +8,7 @@
 
   /** Check if a nick is the current user. */
   function isOwnNick(nick: string) {
-    const myNick = store.nicknamePerServer[store.selectedServerId] || store.nickname;
+    const myNick = store.nicknamePerServer[store.selectedServerId!] || store.nickname;
     return nick?.toLowerCase() === myNick?.toLowerCase();
   }
 
