@@ -1,21 +1,32 @@
 import { defineStore } from 'pinia';
 import { ref, shallowRef, computed, triggerRef, watch } from 'vue';
+import type { Ref, ShallowRef, ComputedRef } from 'vue';
 import config from '@/config.ts';
 import IRCService from '@/services/irc.service.ts';
-import { useServerSettingsStore } from '@/stores/server-settings.js';
-import { useUserSettingsStore } from '@/stores/user-settings.js';
-import { useUserPrefsStore } from '@/stores/user-prefs.js';
+import { useServerSettingsStore } from '@/stores/server-settings.ts';
+import { useUserSettingsStore } from '@/stores/user-settings.ts';
+import { useUserPrefsStore } from '@/stores/user-prefs.ts';
 import defaultServers from '@/servers.ts';
+import type {
+  AvailableChannel,
+  ChatMessage,
+  DisplayChannel,
+  IrcStoreApi,
+  JoinedChannelEntry,
+  MessageType,
+  OpenSettingsRequest,
+  ServerConfig,
+  SessionData,
+} from '@/types/index.ts';
 
-const SESSION_KEY = config.storageKeys.session;
+const SESSION_KEY: string = config.storageKeys.session;
 
 /**
  * Load saved session state from localStorage.
- * @returns {{ serverIds: string[], channels: Record<string, string[]>, selected: { serverId: string, channel: string } | null } | null}
  */
-function loadSession() {
+function loadSession(): SessionData | null {
   try {
-    const raw = localStorage.getItem(SESSION_KEY);
+    const raw: string | null = localStorage.getItem(SESSION_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -24,77 +35,65 @@ function loadSession() {
 
 /**
  * Save current session state to localStorage.
- * @param {{ serverIds: string[], channels: Record<string, string[]>, selected: { serverId: string, channel: string } | null }} data
  */
-function saveSession(data) {
+function saveSession(data: SessionData): void {
   localStorage.setItem(SESSION_KEY, JSON.stringify(data));
 }
 
 /** Clear saved session from localStorage. */
-function clearSession() {
+function clearSession(): void {
   localStorage.removeItem(SESSION_KEY);
 }
 
 const useIrcStore = defineStore('irc', () => {
   // --- State ---
 
-  const servers = ref([...defaultServers]);
+  const servers: Ref<ServerConfig[]> = ref([...defaultServers]);
 
-  const activeConnections = ref([]);
-  /** @type {import('vue').Ref<string[]>} servers currently attempting to connect */
-  const connectingServers = ref([]);
-  const selectedServerId = ref(null);
-  const selectedChannel = ref(null);
-  const nickname = ref('');
-  /** @type {import('vue').Ref<Record<string, string>>} actual nick per server (confirmed by server) */
-  const nicknamePerServer = ref({});
+  const activeConnections: Ref<string[]> = ref([]);
+  const connectingServers: Ref<string[]> = ref([]);
+  const selectedServerId: Ref<string | null> = ref(null);
+  const selectedChannel: Ref<string | null> = ref(null);
+  const nickname: Ref<string> = ref('');
+  const nicknamePerServer: Ref<Record<string, string>> = ref({});
 
   /**
    * Online status of DM users. Key = "serverId:nick", value = boolean.
-   * @type {import('vue').Ref<Record<string, boolean>>}
    */
-  const dmOnline = ref({});
+  const dmOnline: Ref<Record<string, boolean>> = ref({});
 
   /**
    * Timestamp of the last message the user has seen per channel key.
    * Messages with timestamp > this value are considered unread.
-   * @type {import('vue').Ref<Record<string, number>>}
    */
-  const lastReadTimestamp = ref({});
+  const lastReadTimestamp: Ref<Record<string, number>> = ref({});
 
-  /** @type {import('vue').Ref<Record<string, string[]>>} joined channels per server */
-  const channels = ref({});
+  const channels: Ref<Record<string, string[]>> = ref({});
   /**
    * Available channels per server. Uses shallowRef — Vue only tracks the ref itself,
    * not the thousands of channel objects inside. Trigger reactivity with triggerRef()
    * after mutations, or by replacing the whole value.
-   * @type {import('vue').ShallowRef<Record<string, {name:string,users:number,topic:string}[]>>}
    */
-  const availableChannels = shallowRef({});
-  /** @type {import('vue').Ref<Record<string, object[]>>} messages per serverId:channel key */
-  const messages = ref({});
+  const availableChannels: ShallowRef<Record<string, AvailableChannel[]>> = shallowRef({});
+  const messages: Ref<Record<string, ChatMessage[]>> = ref({});
   /**
    * User lists per channel. shallowRef — channels like #linux have 2000+ users.
-   * @type {import('vue').ShallowRef<Record<string, string[]>>}
    */
-  const users = shallowRef({});
-  /** @type {import('vue').Ref<Record<string, string>>} topics per serverId:channel key */
-  const topics = ref({});
+  const users: ShallowRef<Record<string, string[]>> = shallowRef({});
+  const topics: Ref<Record<string, string>> = ref({});
 
-  /** @type {import('vue').Ref<string[]>} servers currently loading LIST */
-  const listLoadingServers = ref([]);
+  const listLoadingServers: Ref<string[]> = ref([]);
 
   // Channel list filters
-  const filterServer = ref(null);
-  const filterMinUsers = ref(0);
-  const filterText = ref('');
-  const sortBy = ref('users'); // 'users' | 'name'
+  const filterServer: Ref<string | null> = ref(null);
+  const filterMinUsers: Ref<number> = ref(0);
+  const filterText: Ref<string> = ref('');
+  const sortBy: Ref<'users' | 'name'> = ref('users');
 
   // Service (lazy init)
-  let ircService = null;
+  let ircService: IRCService | null = null;
 
-  /** @returns {IRCService} */
-  function getService() {
+  function getService(): IRCService {
     if (!ircService) {
       const serverSettings = useServerSettingsStore();
       const userSettings = useUserSettingsStore();
@@ -106,51 +105,51 @@ const useIrcStore = defineStore('irc', () => {
 
   // --- Getters ---
 
-  const connectedServers = computed(() =>
+  const connectedServers: ComputedRef<ServerConfig[]> = computed(() =>
     servers.value.filter((s) => activeConnections.value.includes(s.id)),
   );
 
-  const disconnectedServers = computed(() =>
+  const disconnectedServers: ComputedRef<ServerConfig[]> = computed(() =>
     servers.value.filter((s) => !activeConnections.value.includes(s.id)),
   );
 
-  const selectedServer = computed(
+  const selectedServer: ComputedRef<ServerConfig | null> = computed(
     () => servers.value.find((s) => s.id === selectedServerId.value) || null,
   );
 
-  const currentMessages = computed(() => {
+  const currentMessages: ComputedRef<ChatMessage[]> = computed(() => {
     if (!selectedServerId.value || !selectedChannel.value) return [];
     return messages.value[`${selectedServerId.value}:${selectedChannel.value}`] || [];
   });
 
-  const currentUsers = computed(() => {
+  const currentUsers: ComputedRef<string[]> = computed(() => {
     if (!selectedServerId.value || !selectedChannel.value) return [];
-    const list = users.value[`${selectedServerId.value}:${selectedChannel.value}`];
+    const list: string[] | undefined =
+      users.value[`${selectedServerId.value}:${selectedChannel.value}`];
     if (!list) return [];
-    const myNick = nicknamePerServer.value[selectedServerId.value] || nickname.value;
-    const sorted = [...list].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    const myNick: string = nicknamePerServer.value[selectedServerId.value] || nickname.value;
+    const sorted: string[] = [...list].sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: 'base' }),
+    );
     // Move own nick to the top
-    const myIdx = sorted.findIndex((n) => n.toLowerCase() === myNick?.toLowerCase());
+    const myIdx: number = sorted.findIndex((n) => n.toLowerCase() === myNick?.toLowerCase());
     if (myIdx > 0) {
       sorted.unshift(sorted.splice(myIdx, 1)[0]);
     }
     return sorted;
   });
 
-  const currentTopic = computed(() => {
+  const currentTopic: ComputedRef<string> = computed(() => {
     if (!selectedServerId.value || !selectedChannel.value) return '';
     return topics.value[`${selectedServerId.value}:${selectedChannel.value}`] || '';
   });
 
-  /** All joined channels across connected servers, with server metadata. */
   /**
    * Check if a channel name is a DM (not a channel prefix and not *status).
-   * @param {string} name
-   * @returns {boolean}
    */
-  function isDM(name) {
+  function isDM(name: string): boolean {
     return (
-      name &&
+      !!name &&
       !name.startsWith('#') &&
       !name.startsWith('&') &&
       !name.startsWith('!') &&
@@ -159,18 +158,19 @@ const useIrcStore = defineStore('irc', () => {
     );
   }
 
-  const allJoinedChannels = computed(() => {
-    const chans = [];
-    const dms = [];
+  /** All joined channels across connected servers, with server metadata. */
+  const allJoinedChannels: ComputedRef<JoinedChannelEntry[]> = computed(() => {
+    const chans: JoinedChannelEntry[] = [];
+    const dms: JoinedChannelEntry[] = [];
     for (const serverId of activeConnections.value) {
-      const server = servers.value.find((s) => s.id === serverId);
-      const serverName = server?.name || serverId;
+      const server: ServerConfig | undefined = servers.value.find((s) => s.id === serverId);
+      const serverName: string = server?.name || serverId;
       for (const channel of channels.value[serverId] || []) {
-        const key = `${serverId}:${channel}`;
-        const userList = users.value[key];
-        const userCount = userList ? userList.length : 0;
-        const dm = isDM(channel);
-        const entry = { serverId, serverName, channel, userCount, isDM: dm };
+        const key: string = `${serverId}:${channel}`;
+        const userList: string[] | undefined = users.value[key];
+        const userCount: number = userList ? userList.length : 0;
+        const dm: boolean = isDM(channel);
+        const entry: JoinedChannelEntry = { serverId, serverName, channel, userCount, isDM: dm };
         if (dm) {
           dms.push(entry);
         } else {
@@ -183,8 +183,8 @@ const useIrcStore = defineStore('irc', () => {
   });
 
   /** Set of "serverId:channelName" keys for quick joined lookup. */
-  const joinedSet = computed(() => {
-    const set = new Set();
+  const joinedSet: ComputedRef<Set<string>> = computed(() => {
+    const set: Set<string> = new Set();
     for (const serverId of activeConnections.value) {
       for (const ch of channels.value[serverId] || []) {
         set.add(`${serverId}:${ch}`);
@@ -196,50 +196,48 @@ const useIrcStore = defineStore('irc', () => {
   /**
    * Build a text matcher from filter input. Supports * and ? wildcards.
    * Plain text without wildcards does a substring match.
-   * @param {string} filter
-   * @returns {(text: string) => boolean}
    */
-  function buildMatcher(filter) {
+  function buildMatcher(filter: string): (text: string) => boolean {
     if (!filter) return () => true;
-    const lower = filter.toLowerCase();
-    const hasWildcard = lower.includes('*') || lower.includes('?');
+    const lower: string = filter.toLowerCase();
+    const hasWildcard: boolean = lower.includes('*') || lower.includes('?');
     if (!hasWildcard) {
-      return (text) => text.toLowerCase().includes(lower);
+      return (text: string) => text.toLowerCase().includes(lower);
     }
     // Convert glob to regex: * -> .*, ? -> ., escape the rest
-    const pattern = lower
+    const pattern: string = lower
       .replace(/[.+^${}()|[\]\\]/g, '\\$&')
       .replace(/\*/g, '.*')
       .replace(/\?/g, '.');
-    const re = new RegExp(`^${pattern}$`);
-    return (text) => re.test(text.toLowerCase());
+    const re: RegExp = new RegExp(`^${pattern}$`);
+    return (text: string) => re.test(text.toLowerCase());
   }
 
   /** Whether any server is currently loading a channel list. */
-  const isListLoading = computed(() => listLoadingServers.value.length > 0);
+  const isListLoading: ComputedRef<boolean> = computed(() => listLoadingServers.value.length > 0);
 
   /**
    * All available channels (not joined) across all servers, with filters applied.
    * Returns empty during LIST loading. Data is pre-sorted in the store, so no
    * sort is needed here — only filtering and early exit at the render limit.
    */
-  const allAvailableChannels = computed(() => {
+  const allAvailableChannels: ComputedRef<DisplayChannel[]> = computed(() => {
     if (listLoadingServers.value.length > 0) return [];
 
-    const result = [];
-    const matcher = buildMatcher(filterText.value);
-    const minUsers = filterMinUsers.value || 0;
-    const serverFilter = filterServer.value;
-    const byName = sortBy.value === 'name';
-    const joined = joinedSet.value;
+    const result: DisplayChannel[] = [];
+    const matcher: (text: string) => boolean = buildMatcher(filterText.value);
+    const minUsers: number = filterMinUsers.value || 0;
+    const serverFilter: string | null = filterServer.value;
+    const byName: boolean = sortBy.value === 'name';
+    const joined: Set<string> = joinedSet.value;
 
     // Collect from all servers (pre-sorted per server)
-    const sources = [];
+    const sources: { serverId: string; serverName: string; list: AvailableChannel[] }[] = [];
     for (const serverId of activeConnections.value) {
       if (serverFilter && serverId !== serverFilter) continue;
-      const server = servers.value.find((s) => s.id === serverId);
-      const serverName = server?.name || serverId;
-      const list = availableChannels.value[serverId];
+      const server: ServerConfig | undefined = servers.value.find((s) => s.id === serverId);
+      const serverName: string = server?.name || serverId;
+      const list: AvailableChannel[] | undefined = availableChannels.value[serverId];
       if (list) sources.push({ serverId, serverName, list });
     }
 
@@ -251,9 +249,9 @@ const useIrcStore = defineStore('irc', () => {
         if (ch.users < minUsers) continue;
         if (!matcher(ch.name) && !matcher(ch.topic)) continue;
         // Attach metadata without spread — reuse the channel object
-        ch._sid = src.serverId;
-        ch._sname = src.serverName;
-        result.push(ch);
+        (ch as DisplayChannel)._sid = src.serverId;
+        (ch as DisplayChannel)._sname = src.serverName;
+        result.push(ch as DisplayChannel);
       }
     }
 
@@ -265,14 +263,13 @@ const useIrcStore = defineStore('irc', () => {
     return result;
   });
 
-  /** Total count of available channels before filtering (for display). */
   /** Total raw channel count across servers (unfiltered, excluding joined). */
-  const totalAvailableCount = computed(() => {
+  const totalAvailableCount: ComputedRef<number> = computed(() => {
     if (listLoadingServers.value.length > 0) return 0;
-    const joined = joinedSet.value;
-    let count = 0;
+    const joined: Set<string> = joinedSet.value;
+    let count: number = 0;
     for (const serverId of activeConnections.value) {
-      const list = availableChannels.value[serverId] || [];
+      const list: AvailableChannel[] = availableChannels.value[serverId] || [];
       for (const ch of list) {
         if (!joined.has(`${serverId}:${ch.name}`)) count++;
       }
@@ -284,9 +281,8 @@ const useIrcStore = defineStore('irc', () => {
 
   /**
    * Mark a server as connected and initialize its status channel.
-   * @param {string} serverId
    */
-  function addConnection(serverId) {
+  function addConnection(serverId: string): void {
     connectingServers.value = connectingServers.value.filter((id) => id !== serverId);
     if (connectTimers[serverId]) {
       clearTimeout(connectTimers[serverId]);
@@ -306,9 +302,8 @@ const useIrcStore = defineStore('irc', () => {
 
   /**
    * Mark a server as disconnected.
-   * @param {string} serverId
    */
-  function removeConnection(serverId) {
+  function removeConnection(serverId: string): void {
     activeConnections.value = activeConnections.value.filter((id) => id !== serverId);
     connectingServers.value = connectingServers.value.filter((id) => id !== serverId);
     if (connectTimers[serverId]) {
@@ -317,9 +312,9 @@ const useIrcStore = defineStore('irc', () => {
     }
 
     // Clean up all data for this server
-    const serverChannels = channels.value[serverId] || [];
+    const serverChannels: string[] = channels.value[serverId] || [];
     for (const ch of serverChannels) {
-      const key = `${serverId}:${ch}`;
+      const key: string = `${serverId}:${ch}`;
       delete messages.value[key];
       delete users.value[key];
       delete topics.value[key];
@@ -331,7 +326,7 @@ const useIrcStore = defineStore('irc', () => {
 
     // Switch selection if we were viewing this server
     if (selectedServerId.value === serverId) {
-      const remaining = activeConnections.value;
+      const remaining: string[] = activeConnections.value;
       if (remaining.length > 0) {
         selectedServerId.value = remaining[0];
         selectedChannel.value = (channels.value[remaining[0]] || [])[0] || null;
@@ -344,75 +339,67 @@ const useIrcStore = defineStore('irc', () => {
 
   /**
    * Select a server and its first channel.
-   * @param {string} serverId
    */
-  function selectServer(serverId) {
+  function selectServer(serverId: string): void {
     selectedServerId.value = serverId;
-    const serverChannels = channels.value[serverId] || [];
+    const serverChannels: string[] = channels.value[serverId] || [];
     selectedChannel.value = serverChannels[0] || null;
   }
 
   /**
    * Select a specific channel on a specific server.
-   * @param {string} serverId
-   * @param {string} channel
    */
-  function selectChannel(serverId, channel) {
+  function selectChannel(serverId: string, channel: string): void {
     selectedServerId.value = serverId;
     selectedChannel.value = channel;
   }
 
   /**
    * Check if a server is currently connected.
-   * @param {string} serverId
-   * @returns {boolean}
    */
-  function isConnected(serverId) {
+  function isConnected(serverId: string): boolean {
     return activeConnections.value.includes(serverId);
   }
 
   /**
    * Add a channel to a server's joined list and initialize its data.
-   * @param {string} serverId
-   * @param {string} channel
    */
-  function addJoinedChannel(serverId, channel) {
+  function addJoinedChannel(serverId: string, channel: string): void {
     if (!channels.value[serverId]) channels.value[serverId] = [];
     if (!channels.value[serverId].includes(channel)) {
       channels.value[serverId].push(channel);
     }
-    const key = `${serverId}:${channel}`;
+    const key: string = `${serverId}:${channel}`;
     if (!messages.value[key]) messages.value[key] = [];
     if (!users.value[key]) users.value[key] = [];
   }
 
   /**
    * Remove a channel from a server's joined list.
-   * @param {string} serverId
-   * @param {string} channel
    */
-  function removeJoinedChannel(serverId, channel) {
+  function removeJoinedChannel(serverId: string, channel: string): void {
     if (channels.value[serverId]) {
       channels.value[serverId] = channels.value[serverId].filter((c) => c !== channel);
     }
     if (selectedServerId.value === serverId && selectedChannel.value === channel) {
-      const remaining = channels.value[serverId] || [];
+      const remaining: string[] = channels.value[serverId] || [];
       selectedChannel.value = remaining[0] || null;
     }
   }
 
   /**
    * Add a chat message to a channel.
-   * @param {string} serverId
-   * @param {string} channel
-   * @param {string} nick
-   * @param {string} content
-   * @param {string} [type='message']
    */
-  function addMessage(serverId, channel, nick, content, type = 'message') {
-    const key = `${serverId}:${channel}`;
+  function addMessage(
+    serverId: string,
+    channel: string,
+    nick: string,
+    content: string,
+    type: MessageType = 'message',
+  ): void {
+    const key: string = `${serverId}:${channel}`;
     if (!messages.value[key]) messages.value[key] = [];
-    const arr = messages.value[key];
+    const arr: ChatMessage[] = messages.value[key];
     arr.push({
       id: crypto.randomUUID(),
       serverId,
@@ -423,7 +410,7 @@ const useIrcStore = defineStore('irc', () => {
       type,
     });
     // Trim old messages to stay within limit
-    const max = config.chat.maxMessages;
+    const max: number = config.chat.maxMessages;
     if (arr.length > max) {
       arr.splice(0, arr.length - max);
     }
@@ -431,24 +418,15 @@ const useIrcStore = defineStore('irc', () => {
 
   /**
    * Get the unread message count for a channel.
-   * @param {string} serverId
-   * @param {string} channel
-   * @returns {number}
-   */
-  /**
-   * Get the unread message count for a channel.
    * Only counts user messages (type === 'message') with timestamp after last read.
-   * @param {string} serverId
-   * @param {string} channel
-   * @returns {number}
    */
-  function unreadCount(serverId, channel) {
-    const key = `${serverId}:${channel}`;
-    const msgs = messages.value[key] || [];
-    const lastRead = lastReadTimestamp.value[key] || 0;
-    let count = 0;
+  function unreadCount(serverId: string, channel: string): number {
+    const key: string = `${serverId}:${channel}`;
+    const msgs: ChatMessage[] = messages.value[key] || [];
+    const lastRead: number = lastReadTimestamp.value[key] || 0;
+    let count: number = 0;
     for (let i = msgs.length - 1; i >= 0; i--) {
-      const msg = msgs[i];
+      const msg: ChatMessage = msgs[i];
       if (msg.timestamp <= lastRead) break;
       if (msg.type === 'message') count++;
     }
@@ -458,13 +436,10 @@ const useIrcStore = defineStore('irc', () => {
   /**
    * Mark a channel as read up to a given timestamp.
    * Only advances forward (high-water mark).
-   * @param {string} serverId
-   * @param {string} channel
-   * @param {number} timestamp — epoch ms
    */
-  function markReadUpTo(serverId, channel, timestamp) {
-    const key = `${serverId}:${channel}`;
-    const current = lastReadTimestamp.value[key] || 0;
+  function markReadUpTo(serverId: string, channel: string, timestamp: number): void {
+    const key: string = `${serverId}:${channel}`;
+    const current: number = lastReadTimestamp.value[key] || 0;
     if (timestamp > current) {
       lastReadTimestamp.value[key] = timestamp;
     }
@@ -472,22 +447,16 @@ const useIrcStore = defineStore('irc', () => {
 
   /**
    * Set the online status of a DM user.
-   * @param {string} serverId
-   * @param {string} nick
-   * @param {boolean} online
    */
-  function setDMOnline(serverId, nick, online) {
+  function setDMOnline(serverId: string, nick: string, online: boolean): void {
     dmOnline.value[`${serverId}:${nick}`] = online;
   }
 
   /**
    * Check if a DM user is online.
-   * @param {string} serverId
-   * @param {string} nick
-   * @returns {boolean}
    */
-  function isDMOnline(serverId, nick) {
-    const key = `${serverId}:${nick}`;
+  function isDMOnline(serverId: string, nick: string): boolean {
+    const key: string = `${serverId}:${nick}`;
     // Default to true (assume online until we see QUIT)
     return dmOnline.value[key] !== false;
   }
@@ -495,14 +464,12 @@ const useIrcStore = defineStore('irc', () => {
   /**
    * Mark the last own message in the current channel with a warning.
    * Used when the server reports an error that may be related to a recent message.
-   * @param {string} serverId
-   * @param {string} warningText
    */
-  function warnLastOwnMessage(serverId, warningText) {
-    const channel = selectedChannel.value;
+  function warnLastOwnMessage(serverId: string, warningText: string): void {
+    const channel: string | null = selectedChannel.value;
     if (!channel || selectedServerId.value !== serverId) return;
-    const key = `${serverId}:${channel}`;
-    const list = messages.value[key];
+    const key: string = `${serverId}:${channel}`;
+    const list: ChatMessage[] | undefined = messages.value[key];
     if (!list) return;
     // Find the last own message (searching from the end)
     for (let i = list.length - 1; i >= 0; i--) {
@@ -515,10 +482,8 @@ const useIrcStore = defineStore('irc', () => {
 
   /**
    * Add a system message to the server's status channel (and current channel if same server).
-   * @param {string} serverId
-   * @param {string} content
    */
-  function addSystemMessage(serverId, content) {
+  function addSystemMessage(serverId: string, content: string): void {
     addMessage(serverId, '*status', '', content, 'system');
     if (
       selectedServerId.value === serverId &&
@@ -532,22 +497,16 @@ const useIrcStore = defineStore('irc', () => {
 
   /**
    * Set the topic for a channel.
-   * @param {string} serverId
-   * @param {string} channel
-   * @param {string} topic
    */
-  function setTopic(serverId, channel, topic) {
+  function setTopic(serverId: string, channel: string, topic: string): void {
     topics.value[`${serverId}:${channel}`] = topic;
   }
 
   /**
    * Add a single user to a channel's user list.
-   * @param {string} serverId
-   * @param {string} channel
-   * @param {string} nick
    */
-  function addUser(serverId, channel, nick) {
-    const key = `${serverId}:${channel}`;
+  function addUser(serverId: string, channel: string, nick: string): void {
+    const key: string = `${serverId}:${channel}`;
     if (!users.value[key]) users.value[key] = [];
     if (!users.value[key].includes(nick)) {
       users.value[key].push(nick);
@@ -558,14 +517,11 @@ const useIrcStore = defineStore('irc', () => {
   /**
    * Add multiple users to a channel's user list (from NAMREPLY).
    * Does NOT trigger reactivity — call finalizeUsers() after all NAMREPLY are processed.
-   * @param {string} serverId
-   * @param {string} channel
-   * @param {string[]} names
    */
-  function addUsers(serverId, channel, names) {
-    const key = `${serverId}:${channel}`;
+  function addUsers(serverId: string, channel: string, names: string[]): void {
+    const key: string = `${serverId}:${channel}`;
     if (!users.value[key]) users.value[key] = [];
-    const existing = new Set(users.value[key]);
+    const existing: Set<string> = new Set(users.value[key]);
     for (const name of names) {
       if (!existing.has(name)) {
         existing.add(name);
@@ -579,18 +535,15 @@ const useIrcStore = defineStore('irc', () => {
    * Signal that all NAMREPLY for a channel have been received.
    * Replaces the users object to force Vue to see the change with shallowRef.
    */
-  function finalizeUsers() {
+  function finalizeUsers(): void {
     users.value = { ...users.value };
   }
 
   /**
    * Remove a user from a channel's user list.
-   * @param {string} serverId
-   * @param {string} channel
-   * @param {string} nick
    */
-  function removeUser(serverId, channel, nick) {
-    const key = `${serverId}:${channel}`;
+  function removeUser(serverId: string, channel: string, nick: string): void {
+    const key: string = `${serverId}:${channel}`;
     if (users.value[key]) {
       users.value[key] = users.value[key].filter((u) => u !== nick);
       users.value = { ...users.value };
@@ -599,10 +552,8 @@ const useIrcStore = defineStore('irc', () => {
 
   /**
    * Set the confirmed nickname for a server.
-   * @param {string} serverId
-   * @param {string} nick
    */
-  function setNickname(serverId, nick) {
+  function setNickname(serverId: string, nick: string): void {
     nicknamePerServer.value = { ...nicknamePerServer.value, [serverId]: nick };
     // Update global display nick to the selected server's nick
     if (serverId === selectedServerId.value || !nickname.value) {
@@ -612,18 +563,15 @@ const useIrcStore = defineStore('irc', () => {
 
   /**
    * Rename a user across all channels on a server.
-   * @param {string} serverId
-   * @param {string} oldNick
-   * @param {string} newNick
    */
-  function renameUser(serverId, oldNick, newNick) {
-    let changed = false;
-    const serverChannels = channels.value[serverId] || [];
+  function renameUser(serverId: string, oldNick: string, newNick: string): void {
+    let changed: boolean = false;
+    const serverChannels: string[] = channels.value[serverId] || [];
     for (const channel of serverChannels) {
-      const key = `${serverId}:${channel}`;
-      const userList = users.value[key];
+      const key: string = `${serverId}:${channel}`;
+      const userList: string[] | undefined = users.value[key];
       if (userList) {
-        const idx = userList.indexOf(oldNick);
+        const idx: number = userList.indexOf(oldNick);
         if (idx !== -1) {
           userList[idx] = newNick;
           changed = true;
@@ -637,22 +585,19 @@ const useIrcStore = defineStore('irc', () => {
 
   /**
    * Send a NICK command to change nick on a server.
-   * @param {string} serverId
-   * @param {string} newNick
    */
-  function changeNick(serverId, newNick) {
+  function changeNick(serverId: string, newNick: string): void {
     getService().changeNick(serverId, newNick);
   }
 
   /**
    * Send NICK to all connected servers using global settings.
    * Skips servers with per-server nick overrides.
-   * @param {string} newNick
    */
-  function changeNickGlobal(newNick) {
+  function changeNickGlobal(newNick: string): void {
     const serverSettings = useServerSettingsStore();
     for (const serverId of activeConnections.value) {
-      const serverNick = serverSettings.getSettings(serverId).nickname;
+      const serverNick: string = serverSettings.getSettings(serverId).nickname;
       if (!serverNick) {
         getService().changeNick(serverId, newNick);
       }
@@ -661,26 +606,23 @@ const useIrcStore = defineStore('irc', () => {
 
   /**
    * Clear available channels for a server (before LIST refresh).
-   * @param {string} serverId
    */
-  function clearAvailableChannels(serverId) {
+  function clearAvailableChannels(serverId: string): void {
     availableChannels.value[serverId] = [];
     delete channelBuffer[serverId];
     // No triggerRef here — during loading the computed returns [] anyway
   }
 
-  /** @type {Record<string, object[]>} buffer per server, flushed periodically */
-  const channelBuffer = {};
-  /** @type {Record<string, number>} flush timer per server */
-  const channelFlushTimers = {};
+  /** Buffer per server, flushed periodically. */
+  const channelBuffer: Record<string, AvailableChannel[]> = {};
+  /** Flush timer per server. */
+  const channelFlushTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 
   /**
    * Flush buffered channels into the reactive state.
-   * @param {string} serverId
-   * @param {boolean} [final=false] — true when LIST is complete, triggers sort
    */
-  function flushChannelBuffer(serverId, final = false) {
-    const buf = channelBuffer[serverId];
+  function flushChannelBuffer(serverId: string, final: boolean = false): void {
+    const buf: AvailableChannel[] | undefined = channelBuffer[serverId];
     if (!buf || buf.length === 0) {
       if (final && availableChannels.value[serverId]) {
         availableChannels.value[serverId].sort((a, b) => b.users - a.users);
@@ -700,13 +642,11 @@ const useIrcStore = defineStore('irc', () => {
   /**
    * Add a single available channel entry (called per RPL_LIST).
    * Batches updates to avoid blocking the UI with thousands of reactive pushes.
-   * @param {string} serverId
-   * @param {{ name: string, users: number, topic: string }} channel
    */
-  function addAvailableChannel(serverId, channel) {
+  function addAvailableChannel(serverId: string, channel: AvailableChannel): void {
     if (!channelBuffer[serverId]) channelBuffer[serverId] = [];
     channelBuffer[serverId].push(channel);
-    // Flush every 100 channels or schedule a timer flush
+    // Flush every 500 channels or schedule a timer flush
     if (channelBuffer[serverId].length >= 500) {
       flushChannelBuffer(serverId);
     } else if (!channelFlushTimers[serverId]) {
@@ -719,18 +659,13 @@ const useIrcStore = defineStore('irc', () => {
 
   // --- Actions (delegate to service) ---
 
-  /**
-   * Connect to a server.
-   * @param {{ id: string, name: string, host: string }} server
-   */
-  /** @type {Record<string, number>} connection timeout timers */
-  const connectTimers = {};
+  /** Connection timeout timers. */
+  const connectTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 
   /**
    * Connect to a server with connecting state and timeout.
-   * @param {{ id: string, name: string, host: string }} server
    */
-  function connectToServer(server) {
+  function connectToServer(server: ServerConfig): void {
     if (isConnected(server.id)) return;
     if (connectingServers.value.includes(server.id)) return;
     connectingServers.value.push(server.id);
@@ -745,54 +680,45 @@ const useIrcStore = defineStore('irc', () => {
     }, 15000);
   }
 
-  /** @type {import('vue').Ref<string|null>} connection error message for popup */
-  const connectionError = ref(null);
+  const connectionError: Ref<string | null> = ref(null);
 
   /**
    * Signal to open server settings on a specific tab.
    * Set to { serverId, tab } to open, null to close.
-   * @type {import('vue').Ref<{ serverId: string, tab: string }|null>}
    */
-  const openSettingsRequest = ref(null);
+  const openSettingsRequest: Ref<OpenSettingsRequest | null> = ref(null);
 
   /**
    * Request opening server settings on a specific tab.
-   * @param {string} serverId
-   * @param {string} tab
    */
-  function requestOpenSettings(serverId, tab) {
+  function requestOpenSettings(serverId: string, tab: string): void {
     openSettingsRequest.value = { serverId, tab };
   }
 
   /** Dismiss the connection error popup. */
-  function dismissConnectionError() {
+  function dismissConnectionError(): void {
     connectionError.value = null;
   }
 
   /**
    * Disconnect from a server.
-   * @param {string} serverId
    */
-  function disconnectFromServer(serverId) {
+  function disconnectFromServer(serverId: string): void {
     getService().disconnect(serverId);
   }
 
   /**
    * Join a channel on a server.
-   * @param {string} serverId
-   * @param {string} channel
    */
-  function joinChannel(serverId, channel) {
+  function joinChannel(serverId: string, channel: string): void {
     if (!isConnected(serverId)) return;
     getService().joinChannel(serverId, channel);
   }
 
   /**
    * Leave a channel on a server.
-   * @param {string} serverId
-   * @param {string} channel
    */
-  function partChannel(serverId, channel) {
+  function partChannel(serverId: string, channel: string): void {
     if (!isConnected(serverId)) return;
     if (channel === '*status') return;
     if (isDM(channel)) {
@@ -806,12 +732,10 @@ const useIrcStore = defineStore('irc', () => {
   /**
    * Open a direct message channel with a user.
    * Creates the DM channel if it doesn't exist and selects it.
-   * @param {string} serverId
-   * @param {string} nick
    */
-  function openDM(serverId, nick) {
+  function openDM(serverId: string, nick: string): void {
     if (!isConnected(serverId)) return;
-    const serverChannels = channels.value[serverId] || [];
+    const serverChannels: string[] = channels.value[serverId] || [];
     if (!serverChannels.includes(nick)) {
       addJoinedChannel(serverId, nick);
     }
@@ -821,15 +745,15 @@ const useIrcStore = defineStore('irc', () => {
   /**
    * Close the DM channel with a user on a specific server.
    * If the active channel is this DM, switch to the first available channel.
-   * @param {string} serverId
-   * @param {string} nick
    */
-  function closeDMsWithUser(serverId, nick) {
-    const serverChannels = channels.value[serverId] || [];
-    const dmChannel = serverChannels.find((ch) => ch.toLowerCase() === nick.toLowerCase());
+  function closeDMsWithUser(serverId: string, nick: string): void {
+    const serverChannels: string[] = channels.value[serverId] || [];
+    const dmChannel: string | undefined = serverChannels.find(
+      (ch) => ch.toLowerCase() === nick.toLowerCase(),
+    );
     if (!dmChannel) return;
     if (selectedServerId.value === serverId && selectedChannel.value === dmChannel) {
-      const firstChannel = serverChannels.find((ch) => ch !== dmChannel) || '*status';
+      const firstChannel: string = serverChannels.find((ch) => ch !== dmChannel) || '*status';
       selectChannel(serverId, firstChannel);
     }
     removeJoinedChannel(serverId, dmChannel);
@@ -837,9 +761,8 @@ const useIrcStore = defineStore('irc', () => {
 
   /**
    * Send a message to the currently selected channel.
-   * @param {string} content
    */
-  function sendMessage(content) {
+  function sendMessage(content: string): void {
     if (!selectedServerId.value || !selectedChannel.value) return;
     if (selectedChannel.value === '*status') return;
     getService().sendMessage(selectedServerId.value, selectedChannel.value, content);
@@ -850,9 +773,8 @@ const useIrcStore = defineStore('irc', () => {
 
   /**
    * Mark a server as loading LIST.
-   * @param {string} serverId
    */
-  function setListLoading(serverId) {
+  function setListLoading(serverId: string): void {
     if (!listLoadingServers.value.includes(serverId)) {
       listLoadingServers.value.push(serverId);
     }
@@ -860,22 +782,21 @@ const useIrcStore = defineStore('irc', () => {
 
   /**
    * Mark a server as done loading LIST.
-   * @param {string} serverId
    */
-  function clearListLoading(serverId) {
+  function clearListLoading(serverId: string): void {
     listLoadingServers.value = listLoadingServers.value.filter((id) => id !== serverId);
   }
 
   /** Request a fresh LIST from all connected servers. */
-  function refreshChannelList() {
-    const service = getService();
+  function refreshChannelList(): void {
+    const service: IRCService = getService();
     for (const serverId of activeConnections.value) {
       service.requestList(serverId);
     }
   }
 
   /** Save current session to localStorage. */
-  function persistSession() {
+  function persistSession(): void {
     if (activeConnections.value.length === 0) {
       clearSession();
       return;
@@ -886,27 +807,29 @@ const useIrcStore = defineStore('irc', () => {
       selected: selectedServerId.value
         ? { serverId: selectedServerId.value, channel: selectedChannel.value }
         : null,
-    });
+    } as SessionData);
   }
 
   /**
    * Restore a saved session — reconnect to servers and rejoin channels.
    * Called once on app startup.
    */
-  function restoreSession() {
-    const session = loadSession();
+  function restoreSession(): void {
+    const session: SessionData | null = loadSession();
     if (!session || !session.serverIds?.length) return;
 
     for (const serverId of session.serverIds) {
-      const server = servers.value.find((s) => s.id === serverId);
+      const server: ServerConfig | undefined = servers.value.find((s) => s.id === serverId);
       if (!server) continue;
       // Store the channels to rejoin after connection
-      const channelsToJoin = (session.channels[serverId] || []).filter((ch) => ch !== '*status');
+      const channelsToJoin: string[] = (session.channels[serverId] || []).filter(
+        (ch) => ch !== '*status',
+      );
       connectToServer(server);
       // Rejoin channels after registration completes (376/422)
       if (channelsToJoin.length > 0) {
-        const service = getService();
-        const check = setInterval(() => {
+        const service: IRCService = getService();
+        const check: ReturnType<typeof setInterval> = setInterval(() => {
           if (service.isRegistered(serverId)) {
             clearInterval(check);
             for (const ch of channelsToJoin) {
@@ -931,7 +854,7 @@ const useIrcStore = defineStore('irc', () => {
   }
 
   /** Disconnect from all servers and clean up. */
-  function cleanup() {
+  function cleanup(): void {
     getService().disconnectAll();
     clearSession();
   }
@@ -944,7 +867,7 @@ const useIrcStore = defineStore('irc', () => {
   );
 
   // Store API for the service (avoids circular reactive deps)
-  const storeApi = {
+  const storeApi: IrcStoreApi = {
     get nickname() {
       return nickname.value;
     },

@@ -1,5 +1,5 @@
 <script setup>
-  import { useIrcStore } from '@/stores/irc.js';
+  import { useIrcStore } from '@/stores/irc.ts';
   import ChatHeader from './ChatHeader.vue';
   import MessageList from './MessageList.vue';
   import MessageInput from './MessageInput.vue';

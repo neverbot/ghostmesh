@@ -9,7 +9,17 @@ import { resolveImageProvider, providers } from '@/services/image-providers.ts';
 import { imageProxyUrl, fetchWithProxy } from '@/services/proxy-services.ts';
 
 /** Image file extensions to detect for inline preview. */
-const IMAGE_EXTENSIONS: string[] = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif'];
+const IMAGE_EXTENSIONS: string[] = [
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'svg',
+  'bmp',
+  'ico',
+  'avif',
+];
 
 /** URLs that have already failed preview resolution — not retried during this session. */
 const failedPreviews: Set<string> = new Set();
@@ -181,7 +191,12 @@ async function resolveAsyncImage(asyncMarker: string, placeholderId: string): Pr
  * @param {string} placeholderId — the placeholder DOM id
  * @param {string} message — failure message to display
  */
-function replaceWithRetry(el: HTMLElement, asyncMarker: string, placeholderId: string, message: string): void {
+function replaceWithRetry(
+  el: HTMLElement,
+  asyncMarker: string,
+  placeholderId: string,
+  message: string,
+): void {
   el.className = 'my-1 flex items-center gap-1.5 text-[10px] italic opacity-60';
   el.innerHTML = '';
   const span: HTMLSpanElement = document.createElement('span');

@@ -1,7 +1,7 @@
 <script setup>
   import { ref, computed, watch, nextTick } from 'vue';
-  import { useUserPrefsStore } from '@/stores/user-prefs.js';
-  import { useIrcStore } from '@/stores/irc.js';
+  import { useUserPrefsStore } from '@/stores/user-prefs.ts';
+  import { useIrcStore } from '@/stores/irc.ts';
 
   const props = defineProps({
     nick: { type: String, default: '' },

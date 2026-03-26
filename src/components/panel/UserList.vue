@@ -1,6 +1,6 @@
 <script setup>
   import { ref, computed } from 'vue';
-  import { useIrcStore } from '@/stores/irc.js';
+  import { useIrcStore } from '@/stores/irc.ts';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
 

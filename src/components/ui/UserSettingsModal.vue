@@ -1,7 +1,7 @@
 <script setup>
   import { ref, watch, nextTick } from 'vue';
-  import { useUserSettingsStore } from '@/stores/user-settings.js';
-  import { useIrcStore } from '@/stores/irc.js';
+  import { useUserSettingsStore } from '@/stores/user-settings.ts';
+  import { useIrcStore } from '@/stores/irc.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
 
   const backdrop = ref(null);

@@ -38,8 +38,8 @@
 
 <script>
   import { computed } from 'vue';
-  import { useIrcStore } from '@/stores/irc.js';
-  import { useUserSettingsStore } from '@/stores/user-settings.js';
+  import { useIrcStore } from '@/stores/irc.ts';
+  import { useUserSettingsStore } from '@/stores/user-settings.ts';
 
   export default {
     name: 'UserProfile',

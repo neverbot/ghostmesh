@@ -1,7 +1,7 @@
 <script setup>
   import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
-  import { useIrcStore } from '@/stores/irc.js';
-  import { useUserPrefsStore } from '@/stores/user-prefs.js';
+  import { useIrcStore } from '@/stores/irc.ts';
+  import { useUserPrefsStore } from '@/stores/user-prefs.ts';
   import MessageItem from './MessageItem.vue';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
 

@@ -1,6 +1,6 @@
 <script setup>
   import { ref, onBeforeUnmount } from 'vue';
-  import { useIrcStore } from '@/stores/irc.js';
+  import { useIrcStore } from '@/stores/irc.ts';
   import SidebarLeft from '@/components/sidebar/SidebarLeft.vue';
   import ChatPanel from '@/components/chat/ChatPanel.vue';
   import SidebarRight from '@/components/panel/SidebarRight.vue';

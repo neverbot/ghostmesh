@@ -1,18 +1,19 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
+import type { Ref } from 'vue';
 import config from '@/config.ts';
+import type { ServerDefaults, ServerSettingsEntry } from '@/types/index.ts';
 
-const STORAGE_KEY = config.storageKeys.serverSettings;
-const DEFAULTS = config.serverDefaults;
+const STORAGE_KEY: string = config.storageKeys.serverSettings;
+const DEFAULTS: ServerDefaults = config.serverDefaults;
 
 /**
  * Load all server settings from localStorage.
- * @returns {Record<string, object>}
  */
-function loadFromStorage() {
+function loadFromStorage(): Record<string, Partial<ServerSettingsEntry>> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    const raw: string | null = localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, Partial<ServerSettingsEntry>>) : {};
   } catch {
     return {};
   }
@@ -20,47 +21,40 @@ function loadFromStorage() {
 
 /**
  * Save all server settings to localStorage.
- * @param {Record<string, object>} data
  */
-function saveToStorage(data) {
+function saveToStorage(data: Record<string, Partial<ServerSettingsEntry>>): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
 const useServerSettingsStore = defineStore('server-settings', () => {
-  /** @type {import('vue').Ref<Record<string, object>>} settings per serverId */
-  const settings = ref(loadFromStorage());
+  const settings: Ref<Record<string, Partial<ServerSettingsEntry>>> = ref(loadFromStorage());
 
   // Persist on change
-  watch(settings, (val) => saveToStorage(val), { deep: true });
+  watch(settings, (val: Record<string, Partial<ServerSettingsEntry>>) => saveToStorage(val), {
+    deep: true,
+  });
 
   /**
    * Get settings for a server, with defaults applied.
-   * @param {string} serverId
-   * @returns {object}
    */
-  function getSettings(serverId) {
+  function getSettings(serverId: string): ServerSettingsEntry {
     return { ...DEFAULTS, ...(settings.value[serverId] || {}) };
   }
 
   /**
    * Update one or more settings for a server.
-   * @param {string} serverId
-   * @param {object} partial — key/value pairs to merge
    */
-  function updateSettings(serverId, partial) {
-    const current = settings.value[serverId] || {};
+  function updateSettings(serverId: string, partial: Partial<ServerSettingsEntry>): void {
+    const current: Partial<ServerSettingsEntry> = settings.value[serverId] || {};
     settings.value[serverId] = { ...current, ...partial };
   }
 
   /**
    * Get the LIST delay for a server (in seconds).
    * Returns user override, or detected value, or default.
-   * @param {string} serverId
-   * @param {number|null} detected — auto-detected value from NOTICE
-   * @returns {number}
    */
-  function getListDelay(serverId, detected = null) {
-    const s = getSettings(serverId);
+  function getListDelay(serverId: string, detected: number | null = null): number {
+    const s: ServerSettingsEntry = getSettings(serverId);
     // User has explicitly set a custom value (different from default)
     if (settings.value[serverId]?.listDelay !== undefined) {
       return s.listDelay;
@@ -74,12 +68,9 @@ const useServerSettingsStore = defineStore('server-settings', () => {
   /**
    * Check if mIRC formatting is enabled for a server.
    * null = auto (enabled if detected), true = forced on, false = forced off.
-   * @param {string} serverId
-   * @param {boolean} detected — whether mIRC codes were detected
-   * @returns {boolean}
    */
-  function isMircEnabled(serverId, detected = false) {
-    const s = getSettings(serverId);
+  function isMircEnabled(serverId: string, detected: boolean = false): boolean {
+    const s: ServerSettingsEntry = getSettings(serverId);
     if (s.mircFormatting === true) return true;
     if (s.mircFormatting === false) return false;
     // Auto: follow detection
@@ -88,10 +79,9 @@ const useServerSettingsStore = defineStore('server-settings', () => {
 
   /**
    * Mark mIRC as auto-detected for a server (only if user hasn't explicitly set it).
-   * @param {string} serverId
    */
-  function markMircDetected(serverId) {
-    const current = settings.value[serverId] || {};
+  function markMircDetected(serverId: string): void {
+    const current: Partial<ServerSettingsEntry> = settings.value[serverId] || {};
     if (current.mircFormatting === undefined || current.mircFormatting === null) {
       updateSettings(serverId, { mircFormatting: null, mircDetected: true });
     }

@@ -1,6 +1,6 @@
 <script setup>
   import { computed } from 'vue';
-  import { useIrcStore } from '@/stores/irc.js';
+  import { useIrcStore } from '@/stores/irc.ts';
 
   const store = useIrcStore();
 

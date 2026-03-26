@@ -1,6 +1,6 @@
 <script setup>
   import { onMounted, onUnmounted } from 'vue';
-  import { useIrcStore } from '@/stores/irc.js';
+  import { useIrcStore } from '@/stores/irc.ts';
 
   const store = useIrcStore();
 

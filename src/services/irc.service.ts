@@ -601,7 +601,10 @@ class IRCService extends EventEmitter {
         const serverChannels: string[] = s.channels[serverId] || [];
         for (const channel of serverChannels) {
           s.removeUser(serverId, channel, nick);
-          if (CHANNEL_PREFIXES.some((p: string) => channel.startsWith(p)) || channel === '*status') {
+          if (
+            CHANNEL_PREFIXES.some((p: string) => channel.startsWith(p)) ||
+            channel === '*status'
+          ) {
             s.addMessage(serverId, channel, nick, `${nick} has quit (${trailing || ''})`, 'quit');
           }
         }

@@ -1,10 +1,12 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
+import type { Ref } from 'vue';
 import config from '@/config.ts';
+import type { UserProfile, ServerSettingsEntry } from '@/types/index.ts';
 
-const STORAGE_KEY = config.storageKeys.userSettings;
+const STORAGE_KEY: string = config.storageKeys.userSettings;
 
-const DEFAULTS = {
+const DEFAULTS: UserProfile = {
   nickname: '',
   username: '',
   realname: '',
@@ -13,12 +15,11 @@ const DEFAULTS = {
 
 /**
  * Load user settings from localStorage.
- * @returns {object}
  */
-function loadFromStorage() {
+function loadFromStorage(): Partial<UserProfile> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
+    const raw: string | null = localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Partial<UserProfile>) : {};
   } catch {
     return {};
   }
@@ -26,45 +27,43 @@ function loadFromStorage() {
 
 /**
  * Save user settings to localStorage.
- * @param {object} data
  */
-function saveToStorage(data) {
+function saveToStorage(data: UserProfile): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
+interface ServerSettingsApi {
+  getSettings(serverId: string): ServerSettingsEntry;
+}
+
 const useUserSettingsStore = defineStore('user-settings', () => {
-  const settings = ref({ ...DEFAULTS, ...loadFromStorage() });
+  const settings: Ref<UserProfile> = ref({ ...DEFAULTS, ...loadFromStorage() });
 
   // Persist on change
-  watch(settings, (val) => saveToStorage(val), { deep: true });
+  watch(settings, (val: UserProfile) => saveToStorage(val), { deep: true });
 
   /**
    * Get the full user profile with defaults applied.
-   * @returns {object}
    */
-  function getProfile() {
+  function getProfile(): UserProfile {
     return { ...DEFAULTS, ...settings.value };
   }
 
   /**
    * Update one or more profile fields.
-   * @param {object} partial — key/value pairs to merge
    */
-  function updateProfile(partial) {
+  function updateProfile(partial: Partial<UserProfile>): void {
     settings.value = { ...settings.value, ...partial };
   }
 
   /**
    * Resolve the nickname to use for a server.
    * Priority: per-server override > global setting > random.
-   * @param {string|null} serverId
-   * @param {object} [serverSettings] — server settings store instance
-   * @returns {string}
    */
-  function resolveNick(serverId, serverSettings) {
+  function resolveNick(serverId: string | null, serverSettings?: ServerSettingsApi): string {
     // Per-server override
     if (serverId && serverSettings) {
-      const serverNick = serverSettings.getSettings(serverId).nickname;
+      const serverNick: string = serverSettings.getSettings(serverId).nickname;
       if (serverNick) return serverNick;
     }
     // Global user setting
@@ -76,13 +75,10 @@ const useUserSettingsStore = defineStore('user-settings', () => {
   /**
    * Resolve the username for a server.
    * Priority: per-server override > global setting > config default.
-   * @param {string|null} serverId
-   * @param {object} [serverSettings] — server settings store instance
-   * @returns {string}
    */
-  function resolveUsername(serverId, serverSettings) {
+  function resolveUsername(serverId: string | null, serverSettings?: ServerSettingsApi): string {
     if (serverId && serverSettings) {
-      const serverUsername = serverSettings.getSettings(serverId).username;
+      const serverUsername: string = serverSettings.getSettings(serverId).username;
       if (serverUsername) return serverUsername;
     }
     if (settings.value.username) return settings.value.username;
@@ -92,13 +88,10 @@ const useUserSettingsStore = defineStore('user-settings', () => {
   /**
    * Resolve the realname for a server.
    * Priority: per-server override > global setting > config default.
-   * @param {string|null} serverId
-   * @param {object} [serverSettings] — server settings store instance
-   * @returns {string}
    */
-  function resolveRealname(serverId, serverSettings) {
+  function resolveRealname(serverId: string | null, serverSettings?: ServerSettingsApi): string {
     if (serverId && serverSettings) {
-      const serverRealname = serverSettings.getSettings(serverId).realname;
+      const serverRealname: string = serverSettings.getSettings(serverId).realname;
       if (serverRealname) return serverRealname;
     }
     if (settings.value.realname) return settings.value.realname;
@@ -109,7 +102,7 @@ const useUserSettingsStore = defineStore('user-settings', () => {
    * Clear all user data from localStorage (user settings + server settings).
    * Resets in-memory state to defaults.
    */
-  function clearAll() {
+  function clearAll(): void {
     localStorage.removeItem(config.storageKeys.userSettings);
     localStorage.removeItem(config.storageKeys.serverSettings);
     localStorage.removeItem(config.storageKeys.userPrefs);

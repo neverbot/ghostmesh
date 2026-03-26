@@ -1,8 +1,8 @@
 <script setup>
   import { computed, ref, onMounted, onUnmounted } from 'vue';
-  import { useIrcStore } from '@/stores/irc.js';
-  import { useServerSettingsStore } from '@/stores/server-settings.js';
-  import { useUserPrefsStore } from '@/stores/user-prefs.js';
+  import { useIrcStore } from '@/stores/irc.ts';
+  import { useServerSettingsStore } from '@/stores/server-settings.ts';
+  import { useUserPrefsStore } from '@/stores/user-prefs.ts';
   import { parseFormatting, stripFormatting, hasFormatting } from '@/utils/mirc-format.ts';
   import { formatPlainContent, formatHtmlContent, isImageUrl } from '@/services/message.service.ts';
   import { resolveImageProvider } from '@/services/image-providers.ts';
