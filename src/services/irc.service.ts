@@ -776,6 +776,23 @@ class IRCService extends EventEmitter {
             }
           }
         }
+        // Detect VERIFY challenge from anti-bot systems
+        if (/QUOTE\s+VERIFY/i.test(text)) {
+          const codeMatch: RegExpMatchArray | null = text.match(
+            /QUOTE\s+VERIFY\s+(\S+)/i,
+          );
+          const code: string = codeMatch ? codeMatch[1] : '';
+          const serverName: string =
+            this.serverConfigs.get(serverId)?.name || serverId;
+          s.addMessage(
+            serverId,
+            '*status',
+            '',
+            `${serverName} requires verification. Send: VERIFY ${code}`,
+            'system',
+          );
+          s.selectChannel(serverId, '*status');
+        }
         break;
       }
 

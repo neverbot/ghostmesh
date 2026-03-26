@@ -798,7 +798,13 @@ const useIrcStore = defineStore('irc', () => {
    */
   function sendMessage(content: string): void {
     if (!selectedServerId.value || !selectedChannel.value) return;
-    if (selectedChannel.value === '*status') return;
+    if (selectedChannel.value === '*status') {
+      // Status channel: send as raw IRC command
+      getService().send(selectedServerId.value, content);
+      addMessage(selectedServerId.value, '*status', nickname.value, content, 'message');
+      markReadUpTo(selectedServerId.value, '*status', Date.now());
+      return;
+    }
     getService().sendMessage(selectedServerId.value, selectedChannel.value, content);
     addMessage(selectedServerId.value, selectedChannel.value, nickname.value, content, 'message');
     // Own messages should not increase unread count

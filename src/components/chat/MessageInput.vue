@@ -10,7 +10,7 @@
   watch(
     () => store.selectedChannel,
     (ch) => {
-      if (ch && ch !== '*status') {
+      if (ch) {
         nextTick(() => inputEl.value?.focus());
       }
     },
@@ -27,7 +27,7 @@
     text.value = '';
   }
 
-  const isDisabled = computed(() => !store.selectedChannel || store.selectedChannel === '*status');
+  const isDisabled = computed(() => !store.selectedChannel);
 </script>
 
 <template>
@@ -37,7 +37,13 @@
         ref="inputEl"
         v-model="text"
         type="text"
-        :placeholder="isDisabled ? 'Select a channel to chat...' : 'Write your message...'"
+        :placeholder="
+          isDisabled
+            ? 'Select a channel to chat...'
+            : store.selectedChannel === '*status'
+              ? 'Send raw IRC command...'
+              : 'Write your message...'
+        "
         :disabled="isDisabled"
         class="flex-1 rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white disabled:cursor-not-allowed disabled:opacity-50"
         @keyup.enter="handleSend"
