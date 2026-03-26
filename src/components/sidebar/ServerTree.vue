@@ -522,6 +522,7 @@
                 <span
                   v-if="store.connectedServers.length > 1"
                   class="w-6 rounded bg-slate-700/30 py-0.5 text-center text-[8px] text-slate-600"
+                  :title="ch._sname"
                 >
                   {{ serverAbbr(ch._sname) }}
                 </span>
