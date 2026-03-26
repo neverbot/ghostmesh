@@ -59,7 +59,7 @@
     }
   });
 
-  const isOwn = computed(() => props.message.nick === store.nickname);
+  const isOwn = computed(() => !!props.message.own);
   const isSystem = computed(() =>
     ['system', 'join', 'part', 'quit', 'nick'].includes(props.message.type),
   );

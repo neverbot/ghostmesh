@@ -59,6 +59,8 @@ interface ChatMessage {
   type: MessageType;
   /** Optional warning text shown as a badge on the message bubble. */
   warning?: string;
+  /** Whether this message was sent by the local user. Persists across nick changes. */
+  own?: boolean;
 }
 
 // ─── UI events ───────────────────────────────────────────────────────────────
