@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, shallowRef, computed, triggerRef, watch } from 'vue';
 import config from '@/config.ts';
-import IRCService from '@/services/irc.service.js';
+import IRCService from '@/services/irc.service.ts';
 import { useServerSettingsStore } from '@/stores/server-settings.js';
 import { useUserSettingsStore } from '@/stores/user-settings.js';
 import { useUserPrefsStore } from '@/stores/user-prefs.js';

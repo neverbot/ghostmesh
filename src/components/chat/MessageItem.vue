@@ -4,8 +4,8 @@
   import { useServerSettingsStore } from '@/stores/server-settings.js';
   import { useUserPrefsStore } from '@/stores/user-prefs.js';
   import { parseFormatting, stripFormatting, hasFormatting } from '@/utils/mirc-format.ts';
-  import { formatPlainContent, formatHtmlContent, isImageUrl } from '@/services/message.service.js';
-  import { resolveImageProvider } from '@/services/image-providers.js';
+  import { formatPlainContent, formatHtmlContent, isImageUrl } from '@/services/message.service.ts';
+  import { resolveImageProvider } from '@/services/image-providers.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
 
   const props = defineProps({
