@@ -242,6 +242,11 @@
         autoScroll = true;
         showScrollBtn.value = false;
         el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
+      }
+      // If content doesn't overflow (few messages), mark all as read
+      if (el.scrollHeight <= el.clientHeight) {
+        markAllCurrentAsRead();
+      } else if (!saved) {
         markAllCurrentAsRead();
       }
     });
