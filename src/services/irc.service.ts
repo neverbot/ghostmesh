@@ -811,6 +811,13 @@ class IRCService extends EventEmitter {
             'system',
           );
           s.selectChannel(serverId, '*status');
+          // Delay focus to ensure Vue has flushed the channel switch
+          setTimeout(() => {
+            const input = document.querySelector<HTMLInputElement>(
+              'input[placeholder="Send raw IRC command..."]',
+            );
+            input?.focus();
+          }, 100);
         }
         break;
       }
