@@ -456,13 +456,14 @@
                 >
                   {{ getBadge(entry.serverId, entry.channel).users || '' }}
                 </span>
-                <span
+                <InfoTooltip
                   v-if="store.connectedServers.length > 1"
-                  class="w-6 rounded bg-slate-700/60 py-0.5 text-center text-[9px] text-slate-500"
-                  :title="entry.serverName"
+                  :text="entry.serverName"
                 >
-                  {{ serverAbbr(entry.serverName) }}
-                </span>
+                  <span class="w-6 rounded bg-slate-700/60 py-0.5 text-center text-[9px] text-slate-500">
+                    {{ serverAbbr(entry.serverName) }}
+                  </span>
+                </InfoTooltip>
                 <!-- Leave button — always rendered for consistent width, invisible for status -->
                 <InfoTooltip
                   v-if="entry.channel !== '*status'"
@@ -519,13 +520,14 @@
                 <span class="text-[10px] text-slate-600">
                   {{ ch.users }}
                 </span>
-                <span
+                <InfoTooltip
                   v-if="store.connectedServers.length > 1"
-                  class="w-6 rounded bg-slate-700/30 py-0.5 text-center text-[8px] text-slate-600"
-                  :title="ch._sname"
+                  :text="ch._sname"
                 >
-                  {{ serverAbbr(ch._sname) }}
-                </span>
+                  <span class="w-6 rounded bg-slate-700/30 py-0.5 text-center text-[8px] text-slate-600">
+                    {{ serverAbbr(ch._sname) }}
+                  </span>
+                </InfoTooltip>
               </div>
             </div>
 
