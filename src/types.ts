@@ -24,8 +24,14 @@ interface ServerConfig {
   id: string;
   /** Human-readable display name. */
   name: string;
-  /** WebSocket URL for connecting (wss://...). */
+  /** WebSocket URL for direct connection, or display label for proxy-routed servers. */
   host: string;
+  /** TCP hostname for proxy-based connections (e.g. "irc.example.com"). If set, connect via proxy. */
+  tcpHost?: string;
+  /** TCP port for proxy-based connections (default 6667). */
+  tcpPort?: number;
+  /** Whether to use TLS for the TCP connection to the IRC server. */
+  tcpTls?: boolean;
 }
 
 // ─── Chat messages ───────────────────────────────────────────────────────────

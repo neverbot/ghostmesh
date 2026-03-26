@@ -38,12 +38,20 @@ interface ServerDefaults {
   realname: string;
 }
 
+interface ProxyConfig {
+  /** Base WebSocket URL for the proxy-wss service. */
+  url: string;
+  /** Shared secret for authenticating with the proxy. */
+  secret: string;
+}
+
 interface AppConfig {
   storageKeys: StorageKeys;
   irc: IrcDefaults;
   chat: ChatConfig;
   list: ListConfig;
   images: ImagesConfig;
+  proxy: ProxyConfig;
   serverDefaults: ServerDefaults;
 }
 
@@ -85,6 +93,12 @@ const config: AppConfig = {
     showProxyCaption: true,
   },
 
+  /** WebSocket-to-TCP proxy for servers without native WebSocket support. */
+  proxy: {
+    url: 'ws://localhost:8080',
+    secret: 'dev-secret',
+  },
+
   /** Per-server settings defaults (overridden by localStorage). */
   serverDefaults: {
     /** Seconds to wait after connecting before requesting LIST. */
@@ -117,6 +131,7 @@ export type {
   ChatConfig,
   ListConfig,
   ImagesConfig,
+  ProxyConfig,
   ServerDefaults,
 };
 export default config;

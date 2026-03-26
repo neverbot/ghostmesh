@@ -135,7 +135,21 @@ class IRCService extends EventEmitter {
       realname: this.userSettings.resolveRealname(serverId, this.serverSettings),
     };
 
-    const socket: WebSocket = new WebSocket(server.host);
+    // Route through proxy for TCP-only servers, direct WebSocket otherwise
+    let wsUrl: string;
+    if (server.tcpHost) {
+      const params = new URLSearchParams({
+        host: server.tcpHost,
+        port: String(server.tcpPort || 6667),
+        tls: String(server.tcpTls ?? false),
+        token: config.proxy.secret,
+      });
+      wsUrl = `${config.proxy.url}/?${params}`;
+    } else {
+      wsUrl = server.host;
+    }
+
+    const socket: WebSocket = new WebSocket(wsUrl);
     const connection: IRCConnection = { socket, config: ircConfig };
 
     // Store server config for potential reconnection
@@ -172,7 +186,10 @@ class IRCService extends EventEmitter {
 
     socket.onerror = (): void => {
       this.store.removeConnection(serverId);
-      this.store.addSystemMessage(serverId, `Error connecting to ${server.name}`);
+      const msg = server.tcpHost
+        ? `Error connecting to ${server.name} — proxy service may be unavailable`
+        : `Error connecting to ${server.name}`;
+      this.store.addSystemMessage(serverId, msg);
       this.cleanupConnection(serverId);
       this.scheduleReconnect(serverId);
     };
