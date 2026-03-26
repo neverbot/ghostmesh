@@ -863,11 +863,20 @@ const useIrcStore = defineStore('irc', () => {
     for (const serverId of session.serverIds) {
       const server: ServerConfig | undefined = servers.value.find((s) => s.id === serverId);
       if (!server) continue;
+      if (isConnected(serverId) || connectingServers.value.includes(serverId)) continue;
       // Store the channels to rejoin after connection
       const channelsToJoin: string[] = (session.channels[serverId] || []).filter(
         (ch) => ch !== '*status',
       );
-      connectToServer(server);
+      // Connect directly without duplicate network check (session restore is intentional)
+      connectingServers.value.push(server.id);
+      getService().connect(server);
+      connectTimers[server.id] = setTimeout(() => {
+        if (!isConnected(server.id)) {
+          connectingServers.value = connectingServers.value.filter((id) => id !== server.id);
+          getService().cleanupConnection(server.id);
+        }
+      }, 15000);
       // Rejoin channels after registration completes (376/422)
       if (channelsToJoin.length > 0) {
         const service: IRCService = getService();
