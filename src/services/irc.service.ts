@@ -557,6 +557,10 @@ class IRCService extends EventEmitter {
         const actionMatch: RegExpMatchArray | null = msgText.match(
           /^\x01ACTION (.*)\x01?$/,
         );
+        if (msgText.includes('\x01')) {
+          // eslint-disable-next-line no-console
+          console.debug('[GhostMesh] CTCP detected:', JSON.stringify(msgText));
+        }
         const isAction: boolean = !!actionMatch;
         const content: string = isAction ? `* ${nick} ${actionMatch![1]}` : msgText;
         const msgType: string = isAction ? 'system' : 'message';
@@ -676,6 +680,15 @@ class IRCService extends EventEmitter {
           ) {
             s.addMessage(serverId, channel, nick, `${nick} is now known as ${newNick}`, 'nick');
           }
+        }
+        break;
+      }
+
+      case '442': {
+        // ERR_NOTONCHANNEL — we tried to PART a channel we're not on
+        const channel: string = params[1];
+        if (channel) {
+          s.removeJoinedChannel(serverId, channel);
         }
         break;
       }
