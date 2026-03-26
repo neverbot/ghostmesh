@@ -42,6 +42,15 @@
     () =>
       store.connectedServers.length > 0 && !store.isListLoading && store.totalAvailableCount === 0,
   );
+  /** Servers sorted with connected ones first. */
+  const sortedServers = computed(() =>
+    [...store.servers].sort((a, b) => {
+      const aConn = store.isConnected(a.id) ? 0 : 1;
+      const bConn = store.isConnected(b.id) ? 0 : 1;
+      return aConn - bConn;
+    }),
+  );
+
   const channelsCollapsed = ref(false);
   const showFilters = ref(false);
   const channelFilterInput = ref<HTMLInputElement | null>(null);
@@ -131,7 +140,7 @@
       >
         <div class="flex flex-col gap-0.5 overflow-hidden">
           <div
-            v-for="server in store.servers"
+            v-for="server in sortedServers"
             :key="server.id"
             class="group flex items-center gap-3 rounded-lg px-3 py-2 transition-colors"
             :class="[
