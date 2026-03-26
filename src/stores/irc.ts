@@ -222,24 +222,11 @@ const useIrcStore = defineStore('irc', () => {
     return set;
   });
 
-  /**
-   * Build a text matcher from filter input. Supports * and ? wildcards.
-   * Plain text without wildcards does a substring match.
-   */
+  /** Build a case-insensitive substring matcher from filter input. */
   function buildMatcher(filter: string): (text: string) => boolean {
     if (!filter) return () => true;
     const lower: string = filter.toLowerCase();
-    const hasWildcard: boolean = lower.includes('*') || lower.includes('?');
-    if (!hasWildcard) {
-      return (text: string) => text.toLowerCase().includes(lower);
-    }
-    // Convert glob to regex: * -> .*, ? -> ., escape the rest
-    const pattern: string = lower
-      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-      .replace(/\*/g, '.*')
-      .replace(/\?/g, '.');
-    const re: RegExp = new RegExp(`^${pattern}$`);
-    return (text: string) => re.test(text.toLowerCase());
+    return (text: string) => text.toLowerCase().includes(lower);
   }
 
   /** Whether any server is currently loading a channel list. */
