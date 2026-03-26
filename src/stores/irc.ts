@@ -933,7 +933,7 @@ const useIrcStore = defineStore('irc', () => {
   /** Disconnect from all servers and clean up. */
   function cleanup(): void {
     getService().disconnectAll();
-    clearSession();
+    if (!unloading) clearSession();
   }
 
   // Persist session on changes
