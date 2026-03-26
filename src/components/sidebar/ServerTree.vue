@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, computed, watch } from 'vue';
+  import { ref, computed, watch, nextTick } from 'vue';
   import config from '@/config.ts';
   import { useIrcStore } from '@/stores/irc.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
@@ -16,6 +16,7 @@
   );
   const channelsCollapsed = ref(false);
   const showFilters = ref(false);
+  const channelFilterInput = ref<HTMLInputElement | null>(null);
   const joinInput = ref('');
   const settingsModalOpen = ref(false);
   const settingsServerId = ref<string | null>(null);
@@ -276,7 +277,10 @@
             :class="
               showFilters ? 'bg-slate-700 text-slate-300' : 'text-slate-600 hover:text-slate-400'
             "
-            @click="showFilters = !showFilters"
+            @click="
+              showFilters = !showFilters;
+              if (showFilters) nextTick(() => channelFilterInput?.focus());
+            "
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -302,6 +306,7 @@
           >
             <!-- Text search -->
             <input
+              ref="channelFilterInput"
               v-model="store.filterText"
               type="text"
               placeholder="Search name or topic"

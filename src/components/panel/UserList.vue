@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, computed } from 'vue';
+  import { ref, computed, nextTick } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
@@ -19,6 +19,7 @@
 
   const showFilter = ref(false);
   const filterText = ref('');
+  const userFilterInput = ref<HTMLInputElement | null>(null);
 
   /** Filtered user list (case-insensitive substring match). */
   const filteredUsers = computed(() => {
@@ -71,7 +72,10 @@
               ? 'bg-emerald-500/20 text-emerald-400'
               : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
           "
-          @click="showFilter = !showFilter"
+          @click="
+            showFilter = !showFilter;
+            if (showFilter) nextTick(() => userFilterInput?.focus());
+          "
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -91,6 +95,7 @@
       class="mb-2 rounded-lg bg-slate-100 px-2 py-1.5"
     >
       <input
+        ref="userFilterInput"
         v-model="filterText"
         type="text"
         placeholder="Search by name..."
