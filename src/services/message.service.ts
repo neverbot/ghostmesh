@@ -111,6 +111,8 @@ function handleImageError(img: HTMLImageElement): void {
       newImg.alt = '';
       newImg.referrerPolicy = 'no-referrer';
       newImg.className = 'mt-1 block max-w-full rounded-lg animate-preview';
+      newImg.style.maxHeight = '70vh';
+      newImg.style.width = 'auto';
       newImg.loading = 'lazy';
       newImg.onerror = (): void => handleImageError(newImg);
       wrapper.replaceWith(newImg);
@@ -159,6 +161,8 @@ async function resolveAsyncImage(asyncMarker: string, placeholderId: string): Pr
       const img: HTMLImageElement = document.createElement('img');
       img.alt = '';
       img.className = 'mt-1 block max-w-full rounded-lg animate-preview';
+      img.style.maxHeight = '70vh';
+      img.style.width = 'auto';
       if (dataUrl.startsWith('data:')) {
         img.src = dataUrl;
       } else {
@@ -291,7 +295,7 @@ function linkifyText(text: string, { resolveImages = true }: LinkifyOptions = {}
       });
     } else if (imageSrc) {
       const escapedSrc: string = escapeHtml(imageSrc);
-      result += `<img src="${escapedSrc}" data-original-src="${escapedSrc}" data-attempt="0" alt="" referrerpolicy="no-referrer" class="mt-1 block max-w-full rounded-lg animate-preview" loading="lazy" onerror="window.__ghostmeshImageError?.(this)" />`;
+      result += `<img src="${escapedSrc}" data-original-src="${escapedSrc}" data-attempt="0" alt="" referrerpolicy="no-referrer" class="mt-1 block max-w-full rounded-lg animate-preview" style="max-height:70vh;width:auto" loading="lazy" onerror="window.__ghostmeshImageError?.(this)" />`;
     }
 
     lastIndex = match.index + rawUrl.length;
