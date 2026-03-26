@@ -449,7 +449,7 @@
                 </span>
                 <span
                   v-if="store.connectedServers.length > 1"
-                  class="rounded bg-slate-700/60 px-1.5 py-0.5 text-[9px] text-slate-500"
+                  class="w-6 rounded bg-slate-700/60 py-0.5 text-center text-[9px] text-slate-500"
                   :title="entry.serverName"
                 >
                   {{ serverAbbr(entry.serverName) }}
@@ -512,7 +512,7 @@
                 </span>
                 <span
                   v-if="store.connectedServers.length > 1"
-                  class="rounded bg-slate-700/30 px-1 py-0.5 text-[8px] text-slate-600"
+                  class="w-6 rounded bg-slate-700/30 py-0.5 text-center text-[8px] text-slate-600"
                 >
                   {{ serverAbbr(ch._sname) }}
                 </span>
