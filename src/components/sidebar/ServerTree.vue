@@ -1,6 +1,6 @@
 <script setup>
   import { ref, computed, watch } from 'vue';
-  import config from '@/config.js';
+  import config from '@/config.ts';
   import { useIrcStore } from '@/stores/irc.js';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import ServerSettingsModal from '@/components/ui/ServerSettingsModal.vue';

@@ -1,10 +1,7 @@
 /* eslint-disable no-control-regex */
 
-/**
- * Standard mIRC 16-color palette.
- * @type {string[]}
- */
-const MIRC_COLORS = [
+/** Standard mIRC 16-color palette. */
+const MIRC_COLORS: readonly string[] = [
   '#ffffff', // 0 white
   '#000000', // 1 black
   '#00007f', // 2 navy
@@ -23,23 +20,14 @@ const MIRC_COLORS = [
   '#d2d2d2', // 15 light grey
 ];
 
-/**
- * Escape HTML special characters.
- * @param {string} str
- * @returns {string}
- */
-function escapeHtml(str) {
+/** Escape HTML special characters. */
+function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-/**
- * Get a CSS color value for a mIRC color code.
- * @param {number} code — 0-98
- * @returns {string|null}
- */
-function getMircColor(code) {
+/** Get a CSS color value for a mIRC color code (0-98). */
+function getMircColor(code: number): string | null {
   if (code >= 0 && code <= 15) return MIRC_COLORS[code];
-  // Extended colors 16-98: approximate with HSL
   if (code >= 16 && code <= 98) {
     const idx = code - 16;
     const row = Math.floor(idx / 12);
@@ -55,10 +43,8 @@ function getMircColor(code) {
  * Parse mIRC formatting codes and return safe HTML with inline styles.
  * Handles: bold (\x02), italic (\x1D), underline (\x1F), strikethrough (\x1E),
  * monospace (\x11), reverse (\x16), color (\x03), reset (\x0F).
- * @param {string} text — raw text with mIRC control characters
- * @returns {string} — HTML string
  */
-function parseFormatting(text) {
+function parseFormatting(text: string): string {
   if (!text) return '';
 
   let bold = false;
@@ -66,8 +52,8 @@ function parseFormatting(text) {
   let underline = false;
   let strikethrough = false;
   let monospace = false;
-  let fg = null;
-  let bg = null;
+  let fg: number | null = null;
+  let bg: number | null = null;
   let reverse = false;
 
   let html = '';
@@ -130,7 +116,6 @@ function parseFormatting(text) {
           }
           i += colorMatch[0].length;
         } else {
-          // \x03 with no digits = reset color
           fg = null;
           bg = null;
         }
@@ -148,9 +133,8 @@ function parseFormatting(text) {
       }
 
       default: {
-        // Regular character — build styled span
-        const styles = [];
-        const classes = [];
+        const styles: string[] = [];
+        const classes: string[] = [];
 
         if (bold) classes.push('font-bold');
         if (italic) classes.push('italic');
@@ -173,7 +157,7 @@ function parseFormatting(text) {
         const escaped = escapeHtml(text[i]);
 
         if (styles.length > 0 || classes.length > 0) {
-          const attrs = [];
+          const attrs: string[] = [];
           if (classes.length) attrs.push(`class="${classes.join(' ')}"`);
           if (styles.length) attrs.push(`style="${styles.join(';')}"`);
           html += `<span ${attrs.join(' ')}>${escaped}</span>`;
@@ -189,12 +173,8 @@ function parseFormatting(text) {
   return html;
 }
 
-/**
- * Strip all mIRC formatting codes from text (plain text output).
- * @param {string} text
- * @returns {string}
- */
-function stripFormatting(text) {
+/** Strip all mIRC formatting codes from text (plain text output). */
+function stripFormatting(text: string): string {
   if (!text) return '';
   return text.replace(
     /\x02|\x1D|\x1F|\x1E|\x11|\x16|\x0F|\x03(\d{1,2}(,\d{1,2})?)?|\x04([0-9a-fA-F]{6}(,[0-9a-fA-F]{6})?)?/g,
@@ -202,12 +182,8 @@ function stripFormatting(text) {
   );
 }
 
-/**
- * Check if text contains mIRC formatting codes.
- * @param {string} text
- * @returns {boolean}
- */
-function hasFormatting(text) {
+/** Check if text contains mIRC formatting codes. */
+function hasFormatting(text: string): boolean {
   if (!text) return false;
   return /[\x02\x03\x04\x0F\x11\x1D\x1E\x1F\x16]/.test(text);
 }

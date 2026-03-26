@@ -1,6 +1,6 @@
-import EventEmitter from '@/utils/event-emitter.js';
-import { hasFormatting } from '@/utils/mirc-format.js';
-import config from '@/config.js';
+import EventEmitter from '@/utils/event-emitter.ts';
+import { hasFormatting } from '@/utils/mirc-format.ts';
+import config from '@/config.ts';
 
 /** Channel prefixes per IRC spec. Names without these are DMs or special. */
 const CHANNEL_PREFIXES = ['#', '&', '!', '+'];

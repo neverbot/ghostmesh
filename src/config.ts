@@ -1,8 +1,10 @@
+import type { AppConfig } from '@/types/index.ts';
+
 /**
  * Global application defaults.
  * All configurable values should live here so they are easy to find and change.
  */
-const config = {
+const config: AppConfig = {
   /** localStorage keys — single source of truth. */
   storageKeys: {
     userSettings: 'ghostmesh:user-settings',

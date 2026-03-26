@@ -3,7 +3,7 @@
  * Handles URL detection, linkification, and image preview with anti-hotlinking fallback.
  */
 
-import config from '@/config.js';
+import config from '@/config.ts';
 import { resolveImageProvider, providers } from '@/services/image-providers.js';
 import { imageProxyUrl, fetchWithProxy } from '@/services/proxy-services.js';
 

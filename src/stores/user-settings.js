@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, watch } from 'vue';
-import config from '@/config.js';
+import config from '@/config.ts';
 
 const STORAGE_KEY = config.storageKeys.userSettings;
 
