@@ -549,8 +549,18 @@ class IRCService extends EventEmitter {
     switch (command) {
       case 'PRIVMSG': {
         const target: string = params[0];
+        const msgText: string = trailing || '';
         const connection: IRCConnection | undefined = this.connections.get(serverId);
         const ourNick: string = connection?.config?.nickname || '';
+
+        // CTCP ACTION: \x01ACTION text\x01 → render as "* nick text"
+        const actionMatch: RegExpMatchArray | null = msgText.match(
+          /^\x01ACTION (.*)\x01?$/,
+        );
+        const isAction: boolean = !!actionMatch;
+        const content: string = isAction ? `* ${nick} ${actionMatch![1]}` : msgText;
+        const msgType: string = isAction ? 'system' : 'message';
+
         // Direct message: target is our nick, not a channel
         if (target.toLowerCase() === ourNick.toLowerCase()) {
           // Self-DM echo: we already added the message locally in sendMessage
@@ -562,10 +572,10 @@ class IRCService extends EventEmitter {
           if (!serverChannels.includes(nick)) {
             s.addJoinedChannel(serverId, nick);
           }
-          s.addMessage(serverId, nick, nick, trailing!, 'message');
+          s.addMessage(serverId, nick, nick, content, msgType);
           s.setDMOnline(serverId, nick, true);
         } else {
-          s.addMessage(serverId, target, nick, trailing!, 'message');
+          s.addMessage(serverId, target, nick, content, msgType);
         }
         break;
       }
