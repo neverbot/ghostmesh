@@ -31,6 +31,7 @@
   const activeTab = ref('general');
 
   const form = ref<Partial<ServerSettingsEntry>>({});
+  const newFilter = ref('');
 
   // Load form values when opening
   watch(
@@ -84,6 +85,23 @@
   function close() {
     emit('close');
   }
+
+  /** Add a new filtered message pattern. */
+  function addFilter() {
+    const text = newFilter.value.trim();
+    if (!text) return;
+    const filters = form.value.filteredMessages || [];
+    if (!filters.some((f) => f.toLowerCase() === text.toLowerCase())) {
+      form.value.filteredMessages = [...filters, text];
+    }
+    newFilter.value = '';
+  }
+
+  /** Remove a filtered message pattern by index. */
+  function removeFilter(idx: number) {
+    const filters = form.value.filteredMessages || [];
+    form.value.filteredMessages = filters.filter((_, i) => i !== idx);
+  }
 </script>
 
 <template>
@@ -123,7 +141,7 @@
         <!-- Tabs -->
         <div class="flex border-b border-slate-700 px-5">
           <button
-            v-for="tab in ['general', 'user', 'formatting', 'blocked']"
+            v-for="tab in ['general', 'user', 'formatting', 'filtered', 'blocked']"
             :key="tab"
             class="border-b-2 px-3 py-2.5 text-xs font-medium capitalize transition-colors"
             :class="
@@ -401,6 +419,57 @@
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Filtered messages tab -->
+          <div
+            v-if="activeTab === 'filtered'"
+            class="flex flex-col gap-4"
+          >
+            <p class="text-[10px] text-slate-500">
+              Messages containing any of these texts will be hidden in public channels. Case-insensitive substring match.
+            </p>
+
+            <!-- Add new filter -->
+            <div class="flex gap-2">
+              <input
+                v-model="newFilter"
+                type="text"
+                placeholder="Text to filter..."
+                class="flex-1 rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-xs text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500/50"
+                @keyup.enter="addFilter"
+              />
+              <button
+                class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs text-white transition-colors hover:bg-emerald-500 disabled:opacity-40"
+                :disabled="!newFilter.trim()"
+                @click="addFilter"
+              >
+                Add
+              </button>
+            </div>
+
+            <!-- Filter list -->
+            <div class="max-h-48 overflow-y-auto">
+              <div
+                v-for="(filter, idx) in (form.filteredMessages || [])"
+                :key="idx"
+                class="flex items-center justify-between border-b border-slate-700/50 py-1.5"
+              >
+                <span class="text-xs text-slate-300">{{ filter }}</span>
+                <button
+                  class="text-[10px] text-slate-500 transition-colors hover:text-red-400"
+                  @click="removeFilter(idx)"
+                >
+                  Remove
+                </button>
+              </div>
+              <p
+                v-if="!form.filteredMessages?.length"
+                class="py-2 text-center text-[10px] italic text-slate-600"
+              >
+                No filters configured
+              </p>
             </div>
           </div>
         </div>

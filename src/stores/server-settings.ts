@@ -9,6 +9,8 @@ import type { ServerDefaults } from '@/config.ts';
 interface ServerSettingsEntry extends ServerDefaults {
   listDelayManual?: boolean;
   mircDetected?: boolean;
+  /** Text patterns to filter out from public channel messages. */
+  filteredMessages?: string[];
 }
 
 const STORAGE_KEY: string = config.storageKeys.serverSettings;
@@ -94,6 +96,14 @@ const useServerSettingsStore = defineStore('server-settings', () => {
     }
   }
 
+  /** Check if a message text matches any filtered patterns for a server. */
+  function isMessageFiltered(serverId: string, text: string): boolean {
+    const filters: string[] = getSettings(serverId).filteredMessages || [];
+    if (filters.length === 0) return false;
+    const lower: string = text.toLowerCase();
+    return filters.some((pattern: string) => lower.includes(pattern.toLowerCase()));
+  }
+
   return {
     settings,
     getSettings,
@@ -101,6 +111,7 @@ const useServerSettingsStore = defineStore('server-settings', () => {
     getListDelay,
     isMircEnabled,
     markMircDetected,
+    isMessageFiltered,
   };
 });
 

@@ -32,6 +32,8 @@ interface ServerConfig {
   tcpPort?: number;
   /** Whether to use TLS for the TCP connection to the IRC server. */
   tcpTls?: boolean;
+  /** Default filtered message patterns for this server. Applied on first connect if no user overrides exist. */
+  defaultFilteredMessages?: string[];
 }
 
 // ─── Chat messages ───────────────────────────────────────────────────────────

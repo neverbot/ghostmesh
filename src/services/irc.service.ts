@@ -575,6 +575,8 @@ class IRCService extends EventEmitter {
           s.addMessage(serverId, nick, nick, content, msgType);
           s.setDMOnline(serverId, nick, true);
         } else {
+          // Filter messages matching server-specific patterns (public channels only)
+          if (this.serverSettings.isMessageFiltered(serverId, content)) break;
           s.addMessage(serverId, target, nick, content, msgType);
         }
         break;
@@ -861,6 +863,17 @@ class IRCService extends EventEmitter {
           }
         }, delay);
         this.initialListTimers.set(serverId, timer);
+        // Apply default filtered messages if user hasn't configured any yet
+        const serverConfig: ServerConfig | undefined = this.serverConfigs.get(serverId);
+        if (serverConfig?.defaultFilteredMessages?.length) {
+          const existing: string[] | undefined =
+            this.serverSettings.settings[serverId]?.filteredMessages;
+          if (!existing || existing.length === 0) {
+            this.serverSettings.updateSettings(serverId, {
+              filteredMessages: [...serverConfig.defaultFilteredMessages],
+            });
+          }
+        }
         if (trailing) s.addSystemMessage(serverId, `[${command}] ${trailing}`);
         break;
       }
