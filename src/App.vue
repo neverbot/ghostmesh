@@ -10,6 +10,8 @@
    */
   function onBeforeUnload(e: BeforeUnloadEvent) {
     if (store.activeConnections.length > 0) {
+      // Save session BEFORE sockets close (socket close triggers clearSession)
+      store.persistSession();
       e.preventDefault();
     }
   }

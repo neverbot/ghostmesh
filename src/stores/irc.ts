@@ -837,12 +837,17 @@ const useIrcStore = defineStore('irc', () => {
     }
   }
 
+  /** When true, the watch won't clear the session (page is unloading). */
+  let sessionLocked = false;
+
   /** Save current session to localStorage. */
   function persistSession(): void {
-    if (activeConnections.value.length === 0) {
+    if (activeConnections.value.length === 0 && !sessionLocked) {
       clearSession();
       return;
     }
+    // Lock to prevent the watch from clearing the session during unload
+    sessionLocked = true;
     saveSession({
       serverIds: [...activeConnections.value],
       channels: { ...channels.value },
@@ -858,12 +863,14 @@ const useIrcStore = defineStore('irc', () => {
    */
   function restoreSession(): void {
     const session: SessionData | null = loadSession();
+    // eslint-disable-next-line no-console
+    console.info('[GhostMesh] restoreSession:', JSON.stringify(session?.serverIds));
     if (!session || !session.serverIds?.length) return;
 
     for (const serverId of session.serverIds) {
       const server: ServerConfig | undefined = servers.value.find((s) => s.id === serverId);
-      if (!server) continue;
-      if (isConnected(serverId) || connectingServers.value.includes(serverId)) continue;
+      if (!server) { console.warn('[GhostMesh] restore: server not found:', serverId); continue; } // eslint-disable-line no-console
+      if (isConnected(serverId) || connectingServers.value.includes(serverId)) { console.warn('[GhostMesh] restore: already connected/connecting:', serverId); continue; } // eslint-disable-line no-console
       // Skip duplicate networks during restore
       const targetKey: string = server.tcpHost
         ? `${server.tcpHost}:${server.tcpPort || 6667}`
@@ -874,11 +881,13 @@ const useIrcStore = defineStore('irc', () => {
         const otherKey = other.tcpHost ? `${other.tcpHost}:${other.tcpPort || 6667}` : other.host;
         return otherKey === targetKey;
       });
-      if (isDuplicate) continue;
+      if (isDuplicate) { console.warn('[GhostMesh] restore: duplicate network skipped:', serverId); continue; } // eslint-disable-line no-console
       // Store the channels to rejoin after connection
       const channelsToJoin: string[] = (session.channels[serverId] || []).filter(
         (ch) => ch !== '*status',
       );
+      // eslint-disable-next-line no-console
+      console.info('[GhostMesh] restore: connecting to', serverId);
       connectingServers.value.push(server.id);
       getService().connect(server);
       connectTimers[server.id] = setTimeout(() => {
@@ -1020,6 +1029,7 @@ const useIrcStore = defineStore('irc', () => {
     unreadCount,
     markReadUpTo,
     dismissConnectionError,
+    persistSession,
     restoreSession,
     cleanup,
   };
