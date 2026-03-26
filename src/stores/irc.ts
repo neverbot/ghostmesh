@@ -66,6 +66,8 @@ function saveSession(data: SessionData): void {
 
 /** Clear saved session from localStorage. */
 function clearSession(): void {
+  // eslint-disable-next-line no-console
+  console.debug('[GhostMesh] clearSession called', new Error().stack?.split('\n').slice(1, 4).join(' <- '));
   localStorage.removeItem(SESSION_KEY);
 }
 
@@ -847,8 +849,10 @@ const useIrcStore = defineStore('irc', () => {
 
   /** Save current session to localStorage. */
   function persistSession(): void {
+    // During page unload, don't touch the session — keep the last good save
+    if (unloading) return;
     if (activeConnections.value.length === 0) {
-      if (!unloading) clearSession();
+      clearSession();
       return;
     }
     saveSession({

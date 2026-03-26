@@ -9,10 +9,9 @@
    * @param {BeforeUnloadEvent} e
    */
   function onBeforeUnload(e: BeforeUnloadEvent) {
+    // Lock session to prevent socket-close from clearing it during page unload
+    store.markUnloading();
     if (store.activeConnections.length > 0) {
-      // Save session and lock BEFORE sockets close (socket close would trigger clearSession)
-      store.persistSession();
-      store.markUnloading();
       e.preventDefault();
     }
   }
