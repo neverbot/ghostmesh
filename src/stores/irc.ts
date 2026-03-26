@@ -838,16 +838,19 @@ const useIrcStore = defineStore('irc', () => {
   }
 
   /** When true, the watch won't clear the session (page is unloading). */
-  let sessionLocked = false;
+  let unloading = false;
+
+  /** Mark the session as unloading so the watch doesn't clear it. */
+  function markUnloading(): void {
+    unloading = true;
+  }
 
   /** Save current session to localStorage. */
   function persistSession(): void {
-    if (activeConnections.value.length === 0 && !sessionLocked) {
-      clearSession();
+    if (activeConnections.value.length === 0) {
+      if (!unloading) clearSession();
       return;
     }
-    // Lock to prevent the watch from clearing the session during unload
-    sessionLocked = true;
     saveSession({
       serverIds: [...activeConnections.value],
       channels: { ...channels.value },
@@ -1030,6 +1033,7 @@ const useIrcStore = defineStore('irc', () => {
     markReadUpTo,
     dismissConnectionError,
     persistSession,
+    markUnloading,
     restoreSession,
     cleanup,
   };
