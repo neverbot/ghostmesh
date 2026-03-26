@@ -304,7 +304,7 @@
             <input
               v-model="store.filterText"
               type="text"
-              placeholder="Search name or topic (* ? wildcards)"
+              placeholder="Search name or topic"
               class="w-full rounded-md border border-slate-600/50 bg-slate-700/40 px-2 py-1 text-[11px] text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500/50"
             />
 
