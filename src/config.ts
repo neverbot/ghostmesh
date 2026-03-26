@@ -95,8 +95,8 @@ const config: AppConfig = {
 
   /** WebSocket-to-TCP proxy for servers without native WebSocket support. */
   proxy: {
-    url: 'ws://localhost:8080',
-    secret: 'dev-secret',
+    url: import.meta.env.VITE_PROXY_URL || 'ws://localhost:8080',
+    secret: import.meta.env.VITE_PROXY_SECRET || 'dev-secret',
   },
 
   /** Per-server settings defaults (overridden by localStorage). */
