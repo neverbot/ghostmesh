@@ -17,7 +17,7 @@
 
   function updateBadgeCache(): void {
     const cache: Record<string, { unread: number; users: number }> = {};
-    for (const entry of store.joinedChannelList) {
+    for (const entry of store.allJoinedChannels) {
       const key = `${entry.serverId}:${entry.channel}`;
       cache[key] = {
         unread: store.unreadCount(entry.serverId, entry.channel),
