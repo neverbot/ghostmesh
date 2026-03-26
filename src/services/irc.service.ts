@@ -733,6 +733,23 @@ class IRCService extends EventEmitter {
         break;
       }
 
+      case '333': {
+        // RPL_TOPICWHOTIME — who set the topic and when
+        const channel: string = params[1];
+        const setter: string = (params[2] || '').split('!')[0];
+        const timestamp: number = parseInt(params[3] || trailing || '0', 10);
+        if (setter && timestamp) {
+          const date: Date = new Date(timestamp * 1000);
+          const dateStr: string = date.toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          });
+          s.addMessage(serverId, channel, '', `Topic set by ${setter} on ${dateStr}`, 'system');
+        }
+        break;
+      }
+
       case '353': {
         // RPL_NAMREPLY
         const channel: string = params[2];
