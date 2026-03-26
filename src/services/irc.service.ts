@@ -670,6 +670,19 @@ class IRCService extends EventEmitter {
         break;
       }
 
+      case '401': {
+        // ERR_NOSUCHNICK — target nick/channel doesn't exist
+        const target: string = params[1];
+        if (target && s.isDM(target)) {
+          s.addMessage(serverId, target, '', `${target} is not connected`, 'system');
+          s.setDMOnline(serverId, target, false);
+        } else {
+          s.addSystemMessage(serverId, `[${command}] ${trailing || `${target}: No such nick/channel`}`);
+        }
+        s.warnLastOwnMessage(serverId, trailing || 'No such nick/channel');
+        break;
+      }
+
       case '432': // ERR_ERRONEUSNICKNAME
       case '433': // ERR_NICKNAMEINUSE
       case '436': {
