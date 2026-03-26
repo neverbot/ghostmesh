@@ -864,11 +864,21 @@ const useIrcStore = defineStore('irc', () => {
       const server: ServerConfig | undefined = servers.value.find((s) => s.id === serverId);
       if (!server) continue;
       if (isConnected(serverId) || connectingServers.value.includes(serverId)) continue;
+      // Skip duplicate networks during restore
+      const targetKey: string = server.tcpHost
+        ? `${server.tcpHost}:${server.tcpPort || 6667}`
+        : server.host;
+      const isDuplicate: boolean = connectingServers.value.some((cid) => {
+        const other = servers.value.find((s) => s.id === cid);
+        if (!other) return false;
+        const otherKey = other.tcpHost ? `${other.tcpHost}:${other.tcpPort || 6667}` : other.host;
+        return otherKey === targetKey;
+      });
+      if (isDuplicate) continue;
       // Store the channels to rejoin after connection
       const channelsToJoin: string[] = (session.channels[serverId] || []).filter(
         (ch) => ch !== '*status',
       );
-      // Connect directly without duplicate network check (session restore is intentional)
       connectingServers.value.push(server.id);
       getService().connect(server);
       connectTimers[server.id] = setTimeout(() => {
