@@ -697,6 +697,24 @@ const useIrcStore = defineStore('irc', () => {
   function connectToServer(server: ServerConfig): void {
     if (isConnected(server.id)) return;
     if (connectingServers.value.includes(server.id)) return;
+
+    // Check if another active connection points to the same IRC server
+    const targetKey = server.tcpHost
+      ? `${server.tcpHost}:${server.tcpPort || 6667}`
+      : server.host;
+    const duplicate = servers.value.find((s) => {
+      if (s.id === server.id) return false;
+      if (!isConnected(s.id)) return false;
+      const otherKey = s.tcpHost ? `${s.tcpHost}:${s.tcpPort || 6667}` : s.host;
+      return otherKey === targetKey;
+    });
+    if (duplicate) {
+      connectionError.value =
+        `${server.name} is part of the same IRC network as ${duplicate.name}. ` +
+        `You are already connected to ${duplicate.name}.`;
+      return;
+    }
+
     connectingServers.value.push(server.id);
     getService().connect(server);
     // Timeout: if not connected after 15s, show error
