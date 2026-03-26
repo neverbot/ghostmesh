@@ -21,6 +21,12 @@
     return store.selectedChannel;
   });
 
+  const serverName = computed(() => {
+    if (!store.selectedServerId) return '';
+    const server = store.servers.find((s) => s.id === store.selectedServerId);
+    return server?.name || '';
+  });
+
   const memberCount = computed(() => {
     if (isPrivate.value) {
       if (isSelfDM.value) return 1;
@@ -76,6 +82,7 @@
         </div>
         <div class="flex flex-col">
           <span class="text-lg font-bold text-slate-700">{{ channelName }}</span>
+          <span class="text-[10px] text-slate-400">{{ serverName }}</span>
           <span
             class="text-[10px]"
             :class="isOnline ? 'text-emerald-500' : 'text-slate-400'"
@@ -85,12 +92,13 @@
         </div>
       </div>
 
-      <!-- Channel: just the name -->
+      <!-- Channel: name + server -->
       <div
         v-else
-        class="flex items-center gap-2"
+        class="flex flex-col"
       >
         <span class="text-lg font-bold text-slate-700">{{ channelName }}</span>
+        <span class="text-[10px] text-slate-400">{{ serverName }}</span>
       </div>
 
       <p
