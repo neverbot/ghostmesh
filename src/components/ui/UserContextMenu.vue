@@ -1,17 +1,29 @@
-<script setup>
+<script setup lang="ts">
   import { ref, computed, watch, nextTick } from 'vue';
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
   import { useIrcStore } from '@/stores/irc.ts';
 
-  const props = defineProps({
-    nick: { type: String, default: '' },
-    serverId: { type: String, default: '' },
-    x: { type: Number, default: 0 },
-    y: { type: Number, default: 0 },
-    open: { type: Boolean, default: false },
-  });
+  const props = withDefaults(
+    defineProps<{
+      nick?: string;
+      serverId?: string;
+      x?: number;
+      y?: number;
+      open?: boolean;
+    }>(),
+    {
+      nick: '',
+      serverId: '',
+      x: 0,
+      y: 0,
+      open: false,
+    },
+  );
 
-  const emit = defineEmits(['close', 'open-dm']);
+  const emit = defineEmits<{
+    close: [];
+    'open-dm': [payload: { nick: string; serverId: string }];
+  }>();
   const prefs = useUserPrefsStore();
   const store = useIrcStore();
 
@@ -20,7 +32,7 @@
     const myNick = store.nicknamePerServer[props.serverId] || store.nickname;
     return props.nick?.toLowerCase() === myNick?.toLowerCase();
   });
-  const menuEl = ref(null);
+  const menuEl = ref<HTMLElement | null>(null);
   const posX = ref(0);
   const posY = ref(0);
 
@@ -44,7 +56,7 @@
   );
 
   /** Close on click outside. */
-  function onBackdropClick(e) {
+  function onBackdropClick(e: Event) {
     if (e.target === e.currentTarget) emit('close');
   }
 

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
   import { useIrcStore } from '@/stores/irc.ts';
   import ChatHeader from './ChatHeader.vue';
   import MessageList from './MessageList.vue';
@@ -6,7 +6,7 @@
 
   const store = useIrcStore();
 
-  function handleSend(content) {
+  function handleSend(content: string) {
     store.sendMessage(content);
   }
 </script>

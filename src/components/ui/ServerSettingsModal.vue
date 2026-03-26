@@ -1,20 +1,29 @@
-<script setup>
+<script setup lang="ts">
   import { ref, computed, watch, nextTick } from 'vue';
   import { useServerSettingsStore } from '@/stores/server-settings.ts';
   import { useIrcStore } from '@/stores/irc.ts';
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
+  import type { ServerSettingsEntry } from '@/types/index.ts';
 
-  const backdrop = ref(null);
+  const backdrop = ref<HTMLElement | null>(null);
 
-  const props = defineProps({
-    serverId: { type: String, required: true },
-    serverName: { type: String, required: true },
-    open: { type: Boolean, default: false },
-    initialTab: { type: String, default: null },
-  });
+  const props = withDefaults(
+    defineProps<{
+      serverId: string;
+      serverName: string;
+      open?: boolean;
+      initialTab?: string | null;
+    }>(),
+    {
+      open: false,
+      initialTab: null,
+    },
+  );
 
-  const emit = defineEmits(['close']);
+  const emit = defineEmits<{
+    close: [];
+  }>();
 
   const settingsStore = useServerSettingsStore();
   const ircStore = useIrcStore();
@@ -26,7 +35,7 @@
    * @param {number} ts — epoch ms
    * @returns {string}
    */
-  function timeAgo(ts) {
+  function timeAgo(ts: number) {
     const seconds = Math.floor((Date.now() - ts) / 1000);
     if (seconds < 60) return 'just now';
     const minutes = Math.floor(seconds / 60);
@@ -36,7 +45,7 @@
     return `${Math.floor(hours / 24)}d ago`;
   }
 
-  const form = ref({});
+  const form = ref<Partial<ServerSettingsEntry>>({});
 
   // Load form values when opening
   watch(

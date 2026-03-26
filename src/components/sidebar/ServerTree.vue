@@ -1,9 +1,10 @@
-<script setup>
+<script setup lang="ts">
   import { ref, computed, watch } from 'vue';
   import config from '@/config.ts';
   import { useIrcStore } from '@/stores/irc.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import ServerSettingsModal from '@/components/ui/ServerSettingsModal.vue';
+  import type { ServerConfig, OpenSettingsRequest } from '@/types/index.ts';
 
   const store = useIrcStore();
   const serversCollapsed = ref(false);
@@ -17,9 +18,9 @@
   const showFilters = ref(false);
   const joinInput = ref('');
   const settingsModalOpen = ref(false);
-  const settingsServerId = ref(null);
+  const settingsServerId = ref<string | null>(null);
   const settingsServerName = ref('');
-  const settingsInitialTab = ref(null);
+  const settingsInitialTab = ref<string | null>(null);
 
   // Watch for external requests to open settings (e.g. from "view settings" links)
   watch(
@@ -37,7 +38,7 @@
     },
   );
 
-  function openSettings(server) {
+  function openSettings(server: ServerConfig) {
     settingsServerId.value = server.id;
     settingsServerName.value = server.name;
     settingsInitialTab.value = null;
@@ -51,11 +52,11 @@
     joinInput.value = '';
   }
 
-  function isSelected(serverId, channel) {
+  function isSelected(serverId: string, channel: string) {
     return store.selectedServerId === serverId && store.selectedChannel === channel;
   }
 
-  function serverAbbr(name) {
+  function serverAbbr(name: string) {
     return name.slice(0, 2).toUpperCase();
   }
 

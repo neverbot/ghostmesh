@@ -36,56 +36,52 @@
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
   import { computed } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
   import { useUserSettingsStore } from '@/stores/user-settings.ts';
 
-  export default {
-    name: 'UserProfile',
-    emits: ['open-settings'],
-    setup() {
-      const store = useIrcStore();
-      const userSettings = useUserSettingsStore();
+  defineEmits<{
+    'open-settings': [];
+  }>();
 
-      const displayNick = computed(() => {
-        // Show confirmed nick from selected server, or global, or placeholder
-        if (store.selectedServerId && store.nicknamePerServer[store.selectedServerId]) {
-          return store.nicknamePerServer[store.selectedServerId];
-        }
-        if (store.nickname) return store.nickname;
-        const profile = userSettings.getProfile();
-        return profile.nickname || 'Not configured';
-      });
+  const store = useIrcStore();
+  const userSettings = useUserSettingsStore();
 
-      const initial = computed(() => {
-        const n = displayNick.value;
-        return n ? n.charAt(0).toUpperCase() : '?';
-      });
+  const displayNick = computed(() => {
+    // Show confirmed nick from selected server, or global, or placeholder
+    if (store.selectedServerId && store.nicknamePerServer[store.selectedServerId]) {
+      return store.nicknamePerServer[store.selectedServerId];
+    }
+    if (store.nickname) return store.nickname;
+    const profile = userSettings.getProfile();
+    return profile.nickname || 'Not configured';
+  });
 
-      /** Generate a color from string hash. */
-      function hashColor(str) {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-          hash = str.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        const hue = Math.abs(hash) % 360;
-        return `hsl(${hue}, 50%, 45%)`;
-      }
+  const initial = computed(() => {
+    const n = displayNick.value;
+    return n ? n.charAt(0).toUpperCase() : '?';
+  });
 
-      const avatarColor = computed(() => {
-        const profile = userSettings.getProfile();
-        if (profile.avatarColor) return profile.avatarColor;
-        return hashColor(displayNick.value || 'ghost');
-      });
+  /** Generate a color from string hash. */
+  function hashColor(str: string) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 50%, 45%)`;
+  }
 
-      const statusText = computed(() => {
-        const count = store.activeConnections.length;
-        if (count === 0) return 'Offline';
-        return `Connected to ${count} server${count > 1 ? 's' : ''}`;
-      });
+  const avatarColor = computed(() => {
+    const profile = userSettings.getProfile();
+    if (profile.avatarColor) return profile.avatarColor;
+    return hashColor(displayNick.value || 'ghost');
+  });
 
-      return { displayNick, initial, avatarColor, statusText };
-    },
-  };
+  const statusText = computed(() => {
+    const count = store.activeConnections.length;
+    if (count === 0) return 'Offline';
+    return `Connected to ${count} server${count > 1 ? 's' : ''}`;
+  });
 </script>

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
   import { useIrcStore } from '@/stores/irc.ts';
   import ChannelInfo from './ChannelInfo.vue';
   import UserList from './UserList.vue';

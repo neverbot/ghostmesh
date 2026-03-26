@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
   import { ref } from 'vue';
   import ServerTree from './ServerTree.vue';
   import UserProfile from './UserProfile.vue';

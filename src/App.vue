@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
   import { onMounted, onUnmounted } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
 
@@ -8,7 +8,7 @@
    * Warn the user before leaving if connected to any server.
    * @param {BeforeUnloadEvent} e
    */
-  function onBeforeUnload(e) {
+  function onBeforeUnload(e: BeforeUnloadEvent) {
     if (store.activeConnections.length > 0) {
       e.preventDefault();
     }

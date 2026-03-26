@@ -1,13 +1,14 @@
-<script setup>
+<script setup lang="ts">
   import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
   import MessageItem from './MessageItem.vue';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
+  import type { UserClickPayload } from '@/types/index.ts';
 
   const store = useIrcStore();
   const userPrefs = useUserPrefsStore();
-  const scrollContainer = ref(null);
+  const scrollContainer = ref<HTMLElement | null>(null);
 
   // Context menu state
   const menuOpen = ref(false);
@@ -26,10 +27,10 @@
   let autoScroll = true;
 
   /** Saved scroll positions per channel key. */
-  const scrollPositions = {};
+  const scrollPositions: Record<string, number> = {};
 
   /** Previous channel key for saving scroll on switch. */
-  let prevKey = null;
+  let prevKey: string | null = null;
 
   /** Suppress onScroll mark-as-read during channel switch. */
   let suppressMarkRead = false;
@@ -38,7 +39,7 @@
    * Handle user-click from a MessageItem.
    * @param {{ nick: string, serverId: string, x: number, y: number }} payload
    */
-  function onUserClick(payload) {
+  function onUserClick(payload: UserClickPayload) {
     menuNick.value = payload.nick;
     menuServerId.value = payload.serverId;
     menuX.value = payload.x;
@@ -50,7 +51,7 @@
    * Handle "Open conversation" from context menu.
    * @param {{ nick: string, serverId: string }} payload
    */
-  function onOpenDM({ nick, serverId }) {
+  function onOpenDM({ nick, serverId }: { nick: string; serverId: string }) {
     store.openDM(serverId, nick);
   }
 
@@ -74,7 +75,7 @@
   }
 
   /** Scroll to bottom. */
-  function doScroll(behavior = 'smooth') {
+  function doScroll(behavior: ScrollBehavior = 'smooth') {
     nextTick(() => {
       const el = scrollContainer.value;
       if (el) {
@@ -88,9 +89,12 @@
    * Updates the last-read timestamp for the channel.
    * @param {{ serverId: string, channel: string, timestamp: Date }} payload
    */
-  function onMessageSeen(payload) {
+  function onMessageSeen(payload: { serverId: string; channel: string; timestamp: Date }) {
     if (suppressMarkRead) return;
-    const ts = payload.timestamp instanceof Date ? payload.timestamp.getTime() : payload.timestamp;
+    const ts =
+      payload.timestamp instanceof Date
+        ? payload.timestamp.getTime()
+        : (payload.timestamp as unknown as number);
     store.markReadUpTo(payload.serverId, payload.channel, ts);
   }
 
@@ -138,7 +142,7 @@
   /**
    * MutationObserver to detect DOM changes that affect scrollHeight.
    */
-  let mutationObserver = null;
+  let mutationObserver: MutationObserver | null = null;
   let lastScrollHeight = 0;
 
   /** Check if scrollHeight changed and re-scroll if in auto mode. */
@@ -152,9 +156,9 @@
   }
 
   /** Re-scroll after CSS animation completes + remove animation class to prevent replay. */
-  function onAnimationEnd(e) {
+  function onAnimationEnd(e: AnimationEvent) {
     if (e.animationName === 'preview-appear') {
-      e.target.classList.remove('animate-preview');
+      (e.target as HTMLElement).classList.remove('animate-preview');
       if (autoScroll && !suppressMarkRead) {
         doScroll('smooth');
       }
@@ -162,8 +166,8 @@
   }
 
   /** Handle delegated clicks on data-action links inside v-html content. */
-  function onActionClick(e) {
-    const link = e.target.closest('[data-action]');
+  function onActionClick(e: Event) {
+    const link = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
     if (!link) return;
     e.preventDefault();
     if (link.dataset.action === 'open-blocked-settings' && store.selectedServerId) {

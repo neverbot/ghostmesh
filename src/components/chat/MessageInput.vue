@@ -1,10 +1,10 @@
-<script setup>
+<script setup lang="ts">
   import { ref, computed, watch, nextTick } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
 
   const store = useIrcStore();
   const text = ref('');
-  const inputEl = ref(null);
+  const inputEl = ref<HTMLInputElement | null>(null);
 
   // Auto-focus input when switching channels
   watch(
@@ -16,7 +16,9 @@
     },
   );
 
-  const emit = defineEmits(['send']);
+  const emit = defineEmits<{
+    send: [content: string];
+  }>();
 
   function handleSend() {
     const content = text.value.trim();

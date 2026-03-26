@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
   import { ref, computed } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
@@ -7,7 +7,7 @@
   const store = useIrcStore();
 
   /** Check if a nick is the current user. */
-  function isOwnNick(nick) {
+  function isOwnNick(nick: string) {
     const myNick = store.nicknamePerServer[store.selectedServerId] || store.nickname;
     return nick?.toLowerCase() === myNick?.toLowerCase();
   }
@@ -32,7 +32,7 @@
    * @param {string} nick
    * @param {MouseEvent} e
    */
-  function onUserClick(nick, e) {
+  function onUserClick(nick: string, e: MouseEvent) {
     menuNick.value = nick;
     menuX.value = e.clientX;
     menuY.value = e.clientY;
@@ -43,7 +43,7 @@
    * Handle "Open conversation" from context menu.
    * @param {{ nick: string, serverId: string }} payload
    */
-  function onOpenDM({ nick, serverId }) {
+  function onOpenDM({ nick, serverId }: { nick: string; serverId: string }) {
     store.openDM(serverId, nick);
   }
 </script>

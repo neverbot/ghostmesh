@@ -1,16 +1,24 @@
-<script setup>
+<script setup lang="ts">
   import { ref, watch, nextTick } from 'vue';
   import { useUserSettingsStore } from '@/stores/user-settings.ts';
   import { useIrcStore } from '@/stores/irc.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
+  import type { UserProfile } from '@/types/index.ts';
 
-  const backdrop = ref(null);
+  const backdrop = ref<HTMLElement | null>(null);
 
-  const props = defineProps({
-    open: { type: Boolean, default: false },
-  });
+  const props = withDefaults(
+    defineProps<{
+      open?: boolean;
+    }>(),
+    {
+      open: false,
+    },
+  );
 
-  const emit = defineEmits(['close']);
+  const emit = defineEmits<{
+    close: [];
+  }>();
 
   const userSettings = useUserSettingsStore();
   const ircStore = useIrcStore();
@@ -30,7 +38,7 @@
     '#6366f1',
   ];
 
-  const form = ref({});
+  const form = ref<Partial<UserProfile>>({});
 
   // Load form values when opening
   watch(

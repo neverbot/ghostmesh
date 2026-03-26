@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
   import { computed, ref, onMounted, onUnmounted } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
   import { useServerSettingsStore } from '@/stores/server-settings.ts';
@@ -7,23 +7,27 @@
   import { formatPlainContent, formatHtmlContent, isImageUrl } from '@/services/message.service.ts';
   import { resolveImageProvider } from '@/services/image-providers.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
+  import type { ChatMessage, UserClickPayload } from '@/types/index.ts';
 
-  const props = defineProps({
-    message: { type: Object, required: true },
-  });
+  const props = defineProps<{
+    message: ChatMessage;
+  }>();
 
-  const emit = defineEmits(['user-click', 'message-seen']);
+  const emit = defineEmits<{
+    'user-click': [payload: UserClickPayload];
+    'message-seen': [payload: { serverId: string; channel: string; timestamp: Date }];
+  }>();
 
   const store = useIrcStore();
   const settingsStore = useServerSettingsStore();
   const userPrefs = useUserPrefsStore();
 
   /** Root element ref for IntersectionObserver. */
-  const messageEl = ref(null);
+  const messageEl = ref<HTMLElement | null>(null);
   /** True once the message has been visible in the viewport. */
   const previewReady = ref(false);
 
-  let observer = null;
+  let observer: IntersectionObserver | null = null;
 
   onMounted(() => {
     if (!messageEl.value) return;
@@ -112,7 +116,7 @@
    * Emit a user-click event for the context menu.
    * @param {MouseEvent} e
    */
-  function onUserClick(e) {
+  function onUserClick(e: MouseEvent) {
     emit('user-click', {
       nick: props.message.nick,
       serverId: props.message.serverId,

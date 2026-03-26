@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
   import { ref, computed } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
@@ -42,7 +42,7 @@
    * Open context menu on the DM user.
    * @param {MouseEvent} e
    */
-  function onUserClick(e) {
+  function onUserClick(e: MouseEvent) {
     menuX.value = e.clientX;
     menuY.value = e.clientY;
     menuOpen.value = true;

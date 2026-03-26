@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
   import { ref, onBeforeUnmount } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
   import SidebarLeft from '@/components/sidebar/SidebarLeft.vue';

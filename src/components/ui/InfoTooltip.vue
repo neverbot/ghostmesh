@@ -1,16 +1,22 @@
-<script setup>
+<script setup lang="ts">
   import { ref, computed } from 'vue';
 
-  const props = defineProps({
-    text: { type: String, required: true },
-    delay: { type: Number, default: 0 },
-    maxWidth: { type: Number, default: 300 },
-  });
+  const props = withDefaults(
+    defineProps<{
+      text: string;
+      delay?: number;
+      maxWidth?: number;
+    }>(),
+    {
+      delay: 0,
+      maxWidth: 300,
+    },
+  );
 
   const visible = ref(false);
   const x = ref(0);
   const y = ref(0);
-  let timer = null;
+  let timer: ReturnType<typeof setTimeout> | null = null;
 
   /** Tooltip position clamped to viewport. */
   const tooltipStyle = computed(() => {
@@ -42,8 +48,7 @@
     };
   });
 
-  /** @param {MouseEvent} e */
-  function onEnter(e) {
+  function onEnter(e: MouseEvent) {
     x.value = e.clientX;
     y.value = e.clientY;
     if (props.delay > 0) {
@@ -55,8 +60,7 @@
     }
   }
 
-  /** @param {MouseEvent} e */
-  function onMove(e) {
+  function onMove(e: MouseEvent) {
     x.value = e.clientX;
     y.value = e.clientY;
   }
