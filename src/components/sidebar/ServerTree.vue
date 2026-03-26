@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, computed, watch, nextTick } from 'vue';
+  import { ref, computed, watch, nextTick, onUnmounted } from 'vue';
   import config from '@/config.ts';
   import { useIrcStore } from '@/stores/irc.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
@@ -7,6 +7,34 @@
   import type { ServerConfig } from '@/types.ts';
 
   const store = useIrcStore();
+
+  /**
+   * Throttled snapshot of unread counts and user counts per channel key.
+   * Updates at most once per second to prevent badge flickering in busy channels.
+   */
+  const badgeCache = ref<Record<string, { unread: number; users: number }>>({});
+  let badgeTimer: ReturnType<typeof setInterval> | null = null;
+
+  function updateBadgeCache(): void {
+    const cache: Record<string, { unread: number; users: number }> = {};
+    for (const entry of store.joinedChannelList) {
+      const key = `${entry.serverId}:${entry.channel}`;
+      cache[key] = {
+        unread: store.unreadCount(entry.serverId, entry.channel),
+        users: entry.userCount,
+      };
+    }
+    badgeCache.value = cache;
+  }
+
+  badgeTimer = setInterval(updateBadgeCache, 1000);
+  updateBadgeCache();
+  onUnmounted(() => { if (badgeTimer) clearInterval(badgeTimer); });
+
+  /** Get cached badge values for a channel. */
+  function getBadge(serverId: string, channel: string): { unread: number; users: number } {
+    return badgeCache.value[`${serverId}:${channel}`] || { unread: 0, users: 0 };
+  }
   const serversCollapsed = ref(false);
 
   /** True when connected but LIST hasn't started yet (waiting for delay timer). */
@@ -399,7 +427,7 @@
               <!-- Right-aligned group: unread badge + user count + server badge + leave -->
               <div class="ml-auto flex items-center gap-1.5">
                 <span
-                  v-if="store.unreadCount(entry.serverId, entry.channel) > 0"
+                  v-if="getBadge(entry.serverId, entry.channel).unread > 0"
                   class="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold"
                   :class="
                     entry.channel === '*status'
@@ -408,18 +436,16 @@
                   "
                 >
                   {{
-                    store.unreadCount(entry.serverId, entry.channel) > 99
+                    getBadge(entry.serverId, entry.channel).unread > 99
                       ? '99+'
-                      : store.unreadCount(entry.serverId, entry.channel)
+                      : getBadge(entry.serverId, entry.channel).unread
                   }}
                 </span>
                 <span
-                  v-if="
-                    entry.channel !== '*status' && !store.unreadCount(entry.serverId, entry.channel)
-                  "
+                  v-else-if="entry.channel !== '*status'"
                   class="text-[10px] text-slate-500"
                 >
-                  {{ entry.userCount || '' }}
+                  {{ getBadge(entry.serverId, entry.channel).users || '' }}
                 </span>
                 <span
                   v-if="store.connectedServers.length > 1"
