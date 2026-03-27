@@ -36,6 +36,8 @@ interface ServerConfig {
   defaultFilteredMessages?: string[];
   /** Transform URLs before sending. Receives a URL string, returns the transformed URL. */
   urlTransform?: (url: string) => string;
+  /** Upload provider names blocked on this server. Uploads will skip these providers. */
+  blockedUploadProviders?: string[];
 }
 
 // ─── Chat messages ───────────────────────────────────────────────────────────

@@ -856,7 +856,8 @@ const useIrcStore = defineStore('irc', () => {
     addMessage(serverId, channel, '', `Uploading ${file.name}...`, 'system');
 
     try {
-      const url = await uploadImage(file);
+      const server = servers.value.find((s) => s.id === serverId);
+      const url = await uploadImage(file, server?.blockedUploadProviders);
       // Send the URL as a normal message — other users will see the preview
       getService().sendMessage(serverId, channel, url);
       addMessage(serverId, channel, nickname.value, url, 'message');
