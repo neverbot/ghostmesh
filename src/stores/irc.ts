@@ -866,8 +866,8 @@ const useIrcStore = defineStore('irc', () => {
     try {
       const server = servers.value.find((s) => s.id === serverId);
       const url = await uploadImage(file, server?.blockedUploadProviders);
-      // Send the URL as a normal message — other users will see the preview
-      getService().sendMessage(serverId, channel, url);
+      // Send the URL directly — bypass URL transforms (upload URLs must not be modified)
+      getService().send(serverId, `PRIVMSG ${channel} :${url}`);
       addMessage(serverId, channel, nickname.value, url, 'message');
       markReadUpTo(serverId, channel, Date.now());
     } catch (err: unknown) {
