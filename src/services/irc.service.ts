@@ -668,6 +668,8 @@ class IRCService extends EventEmitter {
         if (connection && nick === connection.config.nickname) {
           connection.config.nickname = newNick;
           s.setNickname(serverId, newNick);
+          // Persist the nick change in server settings
+          this.serverSettings.updateSettings(serverId, { nickname: newNick });
         }
         // Update user lists and show message in all channels
         const nickChannels: string[] = s.channels[serverId] || [];
