@@ -705,7 +705,7 @@ class IRCService extends EventEmitter {
       case '404': {
         // ERR_CANNOTSENDTOCHAN — message blocked by server
         const target: string = params[1] || '';
-        s.addMessage(serverId, target || '*status', '', `[${command}] ${trailing || 'Cannot send to channel'}`, 'system');
+        s.addMessage(serverId, target || '*status', '', trailing || 'Cannot send to channel', 'system');
         s.warnLastOwnMessage(serverId, trailing || 'Message blocked');
         break;
       }
