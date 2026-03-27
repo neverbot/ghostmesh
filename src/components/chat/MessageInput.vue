@@ -2,12 +2,16 @@
   import { ref, computed, watch, nextTick } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
   import CommandAutocomplete from './CommandAutocomplete.vue';
+  import InfoTooltip from '@/components/ui/InfoTooltip.vue';
 
   const store = useIrcStore();
   const text = ref('');
   const inputEl = ref<HTMLInputElement | null>(null);
+  const fileInputEl = ref<HTMLInputElement | null>(null);
   const autocompleteRef = ref<InstanceType<typeof CommandAutocomplete> | null>(null);
   const inputFocused = ref(false);
+
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
   // Auto-focus input when switching channels
   watch(
@@ -21,6 +25,7 @@
 
   const emit = defineEmits<{
     send: [content: string];
+    upload: [file: File];
   }>();
 
   function handleSend() {
@@ -28,6 +33,46 @@
     if (!content) return;
     emit('send', content);
     text.value = '';
+  }
+
+  /** Open the file picker. */
+  function openFilePicker() {
+    fileInputEl.value?.click();
+  }
+
+  /** Handle file selection from the picker. */
+  function onFileSelected(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    // Reset input so the same file can be selected again
+    input.value = '';
+    validateAndUpload(file);
+  }
+
+  /** Validate and emit the file for upload. */
+  function validateAndUpload(file: File) {
+    if (!file.type.startsWith('image/')) {
+      store.addMessage(
+        store.selectedServerId!,
+        store.selectedChannel!,
+        '',
+        'Only image files are supported',
+        'system',
+      );
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      store.addMessage(
+        store.selectedServerId!,
+        store.selectedChannel!,
+        '',
+        `File too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)`,
+        'system',
+      );
+      return;
+    }
+    emit('upload', file);
   }
 
   /** Handle keyboard events for autocomplete navigation. */
@@ -67,6 +112,9 @@
   }
 
   const isDisabled = computed(() => !store.selectedChannel);
+  const isStatusChannel = computed(() => store.selectedChannel === '*status');
+
+  defineExpose({ validateAndUpload });
 </script>
 
 <template>
@@ -85,7 +133,7 @@
         :placeholder="
           isDisabled
             ? 'Select a channel to chat...'
-            : store.selectedChannel === '*status'
+            : isStatusChannel
               ? 'Send raw IRC command...'
               : 'Write your message...'
         "
@@ -96,6 +144,60 @@
         @focus="inputFocused = true"
         @blur="inputFocused = false"
       />
+      <!-- Attach image button -->
+      <input
+        ref="fileInputEl"
+        type="file"
+        accept="image/*"
+        class="hidden"
+        @change="onFileSelected"
+      />
+      <InfoTooltip
+        v-if="!isStatusChannel"
+        :text="store.isUploading ? 'Uploading...' : 'Attach image'"
+      >
+        <button
+          :disabled="isDisabled || store.isUploading"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-400 text-white transition-all hover:bg-slate-500 active:scale-95 disabled:opacity-40"
+          @click="openFilePicker"
+        >
+          <svg
+            v-if="!store.isUploading"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            class="h-5 w-5"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M15.621 4.379a3 3 0 0 0-4.242 0l-7 7a3 3 0 0 0 4.241 4.243l.828-.829a.75.75 0 0 1 1.06 1.06l-.828.829a4.5 4.5 0 0 1-6.364-6.364l7-7a4.5 4.5 0 0 1 6.368 6.36l-3.455 3.553A2.625 2.625 0 1 1 9.52 9.52l3.45-3.451a.75.75 0 1 1 1.061 1.06l-3.45 3.451a1.125 1.125 0 0 0 1.587 1.595l3.454-3.553a3 3 0 0 0 0-4.242Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <!-- Spinner during upload -->
+          <svg
+            v-else
+            class="h-5 w-5 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="3"
+              class="opacity-25"
+            />
+            <path
+              fill="currentColor"
+              class="opacity-75"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
+        </button>
+      </InfoTooltip>
+      <!-- Send button -->
       <button
         :disabled="isDisabled || !text.trim()"
         class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white transition-all hover:bg-emerald-600 active:scale-95 disabled:opacity-40 disabled:hover:bg-emerald-500"

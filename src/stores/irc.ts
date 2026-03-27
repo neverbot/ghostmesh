@@ -10,6 +10,7 @@ import { useServerSettingsStore } from '@/stores/server-settings.ts';
 import { useUserSettingsStore } from '@/stores/user-settings.ts';
 import { useUserPrefsStore } from '@/stores/user-prefs.ts';
 import defaultServers from '@/servers.ts';
+import { uploadImage } from '@/services/upload-providers.ts';
 import type {
   AvailableChannel,
   ChatMessage,
@@ -719,6 +720,7 @@ const useIrcStore = defineStore('irc', () => {
   }
 
   const connectionError: Ref<string | null> = ref(null);
+  const isUploading: Ref<boolean> = ref(false);
 
   /**
    * Signal to open server settings on a specific tab.
@@ -842,6 +844,28 @@ const useIrcStore = defineStore('irc', () => {
     addMessage(selectedServerId.value, selectedChannel.value, nickname.value, content, 'message');
     // Own messages should not increase unread count
     markReadUpTo(selectedServerId.value, selectedChannel.value, Date.now());
+  }
+
+  /** Upload an image and send the URL as a message. */
+  async function uploadAndSend(file: File): Promise<void> {
+    if (!selectedServerId.value || !selectedChannel.value) return;
+    const serverId = selectedServerId.value;
+    const channel = selectedChannel.value;
+
+    isUploading.value = true;
+    addMessage(serverId, channel, '', `Uploading ${file.name}...`, 'system');
+
+    try {
+      const url = await uploadImage(file);
+      // Send the URL as a normal message — other users will see the preview
+      getService().sendMessage(serverId, channel, url);
+      addMessage(serverId, channel, nickname.value, url, 'message');
+      markReadUpTo(serverId, channel, Date.now());
+    } catch (err: unknown) {
+      addMessage(serverId, channel, '', `Upload failed: ${(err as Error).message}`, 'system');
+    } finally {
+      isUploading.value = false;
+    }
   }
 
   /** Clear all messages in a channel. */
@@ -1086,6 +1110,8 @@ const useIrcStore = defineStore('irc', () => {
     openDM,
     closeDMsWithUser,
     sendMessage,
+    uploadAndSend,
+    isUploading,
     clearMessages,
     leaveChannel,
     refreshChannelList,
