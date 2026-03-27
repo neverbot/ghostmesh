@@ -1,10 +1,13 @@
 <script setup lang="ts">
   import { ref, computed, watch, nextTick } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
+  import CommandAutocomplete from './CommandAutocomplete.vue';
 
   const store = useIrcStore();
   const text = ref('');
   const inputEl = ref<HTMLInputElement | null>(null);
+  const autocompleteRef = ref<InstanceType<typeof CommandAutocomplete> | null>(null);
+  const inputFocused = ref(false);
 
   // Auto-focus input when switching channels
   watch(
@@ -27,11 +30,53 @@
     text.value = '';
   }
 
+  /** Handle keyboard events for autocomplete navigation. */
+  function onKeydown(e: KeyboardEvent) {
+    if (!autocompleteRef.value?.visible) return;
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      autocompleteRef.value.moveUp();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      autocompleteRef.value.moveDown();
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      if (autocompleteRef.value.confirmSelection()) {
+        // Selection was made — input updated via @select
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      text.value = '';
+    }
+  }
+
+  /** Handle Enter — confirm autocomplete or send message. */
+  function onEnter(e: KeyboardEvent) {
+    if (autocompleteRef.value?.visible) {
+      e.preventDefault();
+      if (autocompleteRef.value.confirmSelection()) return;
+    }
+    handleSend();
+  }
+
+  /** When a command is selected from autocomplete. */
+  function onCommandSelect(command: string) {
+    text.value = command;
+    nextTick(() => inputEl.value?.focus());
+  }
+
   const isDisabled = computed(() => !store.selectedChannel);
 </script>
 
 <template>
-  <div class="border-t border-slate-200 bg-white px-5 py-4">
+  <div class="relative border-t border-slate-200 bg-white px-5 py-4">
+    <CommandAutocomplete
+      ref="autocompleteRef"
+      :input="text"
+      :focused="inputFocused"
+      @select="onCommandSelect"
+    />
     <div class="flex items-center gap-3">
       <input
         ref="inputEl"
@@ -46,7 +91,10 @@
         "
         :disabled="isDisabled"
         class="flex-1 rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-        @keyup.enter="handleSend"
+        @keydown="onKeydown"
+        @keydown.enter="onEnter"
+        @focus="inputFocused = true"
+        @blur="inputFocused = false"
       />
       <button
         :disabled="isDisabled || !text.trim()"
