@@ -26,6 +26,7 @@ interface ImagesConfig {
   cacheTtl: number;
   cacheCleanupInterval: number;
   cacheDebug: boolean;
+  exampleUpApiKey: string;
 }
 
 interface ServerDefaults {
@@ -100,6 +101,8 @@ const config: AppConfig = {
     cacheCleanupInterval: 5 * 60 * 1000,
     /** Log cache cleanup stats to console. */
     cacheDebug: true,
+    /** ExampleUp API key for image uploads (free, last-resort provider). */
+    exampleUpApiKey: import.meta.env.VITE_EXAMPLEUP_API_KEY || '',
   },
 
   /** WebSocket-to-TCP proxy for servers without native WebSocket support. */
