@@ -10,7 +10,7 @@ import { useServerSettingsStore } from '@/stores/server-settings.ts';
 import { useUserSettingsStore } from '@/stores/user-settings.ts';
 import { useUserPrefsStore } from '@/stores/user-prefs.ts';
 import defaultServers from '@/servers.ts';
-import { uploadImage } from '@/services/upload-providers.ts';
+import { uploadImage, providers as uploadProviders, disabledProviders as disabledUploadProviders } from '@/services/upload-providers.ts';
 import type {
   AvailableChannel,
   ChatMessage,
@@ -722,6 +722,14 @@ const useIrcStore = defineStore('irc', () => {
   const connectionError: Ref<string | null> = ref(null);
   const isUploading: Ref<boolean> = ref(false);
 
+  /** Whether the current server has any upload providers available. */
+  const canUpload: ComputedRef<boolean> = computed(() => {
+    if (!selectedServerId.value) return false;
+    const server = servers.value.find((s) => s.id === selectedServerId.value);
+    const blocked = server?.blockedUploadProviders || [];
+    return uploadProviders.some((p) => !disabledUploadProviders.has(p.name) && !blocked.includes(p.name));
+  });
+
   /**
    * Signal to open server settings on a specific tab.
    * Set to { serverId, tab } to open, null to close.
@@ -1113,6 +1121,7 @@ const useIrcStore = defineStore('irc', () => {
     sendMessage,
     uploadAndSend,
     isUploading,
+    canUpload,
     clearMessages,
     leaveChannel,
     refreshChannelList,

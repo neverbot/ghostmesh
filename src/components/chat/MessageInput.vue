@@ -154,11 +154,18 @@
       />
       <InfoTooltip
         v-if="!isStatusChannel"
-        :text="store.isUploading ? 'Uploading...' : 'Attach image'"
+        :text="
+          store.isUploading
+            ? 'Uploading...'
+            : store.canUpload
+              ? 'Attach image'
+              : 'No image upload services available for this server'
+        "
       >
         <button
-          :disabled="isDisabled || store.isUploading"
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-400 text-white transition-all hover:bg-slate-500 active:scale-95 disabled:opacity-40"
+          :disabled="isDisabled || store.isUploading || !store.canUpload"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition-all active:scale-95 disabled:opacity-40"
+          :class="store.canUpload ? 'bg-slate-400 hover:bg-slate-500' : 'bg-slate-300'"
           @click="openFilePicker"
         >
           <svg
