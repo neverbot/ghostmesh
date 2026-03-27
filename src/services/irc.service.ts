@@ -561,6 +561,9 @@ class IRCService extends EventEmitter {
         const content: string = isAction ? `* ${nick} ${actionMatch![1]}` : msgText;
         const msgType: string = isAction ? 'system' : 'message';
 
+        // Filter messages matching server-specific patterns
+        if (this.serverSettings.isMessageFiltered(serverId, content)) break;
+
         // Direct message: target is our nick, not a channel
         if (target.toLowerCase() === ourNick.toLowerCase()) {
           // Self-DM echo: we already added the message locally in sendMessage
@@ -575,8 +578,6 @@ class IRCService extends EventEmitter {
           s.addMessage(serverId, nick, nick, content, msgType);
           s.setDMOnline(serverId, nick, true);
         } else {
-          // Filter messages matching server-specific patterns (public channels only)
-          if (this.serverSettings.isMessageFiltered(serverId, content)) break;
           s.addMessage(serverId, target, nick, content, msgType);
         }
         break;
