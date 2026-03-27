@@ -159,7 +159,7 @@
             ? 'Uploading...'
             : store.canUpload
               ? 'Attach image'
-              : 'No image upload services available for this server'
+              : 'Image upload unavailable — this server treats image links as advertising and blocks them'
         "
       >
         <button
