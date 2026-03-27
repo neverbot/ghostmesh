@@ -120,6 +120,7 @@
       username: '',
       realname: '',
     });
+    emit('close');
   }
 </script>
 

@@ -88,6 +88,10 @@
     userPrefs.clearAll();
     // Clear session
     localStorage.removeItem('ghostmesh:session');
+    // Reset display nickname if not connected to any server
+    if (ircStore.activeConnections.length === 0) {
+      ircStore.nickname = '';
+    }
     // Reset form to defaults
     form.value = { ...userSettings.getProfile() };
     emit('close');
