@@ -42,7 +42,7 @@
         const s = settingsStore.getSettings(props.serverId);
         form.value = { ...s };
         if (props.initialTab) activeTab.value = props.initialTab;
-        else activeTab.value = 'general';
+        else activeTab.value = 'user';
         confirmServerForget.value = false;
         nextTick(() => backdrop.value?.focus());
       }
@@ -160,7 +160,7 @@
         <!-- Tabs -->
         <div class="flex border-b border-slate-700 px-5">
           <button
-            v-for="tab in ['general', 'user', 'formatting', 'filtered', 'blocked']"
+            v-for="tab in ['user', 'general', 'formatting', 'filtered', 'blocked']"
             :key="tab"
             class="border-b-2 px-3 py-2.5 text-xs font-medium capitalize transition-colors"
             :class="
