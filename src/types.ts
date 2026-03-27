@@ -34,6 +34,8 @@ interface ServerConfig {
   tcpTls?: boolean;
   /** Default filtered message patterns for this server. Applied on first connect if no user overrides exist. */
   defaultFilteredMessages?: string[];
+  /** Outgoing message transforms. Each function receives the message text and returns the transformed text. Applied in order before sending. */
+  messageTransforms?: ((text: string) => string)[];
 }
 
 // ─── Chat messages ───────────────────────────────────────────────────────────

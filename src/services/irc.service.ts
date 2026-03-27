@@ -241,7 +241,19 @@ class IRCService extends EventEmitter {
    * @param message
    */
   sendMessage(serverId: string, channel: string, message: string): void {
-    this.send(serverId, `PRIVMSG ${channel} :${message}`);
+    const transformed = this.applyTransforms(serverId, message);
+    this.send(serverId, `PRIVMSG ${channel} :${transformed}`);
+  }
+
+  /** Apply server-specific message transforms before sending. */
+  applyTransforms(serverId: string, text: string): string {
+    const server: ServerConfig | undefined = this.serverConfigs.get(serverId);
+    if (!server?.messageTransforms?.length) return text;
+    let result = text;
+    for (const transform of server.messageTransforms) {
+      result = transform(result);
+    }
+    return result;
   }
 
   /**
@@ -691,6 +703,14 @@ class IRCService extends EventEmitter {
         if (channel) {
           s.removeJoinedChannel(serverId, channel);
         }
+        break;
+      }
+
+      case '404': {
+        // ERR_CANNOTSENDTOCHAN — message blocked by server
+        const target: string = params[1] || '';
+        s.addMessage(serverId, target || '*status', '', `[${command}] ${trailing || 'Cannot send to channel'}`, 'system');
+        s.warnLastOwnMessage(serverId, trailing || 'Message blocked');
         break;
       }
 
