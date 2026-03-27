@@ -97,7 +97,7 @@
 <template>
   <div
     v-if="visible"
-    class="absolute bottom-full left-4 mb-1 w-96 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
+    class="absolute bottom-full left-4 mb-1 w-[28rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
   >
     <div ref="listEl" class="max-h-56 overflow-y-auto py-1">
       <button
@@ -107,8 +107,9 @@
         :class="i === selectedIndex ? 'bg-emerald-100 text-emerald-800' : 'text-slate-600 hover:bg-slate-50'"
         @mousedown.prevent="selectItem(i)"
       >
-        <span class="shrink-0 font-mono font-semibold">{{ cmd.usage }}</span>
-        <span class="truncate text-slate-400">— {{ cmd.description }}</span>
+        <span class="w-16 shrink-0 font-mono font-bold">/{{ cmd.name }}</span>
+        <span class="w-28 shrink-0 font-mono text-slate-400">{{ cmd.usage.split(' ').slice(1).join(' ') }}</span>
+        <span class="truncate text-slate-400">{{ cmd.description }}</span>
       </button>
     </div>
   </div>
