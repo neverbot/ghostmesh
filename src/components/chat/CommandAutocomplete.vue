@@ -104,7 +104,7 @@
         v-for="(cmd, i) in matches"
         :key="cmd.name"
         class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors"
-        :class="i === selectedIndex ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'"
+        :class="i === selectedIndex ? 'bg-emerald-100 text-emerald-800' : 'text-slate-600 hover:bg-slate-50'"
         @mousedown.prevent="selectItem(i)"
       >
         <span class="w-14 shrink-0 font-mono font-semibold">/{{ cmd.name }}</span>
