@@ -717,7 +717,7 @@ class IRCService extends EventEmitter {
           s.addMessage(serverId, target, '', `${target} is not connected`, 'system');
           s.setDMOnline(serverId, target, false);
         } else {
-          s.addSystemMessage(serverId, `[${command}] ${trailing || `${target}: No such nick/channel`}`);
+          s.addSystemMessage(serverId, trailing || `${target}: No such nick/channel`);
         }
         s.warnLastOwnMessage(serverId, trailing || 'No such nick/channel');
         break;
@@ -729,7 +729,7 @@ class IRCService extends EventEmitter {
         // ERR_NICKCOLLISION
         const failedNick: string = params[1];
         const connection: IRCConnection | undefined = this.connections.get(serverId);
-        s.addSystemMessage(serverId, `[${command}] ${trailing}`);
+        s.addSystemMessage(serverId, trailing || 'Nickname error');
         // During registration (not yet received 376/422), try fallback nicks
         if (connection && !this.registered.has(serverId)) {
           const base: string = failedNick.replace(/_+$/, '').replace(/\d+$/, '');
@@ -793,7 +793,7 @@ class IRCService extends EventEmitter {
         this.listLoading.delete(serverId);
         this.store.clearListLoading(serverId);
         if (command === '263' && trailing) {
-          s.addSystemMessage(serverId, `[${command}] ${trailing}`);
+          s.addSystemMessage(serverId, trailing);
         }
         break;
 
@@ -910,7 +910,7 @@ class IRCService extends EventEmitter {
             });
           }
         }
-        if (trailing) s.addSystemMessage(serverId, `[${command}] ${trailing}`);
+        if (trailing) s.addSystemMessage(serverId, trailing);
         break;
       }
 
