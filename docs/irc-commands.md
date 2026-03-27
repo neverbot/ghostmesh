@@ -14,31 +14,31 @@ Reference: [RFC 1459](https://datatracker.ietf.org/doc/html/rfc1459), [RFC 2812]
 
 ## Connection & Registration
 
-| Command          | Replies           | Description                    | Status | Notes                                                                                           |
-| ---------------- | ----------------- | ------------------------------ | ------ | ----------------------------------------------------------------------------------------------- |
-| `PASS`           | 461, 462          | Set connection password        | —      |                                                                                                 |
-| `NICK`           | 432, 433, 436     | Set/change nickname            | Done   | Sent on connect; live change via user/server settings; handles 432/433/436 errors with fallback |
-| `USER`           | 001-005, 461, 462 | Register username and realname | Done   | Sent on connect from `config.ts`                                                                |
-| `QUIT`           |                   | Disconnect from server         | Done   | Sent on disconnect; socket handlers detached before close                                       |
-| `PING` / `PONG`  |                   | Keep-alive                     | Done   | Auto PONG response, processed immediately (never queued)                                        |
+| Command         | Replies           | Description                    | Status | Notes                                                                                           |
+| --------------- | ----------------- | ------------------------------ | ------ | ----------------------------------------------------------------------------------------------- |
+| `PASS`          | 461, 462          | Set connection password        | —      |                                                                                                 |
+| `NICK`          | 432, 433, 436     | Set/change nickname            | Done   | Sent on connect; live change via user/server settings; handles 432/433/436 errors with fallback |
+| `USER`          | 001-005, 461, 462 | Register username and realname | Done   | Sent on connect from `config.ts`                                                                |
+| `QUIT`          |                   | Disconnect from server         | Done   | Sent on disconnect; socket handlers detached before close                                       |
+| `PING` / `PONG` |                   | Keep-alive                     | Done   | Auto PONG response, processed immediately (never queued)                                        |
 
 ## Channel Operations
 
-| Command  | Replies                 | Description              | Status  | Notes                                                                   |
-| -------- | ----------------------- | ------------------------ | ------- | ----------------------------------------------------------------------- |
-| `JOIN`   | 332, 333, 353, 366      | Join a channel           | Done    | Via sidebar input or channel list click; auto-selects joined channel    |
-| `PART`   | 442                     | Leave a channel          | Done    | Via leave button on joined channels; `*status` cannot be left           |
-| `LIST`   | 321, 322, 323           | List available channels  | Done    | Auto-requested after registration; periodic refresh; batched processing |
-| `TOPIC`  | 332, 333                | Get/set channel topic    | Partial | Receives topic (332/333); displayed in channel info panel; no UI to set |
-| `NAMES`  | 353, 366                | List users in a channel  | Done    | Handled via 353/366 replies; populates user list panel                  |
-| `INVITE` | 341, 443                | Invite user to a channel | —       |                                                                         |
-| `KICK`   |                         | Kick user from a channel | Done    | Shows who was kicked, by whom, and reason; removes user from channel    |
+| Command  | Replies            | Description              | Status  | Notes                                                                   |
+| -------- | ------------------ | ------------------------ | ------- | ----------------------------------------------------------------------- |
+| `JOIN`   | 332, 333, 353, 366 | Join a channel           | Done    | Via sidebar input or channel list click; auto-selects joined channel    |
+| `PART`   | 442                | Leave a channel          | Done    | Via leave button on joined channels; `*status` cannot be left           |
+| `LIST`   | 321, 322, 323      | List available channels  | Done    | Auto-requested after registration; periodic refresh; batched processing |
+| `TOPIC`  | 332, 333           | Get/set channel topic    | Partial | Receives topic (332/333); displayed in channel info panel; no UI to set |
+| `NAMES`  | 353, 366           | List users in a channel  | Done    | Handled via 353/366 replies; populates user list panel                  |
+| `INVITE` | 341, 443           | Invite user to a channel | —       |                                                                         |
+| `KICK`   |                    | Kick user from a channel | Done    | Shows who was kicked, by whom, and reason; removes user from channel    |
 
 ## Sending Messages
 
-| Command   | Replies  | Description                          | Status  | Notes                                                                                                  |
-| --------- | -------- | ------------------------------------ | ------- | ------------------------------------------------------------------------------------------------------ |
-| `PRIVMSG` | 401, 404 | Send message to channel or user      | Done    | Channel + DM support; DM creates private channel with sender nick; CTCP ACTION parsed                  |
+| Command   | Replies  | Description                          | Status  | Notes                                                                                                   |
+| --------- | -------- | ------------------------------------ | ------- | ------------------------------------------------------------------------------------------------------- |
+| `PRIVMSG` | 401, 404 | Send message to channel or user      | Done    | Channel + DM support; DM creates private channel with sender nick; CTCP ACTION parsed                   |
 | `NOTICE`  |          | Send notice (no auto-reply expected) | Partial | Received and displayed as system message; LIST delay detection; VERIFY challenge detection; cannot send |
 
 ## Server Queries
@@ -66,20 +66,20 @@ Reference: [RFC 1459](https://datatracker.ietf.org/doc/html/rfc1459), [RFC 2812]
 
 ## Channel Modes & Operator
 
-| Command | Replies     | Description                  | Status | Notes |
-| ------- | ----------- | ---------------------------- | ------ | ----- |
-| `MODE`  | 221, 324    | Set channel/user modes       | —      |       |
-| `OPER`  | 381, 464    | Authenticate as IRC operator | —      |       |
+| Command | Replies  | Description                  | Status | Notes |
+| ------- | -------- | ---------------------------- | ------ | ----- |
+| `MODE`  | 221, 324 | Set channel/user modes       | —      |       |
+| `OPER`  | 381, 464 | Authenticate as IRC operator | —      |       |
 
 ## Miscellaneous
 
-| Command   | Replies | Description                         | Status | Notes |
-| --------- | ------- | ----------------------------------- | ------ | ----- |
-| `AWAY`    | 301, 305, 306 | Set/unset away status          | —      |       |
-| `WALLOPS` |         | Send message to all operators       | —      |       |
-| `KILL`    |         | Forcefully disconnect a user (oper) | —      |       |
-| `REHASH`  | 382     | Reload server config (oper)         | —      |       |
-| `RESTART` |         | Restart server (oper)               | —      |       |
+| Command   | Replies       | Description                         | Status | Notes |
+| --------- | ------------- | ----------------------------------- | ------ | ----- |
+| `AWAY`    | 301, 305, 306 | Set/unset away status               | —      |       |
+| `WALLOPS` |               | Send message to all operators       | —      |       |
+| `KILL`    |               | Forcefully disconnect a user (oper) | —      |       |
+| `REHASH`  | 382           | Reload server config (oper)         | —      |       |
+| `RESTART` |               | Restart server (oper)               | —      |       |
 
 ## IRCv3 Capabilities
 
@@ -93,27 +93,27 @@ CAP (Capability) negotiation is the IRCv3 mechanism for clients and servers to a
 2. `CAP REQ <capability ...>` — Client requests one or more capabilities.
 3. `CAP END` — Client signals that capability negotiation is complete and registration should continue.
 
-| Command   | Description                                | Status | Notes                                                                                                                                       |
-| --------- | ------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CAP LS`  | List server capabilities                   | —      | Enabling capabilities like `extended-join` and `message-tags` changes the IRC message format and would break our parser. Requires parser update first. |
-| `CAP REQ` | Request capabilities                       | —      |                                                                                                                                             |
-| `CAP END` | End capability negotiation                 | —      |                                                                                                                                             |
+| Command   | Description                | Status | Notes                                                                                                                                                  |
+| --------- | -------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `CAP LS`  | List server capabilities   | —      | Enabling capabilities like `extended-join` and `message-tags` changes the IRC message format and would break our parser. Requires parser update first. |
+| `CAP REQ` | Request capabilities       | —      |                                                                                                                                                        |
+| `CAP END` | End capability negotiation | —      |                                                                                                                                                        |
 
 ### Common Capabilities
 
-| Capability          | Description                                                        | Status |
-| ------------------- | ------------------------------------------------------------------ | ------ |
-| `account-notify`    | Notifications when users identify/unidentify with services         | —      |
-| `away-notify`       | Notifications when users go away or return                         | —      |
-| `extended-join`     | Includes account info in JOIN messages                             | —      |
-| `message-tags`      | Enables IRCv3 message tags (`@tag=value` prefix on messages)       | —      |
+| Capability          | Description                                                       | Status |
+| ------------------- | ----------------------------------------------------------------- | ------ |
+| `account-notify`    | Notifications when users identify/unidentify with services        | —      |
+| `away-notify`       | Notifications when users go away or return                        | —      |
+| `extended-join`     | Includes account info in JOIN messages                            | —      |
+| `message-tags`      | Enables IRCv3 message tags (`@tag=value` prefix on messages)      | —      |
 | `multi-prefix`      | Shows all user prefixes in NAMES (e.g., `@+` instead of just `@`) | —      |
-| `sasl`              | Authentication before registration (EXTERNAL, PLAIN methods)       | —      |
-| `setname`           | Allows changing realname without reconnecting                      | —      |
-| `userhost-in-names` | Includes `user@host` in NAMES replies                              | —      |
-| `standard-replies`  | Standardized error/success reply format                            | —      |
-| `server-time`       | Adds timestamp tag to messages                                     | —      |
-| `batch`             | Groups related messages together                                   | —      |
+| `sasl`              | Authentication before registration (EXTERNAL, PLAIN methods)      | —      |
+| `setname`           | Allows changing realname without reconnecting                     | —      |
+| `userhost-in-names` | Includes `user@host` in NAMES replies                             | —      |
+| `standard-replies`  | Standardized error/success reply format                           | —      |
+| `server-time`       | Adds timestamp tag to messages                                    | —      |
+| `batch`             | Groups related messages together                                  | —      |
 
 ## Numeric Replies Handled
 
@@ -131,22 +131,22 @@ CAP (Capability) negotiation is the IRCv3 mechanism for clients and servers to a
 | `265` | RPL_LOCALUSERS       | Done                                 | Shown in status                                   |
 | `266` | RPL_GLOBALUSERS      | Done                                 | Shown in status                                   |
 | `321` | RPL_LISTSTART        | Done                                 | No-op                                             |
-| `322` | RPL_LIST             | Done                                 | Queued + batched to prevent UI blocking            |
-| `323` | RPL_LISTEND          | Done                                 | Flushes buffer, clears loading state               |
-| `332` | RPL_TOPIC            | Done                                 | Sets channel topic in store                        |
-| `333` | RPL_TOPICWHOTIME     | Done                                 | Shows who set the topic and when                   |
-| `353` | RPL_NAMREPLY         | Done                                 | Populates channel user list                        |
-| `366` | RPL_ENDOFNAMES       | Done                                 | No-op (users already accumulated)                  |
-| `372` | RPL_MOTD             | Done                                 | Stripped `- ` prefix, preserves ASCII art           |
-| `375` | RPL_MOTDSTART        | Done                                 | Stripped `- ` prefix                               |
-| `376` | RPL_ENDOFMOTD        | Done                                 | Triggers delayed LIST request + periodic refresh   |
-| `401` | ERR_NOSUCHNICK       | Done                                 | Marks DM user as offline; warning on last message  |
-| `422` | ERR_NOMOTD           | Done                                 | Same as 376 (triggers LIST)                        |
-| `432` | ERR_ERRONEUSNICKNAME | Done                                 | During registration: fallback nick; post: revert   |
-| `433` | ERR_NICKNAMEINUSE    | Done                                 | During registration: fallback nick; post: revert   |
-| `436` | ERR_NICKCOLLISION    | Done                                 | During registration: fallback nick; post: revert   |
-| `442` | ERR_NOTONCHANNEL     | Done                                 | Silently closes the channel in the UI              |
-| Other | Unhandled numerics   | Shown as `[code] trailing` in status |                                                    |
+| `322` | RPL_LIST             | Done                                 | Queued + batched to prevent UI blocking           |
+| `323` | RPL_LISTEND          | Done                                 | Flushes buffer, clears loading state              |
+| `332` | RPL_TOPIC            | Done                                 | Sets channel topic in store                       |
+| `333` | RPL_TOPICWHOTIME     | Done                                 | Shows who set the topic and when                  |
+| `353` | RPL_NAMREPLY         | Done                                 | Populates channel user list                       |
+| `366` | RPL_ENDOFNAMES       | Done                                 | No-op (users already accumulated)                 |
+| `372` | RPL_MOTD             | Done                                 | Stripped `- ` prefix, preserves ASCII art         |
+| `375` | RPL_MOTDSTART        | Done                                 | Stripped `- ` prefix                              |
+| `376` | RPL_ENDOFMOTD        | Done                                 | Triggers delayed LIST request + periodic refresh  |
+| `401` | ERR_NOSUCHNICK       | Done                                 | Marks DM user as offline; warning on last message |
+| `422` | ERR_NOMOTD           | Done                                 | Same as 376 (triggers LIST)                       |
+| `432` | ERR_ERRONEUSNICKNAME | Done                                 | During registration: fallback nick; post: revert  |
+| `433` | ERR_NICKNAMEINUSE    | Done                                 | During registration: fallback nick; post: revert  |
+| `436` | ERR_NICKCOLLISION    | Done                                 | During registration: fallback nick; post: revert  |
+| `442` | ERR_NOTONCHANNEL     | Done                                 | Silently closes the channel in the UI             |
+| Other | Unhandled numerics   | Shown as `[code] trailing` in status |                                                   |
 
 ## Implementation Notes
 
