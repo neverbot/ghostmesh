@@ -111,12 +111,10 @@ const useUserSettingsStore = defineStore('user-settings', () => {
    * Clear all user data from localStorage (user settings + server settings).
    * Resets in-memory state to defaults.
    */
+  /** Clear user settings from memory and localStorage. */
   function clearAll(): void {
-    localStorage.removeItem(config.storageKeys.userSettings);
-    localStorage.removeItem(config.storageKeys.serverSettings);
-    localStorage.removeItem(config.storageKeys.userPrefs);
-    localStorage.removeItem(config.storageKeys.session);
     settings.value = { ...DEFAULTS };
+    localStorage.removeItem(config.storageKeys.userSettings);
   }
 
   return {

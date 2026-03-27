@@ -104,10 +104,17 @@ const useServerSettingsStore = defineStore('server-settings', () => {
     return filters.some((pattern: string) => lower.includes(pattern.toLowerCase()));
   }
 
+  /** Clear all server settings from memory and localStorage. */
+  function clearAll(): void {
+    settings.value = {};
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
   return {
     settings,
     getSettings,
     updateSettings,
+    clearAll,
     getListDelay,
     isMircEnabled,
     markMircDetected,

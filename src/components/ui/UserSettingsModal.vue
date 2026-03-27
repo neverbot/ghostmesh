@@ -1,6 +1,8 @@
 <script setup lang="ts">
   import { ref, watch, nextTick } from 'vue';
   import { useUserSettingsStore } from '@/stores/user-settings.ts';
+  import { useServerSettingsStore } from '@/stores/server-settings.ts';
+  import { useUserPrefsStore } from '@/stores/user-prefs.ts';
   import { useIrcStore } from '@/stores/irc.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import type { UserProfile } from '@/stores/user-settings.ts';
@@ -21,6 +23,8 @@
   }>();
 
   const userSettings = useUserSettingsStore();
+  const serverSettings = useServerSettingsStore();
+  const userPrefs = useUserPrefsStore();
   const ircStore = useIrcStore();
   const activeTab = ref('profile');
   const confirmForget = ref(false);
@@ -77,11 +81,16 @@
       confirmForget.value = true;
       return;
     }
-    userSettings.clearAll();
     confirmForget.value = false;
+    // Clear all user data from all stores and localStorage
+    userSettings.clearAll();
+    serverSettings.clearAll();
+    userPrefs.clearAll();
+    // Clear session
+    localStorage.removeItem('ghostmesh:session');
+    // Reset form to defaults
+    form.value = { ...userSettings.getProfile() };
     emit('close');
-    // Reload to reset all state
-    window.location.reload();
   }
 </script>
 
