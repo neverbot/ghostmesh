@@ -1,7 +1,9 @@
 <script setup lang="ts">
-  import { computed, ref, watch } from 'vue';
+  import { computed, ref, watch, nextTick } from 'vue';
   import type { CommandDefinition } from '@/services/command-registry.ts';
   import { getMatchingCommands } from '@/services/command-registry.ts';
+
+  const listEl = ref<HTMLElement | null>(null);
 
   const props = defineProps<{
     /** Current input text from the message field. */
@@ -44,11 +46,22 @@
     selectedIndex.value = 0;
   });
 
+  /** Scroll the selected item into view. */
+  function scrollToSelected(): void {
+    nextTick(() => {
+      const el = listEl.value;
+      if (!el) return;
+      const item = el.children[selectedIndex.value] as HTMLElement | undefined;
+      item?.scrollIntoView({ block: 'nearest' });
+    });
+  }
+
   /** Move selection up. */
   function moveUp(): void {
     if (!visible.value) return;
     selectedIndex.value =
       selectedIndex.value <= 0 ? matches.value.length - 1 : selectedIndex.value - 1;
+    scrollToSelected();
   }
 
   /** Move selection down. */
@@ -56,6 +69,7 @@
     if (!visible.value) return;
     selectedIndex.value =
       selectedIndex.value >= matches.value.length - 1 ? 0 : selectedIndex.value + 1;
+    scrollToSelected();
   }
 
   /** Confirm the current selection. */
@@ -85,7 +99,7 @@
     v-if="visible"
     class="absolute bottom-full left-4 mb-1 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
   >
-    <div class="max-h-56 overflow-y-auto py-1">
+    <div ref="listEl" class="max-h-56 overflow-y-auto py-1">
       <button
         v-for="(cmd, i) in matches"
         :key="cmd.name"
