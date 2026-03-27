@@ -81,6 +81,40 @@ Reference: [RFC 1459](https://datatracker.ietf.org/doc/html/rfc1459), [RFC 2812]
 | `REHASH`  | 382     | Reload server config (oper)         | —      |       |
 | `RESTART` |         | Restart server (oper)               | —      |       |
 
+## IRCv3 Capabilities
+
+Reference: [IRCv3 Specifications](https://ircv3.net/irc/)
+
+### CAP Negotiation
+
+CAP (Capability) negotiation is the IRCv3 mechanism for clients and servers to agree on protocol extensions beyond RFC 2812. The flow is:
+
+1. `CAP LS 302` — Client requests the list of capabilities the server supports.
+2. `CAP REQ <capability ...>` — Client requests one or more capabilities.
+3. `CAP END` — Client signals that capability negotiation is complete and registration should continue.
+
+| Command   | Description                                | Status | Notes                                                                                                                                       |
+| --------- | ------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CAP LS`  | List server capabilities                   | —      | Enabling capabilities like `extended-join` and `message-tags` changes the IRC message format and would break our parser. Requires parser update first. |
+| `CAP REQ` | Request capabilities                       | —      |                                                                                                                                             |
+| `CAP END` | End capability negotiation                 | —      |                                                                                                                                             |
+
+### Common Capabilities
+
+| Capability          | Description                                                        | Status |
+| ------------------- | ------------------------------------------------------------------ | ------ |
+| `account-notify`    | Notifications when users identify/unidentify with services         | —      |
+| `away-notify`       | Notifications when users go away or return                         | —      |
+| `extended-join`     | Includes account info in JOIN messages                             | —      |
+| `message-tags`      | Enables IRCv3 message tags (`@tag=value` prefix on messages)       | —      |
+| `multi-prefix`      | Shows all user prefixes in NAMES (e.g., `@+` instead of just `@`) | —      |
+| `sasl`              | Authentication before registration (EXTERNAL, PLAIN methods)       | —      |
+| `setname`           | Allows changing realname without reconnecting                      | —      |
+| `userhost-in-names` | Includes `user@host` in NAMES replies                              | —      |
+| `standard-replies`  | Standardized error/success reply format                            | —      |
+| `server-time`       | Adds timestamp tag to messages                                     | —      |
+| `batch`             | Groups related messages together                                   | —      |
+
 ## Numeric Replies Handled
 
 | Code  | Name                 | Status                               | Notes                                             |
@@ -137,3 +171,7 @@ Large servers like Example Network return 6000+ channels. To prevent UI blocking
 
 - Socket `onclose`/`onerror` handlers are detached before `socket.close()` to prevent the old socket's close event from interfering with a new connection.
 - mIRC detection, LIST wait overrides, connection timestamps, and loading state are all cleaned up on disconnect.
+
+### Server Restrictions (Example Network +T/+q)
+
+Some servers (e.g., Example Network) assign user modes like `+T` (block DMs) or `+q` (quiet) to external/WebSocket connections. This restricts the ability to send or receive private messages. This is a server-side limitation that cannot be worked around without WEBIRC credentials (which require server operator approval) or SASL authentication to identify with a registered account before these modes are applied.
