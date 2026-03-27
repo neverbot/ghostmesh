@@ -308,24 +308,6 @@
               />
             </div>
 
-            <div class="mt-2 border-t border-slate-700 pt-3">
-              <button
-                class="rounded-lg px-3 py-1.5 text-xs transition-colors"
-                :class="
-                  confirmServerForget
-                    ? 'bg-red-600 text-white hover:bg-red-500'
-                    : 'text-red-400 hover:bg-red-500/10 hover:text-red-300'
-                "
-                :title="
-                  confirmServerForget
-                    ? 'Click again to confirm — this will erase user identity for this server'
-                    : 'Clear nickname, username and realname overrides for this server'
-                "
-                @click="handleServerForgetMe"
-              >
-                {{ confirmServerForget ? 'Confirm erase' : 'Forget me on this server' }}
-              </button>
-            </div>
           </div>
 
           <!-- Formatting tab -->
@@ -513,19 +495,37 @@
         </div>
 
         <!-- Footer -->
-        <div class="flex justify-end gap-2 border-t border-slate-700 px-5 py-3">
+        <div class="flex items-center justify-between border-t border-slate-700 px-5 py-3">
           <button
-            class="rounded-lg px-4 py-1.5 text-xs text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-300"
-            @click="close"
+            class="rounded-lg px-3 py-1.5 text-xs transition-colors"
+            :class="
+              confirmServerForget
+                ? 'bg-red-600 text-white hover:bg-red-500'
+                : 'text-red-400 hover:bg-red-500/10 hover:text-red-300'
+            "
+            :title="
+              confirmServerForget
+                ? 'Click again to confirm — this will erase user identity for this server'
+                : 'Clear nickname, username and realname overrides for this server'
+            "
+            @click="handleServerForgetMe"
           >
-            Cancel
+            {{ confirmServerForget ? 'Confirm erase' : 'Forget me on this server' }}
           </button>
-          <button
-            class="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
-            @click="save"
-          >
-            Save
-          </button>
+          <div class="flex gap-2">
+            <button
+              class="rounded-lg px-4 py-1.5 text-xs text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-300"
+              @click="close"
+            >
+              Cancel
+            </button>
+            <button
+              class="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
+              @click="save"
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
     </div>
