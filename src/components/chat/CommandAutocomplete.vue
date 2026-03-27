@@ -26,17 +26,16 @@
 
   /** Extract the command prefix being typed (without the slash). */
   const typedPrefix = computed(() => {
-    if (!props.input.startsWith('/')) return '';
+    if (!props.input.startsWith('/')) return null;
     const spaceIdx = props.input.indexOf(' ');
     // If there's a space, the command name is complete — hide autocomplete
-    if (spaceIdx !== -1) return '';
+    if (spaceIdx !== -1) return null;
     return props.input.slice(1);
   });
 
   /** Matching commands for the current prefix. */
   const matches = computed((): CommandDefinition[] => {
-    if (!props.input.startsWith('/')) return [];
-    if (typedPrefix.value === '') return [];
+    if (typedPrefix.value === null) return [];
     return getMatchingCommands(typedPrefix.value);
   });
 
@@ -84,19 +83,18 @@
 <template>
   <div
     v-if="visible"
-    class="absolute bottom-full left-0 right-0 mb-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
+    class="absolute bottom-full left-4 mb-1 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
   >
     <div class="max-h-56 overflow-y-auto py-1">
       <button
         v-for="(cmd, i) in matches"
         :key="cmd.name"
-        class="flex w-full items-center gap-3 px-4 py-2 text-left text-sm transition-colors"
+        class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors"
         :class="i === selectedIndex ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'"
         @mousedown.prevent="selectItem(i)"
       >
-        <span class="font-mono font-semibold">/{{ cmd.name }}</span>
-        <span class="text-xs text-slate-400">{{ cmd.description }}</span>
-        <span class="ml-auto text-[10px] font-mono text-slate-300">{{ cmd.usage }}</span>
+        <span class="w-14 shrink-0 font-mono font-semibold">/{{ cmd.name }}</span>
+        <span class="truncate text-slate-400">{{ cmd.description }}</span>
       </button>
     </div>
   </div>
