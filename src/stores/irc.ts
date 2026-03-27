@@ -66,8 +66,6 @@ function saveSession(data: SessionData): void {
 
 /** Clear saved session from localStorage. */
 function clearSession(): void {
-  // eslint-disable-next-line no-console
-  console.debug('[GhostMesh] clearSession called', new Error().stack?.split('\n').slice(1, 4).join(' <- '));
   localStorage.removeItem(SESSION_KEY);
 }
 
@@ -870,14 +868,12 @@ const useIrcStore = defineStore('irc', () => {
    */
   function restoreSession(): void {
     const session: SessionData | null = loadSession();
-    // eslint-disable-next-line no-console
-    console.info('[GhostMesh] restoreSession:', JSON.stringify(session?.serverIds));
     if (!session || !session.serverIds?.length) return;
 
     for (const serverId of session.serverIds) {
       const server: ServerConfig | undefined = servers.value.find((s) => s.id === serverId);
-      if (!server) { console.warn('[GhostMesh] restore: server not found:', serverId); continue; } // eslint-disable-line no-console
-      if (isConnected(serverId) || connectingServers.value.includes(serverId)) { console.warn('[GhostMesh] restore: already connected/connecting:', serverId); continue; } // eslint-disable-line no-console
+      if (!server) continue;
+      if (isConnected(serverId) || connectingServers.value.includes(serverId)) continue;
       // Skip duplicate networks during restore
       const targetKey: string = server.tcpHost
         ? `${server.tcpHost}:${server.tcpPort || 6667}`
@@ -888,13 +884,11 @@ const useIrcStore = defineStore('irc', () => {
         const otherKey = other.tcpHost ? `${other.tcpHost}:${other.tcpPort || 6667}` : other.host;
         return otherKey === targetKey;
       });
-      if (isDuplicate) { console.warn('[GhostMesh] restore: duplicate network skipped:', serverId); continue; } // eslint-disable-line no-console
+      if (isDuplicate) continue;
       // Store the channels to rejoin after connection
       const channelsToJoin: string[] = (session.channels[serverId] || []).filter(
         (ch) => ch !== '*status',
       );
-      // eslint-disable-next-line no-console
-      console.info('[GhostMesh] restore: connecting to', serverId);
       connectingServers.value.push(server.id);
       getService().connect(server);
       connectTimers[server.id] = setTimeout(() => {
