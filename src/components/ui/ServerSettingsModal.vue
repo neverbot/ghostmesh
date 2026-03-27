@@ -309,15 +309,17 @@
             </div>
 
             <div class="mt-2 border-t border-slate-700 pt-3">
-              <p class="mb-2 text-[10px] text-slate-500">
-                Clear all user identity overrides for this server. Fields will revert to your global settings.
-              </p>
               <button
                 class="rounded-lg px-3 py-1.5 text-xs transition-colors"
                 :class="
                   confirmServerForget
                     ? 'bg-red-600 text-white hover:bg-red-500'
-                    : 'bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-slate-300'
+                    : 'text-red-400 hover:bg-red-500/10 hover:text-red-300'
+                "
+                :title="
+                  confirmServerForget
+                    ? 'Click again to confirm — this will erase user identity for this server'
+                    : 'Clear nickname, username and realname overrides for this server'
                 "
                 @click="handleServerForgetMe"
               >
