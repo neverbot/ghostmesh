@@ -4,7 +4,7 @@ import type { Ref, ShallowRef, ComputedRef } from 'vue';
 import config from '@/config.ts';
 import IRCService from '@/services/irc.service.ts';
 import type { ServerSettingsApi } from '@/services/irc.service.ts';
-import { parseCommand, executeCommand } from '@/services/command-registry.ts';
+import { parseCommand, executeCommand, findCommand } from '@/services/command-registry.ts';
 import type { CommandContext, CommandStore } from '@/services/command-registry.ts';
 import { useServerSettingsStore } from '@/stores/server-settings.ts';
 import { useUserSettingsStore } from '@/stores/user-settings.ts';
@@ -815,11 +815,15 @@ const useIrcStore = defineStore('irc', () => {
         };
         const handled = executeCommand(parsed, ctx);
         if (!handled) {
+          const cmd = findCommand(parsed.name);
+          const msg = cmd
+            ? `Usage: ${cmd.usage}`
+            : `Unknown command: /${parsed.name}`;
           addMessage(
             selectedServerId.value,
             selectedChannel.value,
             '',
-            `Unknown command: /${parsed.name}`,
+            msg,
             'system',
           );
         }
