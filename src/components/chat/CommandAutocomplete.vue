@@ -1,0 +1,103 @@
+<script setup lang="ts">
+  import { computed, ref, watch } from 'vue';
+  import type { CommandDefinition } from '@/services/command-registry.ts';
+  import { getMatchingCommands } from '@/services/command-registry.ts';
+
+  const props = defineProps<{
+    /** Current input text from the message field. */
+    input: string;
+    /** Whether the input is focused. */
+    focused: boolean;
+  }>();
+
+  const emit = defineEmits<{
+    /** User selected a command from the list. */
+    select: [command: string];
+  }>();
+
+  const selectedIndex = ref(0);
+
+  /** Whether the autocomplete should be visible. */
+  const visible = computed(() => {
+    if (!props.focused) return false;
+    if (!props.input.startsWith('/')) return false;
+    return matches.value.length > 0;
+  });
+
+  /** Extract the command prefix being typed (without the slash). */
+  const typedPrefix = computed(() => {
+    if (!props.input.startsWith('/')) return '';
+    const spaceIdx = props.input.indexOf(' ');
+    // If there's a space, the command name is complete — hide autocomplete
+    if (spaceIdx !== -1) return '';
+    return props.input.slice(1);
+  });
+
+  /** Matching commands for the current prefix. */
+  const matches = computed((): CommandDefinition[] => {
+    if (!props.input.startsWith('/')) return [];
+    if (typedPrefix.value === '') return [];
+    return getMatchingCommands(typedPrefix.value);
+  });
+
+  // Reset selection when matches change
+  watch(matches, () => {
+    selectedIndex.value = 0;
+  });
+
+  /** Move selection up. */
+  function moveUp(): void {
+    if (!visible.value) return;
+    selectedIndex.value =
+      selectedIndex.value <= 0 ? matches.value.length - 1 : selectedIndex.value - 1;
+  }
+
+  /** Move selection down. */
+  function moveDown(): void {
+    if (!visible.value) return;
+    selectedIndex.value =
+      selectedIndex.value >= matches.value.length - 1 ? 0 : selectedIndex.value + 1;
+  }
+
+  /** Confirm the current selection. */
+  function confirmSelection(): boolean {
+    if (!visible.value) return false;
+    const cmd = matches.value[selectedIndex.value];
+    if (cmd) {
+      emit('select', `/${cmd.name} `);
+      return true;
+    }
+    return false;
+  }
+
+  /** Select a command by clicking. */
+  function selectItem(index: number): void {
+    const cmd = matches.value[index];
+    if (cmd) {
+      emit('select', `/${cmd.name} `);
+    }
+  }
+
+  defineExpose({ moveUp, moveDown, confirmSelection, visible });
+</script>
+
+<template>
+  <div
+    v-if="visible"
+    class="absolute bottom-full left-0 right-0 mb-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
+  >
+    <div class="max-h-56 overflow-y-auto py-1">
+      <button
+        v-for="(cmd, i) in matches"
+        :key="cmd.name"
+        class="flex w-full items-center gap-3 px-4 py-2 text-left text-sm transition-colors"
+        :class="i === selectedIndex ? 'bg-emerald-50 text-emerald-700' : 'text-slate-600 hover:bg-slate-50'"
+        @mousedown.prevent="selectItem(i)"
+      >
+        <span class="font-mono font-semibold">/{{ cmd.name }}</span>
+        <span class="text-xs text-slate-400">{{ cmd.description }}</span>
+        <span class="ml-auto text-[10px] font-mono text-slate-300">{{ cmd.usage }}</span>
+      </button>
+    </div>
+  </div>
+</template>
