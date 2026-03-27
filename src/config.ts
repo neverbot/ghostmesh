@@ -23,6 +23,9 @@ interface ListConfig {
 
 interface ImagesConfig {
   showProxyCaption: boolean;
+  cacheTtl: number;
+  cacheCleanupInterval: number;
+  cacheDebug: boolean;
 }
 
 interface ServerDefaults {
@@ -91,6 +94,12 @@ const config: AppConfig = {
   images: {
     /** Show a caption on images served through the proxy. Temporary for testing. */
     showProxyCaption: true,
+    /** Image cache TTL in milliseconds. Entries older than this are cleaned up. */
+    cacheTtl: 10 * 60 * 1000,
+    /** Image cache cleanup interval in milliseconds. */
+    cacheCleanupInterval: 5 * 60 * 1000,
+    /** Log cache cleanup stats to console. */
+    cacheDebug: true,
   },
 
   /** WebSocket-to-TCP proxy for servers without native WebSocket support. */
