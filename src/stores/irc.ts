@@ -4,6 +4,8 @@ import type { Ref, ShallowRef, ComputedRef } from 'vue';
 import config from '@/config.ts';
 import IRCService from '@/services/irc.service.ts';
 import type { ServerSettingsApi } from '@/services/irc.service.ts';
+import { parseCommand, executeCommand } from '@/services/command-registry.ts';
+import type { CommandContext, CommandStore } from '@/services/command-registry.ts';
 import { useServerSettingsStore } from '@/stores/server-settings.ts';
 import { useUserSettingsStore } from '@/stores/user-settings.ts';
 import { useUserPrefsStore } from '@/stores/user-prefs.ts';
@@ -796,10 +798,35 @@ const useIrcStore = defineStore('irc', () => {
   }
 
   /**
-   * Send a message to the currently selected channel.
+   * Send a message or execute a slash command in the currently selected channel.
    */
   function sendMessage(content: string): void {
     if (!selectedServerId.value || !selectedChannel.value) return;
+
+    // Slash command handling
+    if (content.startsWith('/')) {
+      const parsed = parseCommand(content);
+      if (parsed) {
+        const ctx: CommandContext = {
+          serverId: selectedServerId.value,
+          channel: selectedChannel.value,
+          service: getService(),
+          store: commandStoreApi,
+        };
+        const handled = executeCommand(parsed, ctx);
+        if (!handled) {
+          addMessage(
+            selectedServerId.value,
+            selectedChannel.value,
+            '',
+            `Unknown command: /${parsed.name}`,
+            'system',
+          );
+        }
+      }
+      return;
+    }
+
     if (selectedChannel.value === '*status') {
       // Status channel: send as raw IRC command
       getService().send(selectedServerId.value, content);
@@ -812,6 +839,37 @@ const useIrcStore = defineStore('irc', () => {
     // Own messages should not increase unread count
     markReadUpTo(selectedServerId.value, selectedChannel.value, Date.now());
   }
+
+  /** Clear all messages in a channel. */
+  function clearMessages(serverId: string, channel: string): void {
+    const key: string = `${serverId}:${channel}`;
+    if (messages.value[key]) {
+      messages.value[key] = [];
+    }
+  }
+
+  /** Leave a channel or close a DM. */
+  function leaveChannel(serverId: string, channel: string): void {
+    if (isDM(channel)) {
+      removeJoinedChannel(serverId, channel);
+    } else {
+      getService().partChannel(serverId, channel);
+    }
+  }
+
+  /** Store API exposed to the command registry. */
+  const commandStoreApi: CommandStore = {
+    openDM,
+    addMessage,
+    clearMessages,
+    leaveChannel,
+    selectServer: (serverId: string) => {
+      const ch = channels.value[serverId];
+      if (ch?.length) selectChannel(serverId, ch[0]);
+    },
+    isDM,
+    get nickname() { return nickname.value; },
+  };
 
   /**
    * Mark a server as loading LIST.
@@ -1024,6 +1082,8 @@ const useIrcStore = defineStore('irc', () => {
     openDM,
     closeDMsWithUser,
     sendMessage,
+    clearMessages,
+    leaveChannel,
     refreshChannelList,
     changeNick,
     changeNickGlobal,
