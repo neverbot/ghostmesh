@@ -7,6 +7,7 @@ import config from '@/config.ts';
 import type { ImageProvider, ImageProviderResult } from '@/services/image-providers.ts';
 import { resolveImageProvider, providers } from '@/services/image-providers.ts';
 import { imageProxyUrl, fetchWithProxy } from '@/services/proxy-services.ts';
+import * as imageCache from '@/services/image-cache.ts';
 
 /** Image file extensions to detect for inline preview. */
 const IMAGE_EXTENSIONS: string[] = [
@@ -77,8 +78,11 @@ function handleImageError(img: HTMLImageElement): void {
   if (attempt === 0) {
     // First failure: try via image-proxy.invalid proxy
     img.dataset.attempt = '1';
-    img.src = imageProxyUrl(img.dataset.originalSrc!);
+    const proxyUrl: string = imageProxyUrl(img.dataset.originalSrc!);
+    img.src = proxyUrl;
     img.onload = (): void => {
+      // Cache the proxy URL (resolved differs from original)
+      imageCache.set(img.dataset.originalSrc!, proxyUrl);
       // Proxy succeeded — add caption if configured
       if (config.images.showProxyCaption && !img.dataset.captionAdded) {
         img.dataset.captionAdded = '1';
@@ -148,6 +152,28 @@ async function resolveAsyncImage(asyncMarker: string, placeholderId: string): Pr
     return;
   }
 
+  // Check image cache before fetching
+  const cachedUrl: string | null = imageCache.get(asyncMarker);
+  if (cachedUrl) {
+    const img: HTMLImageElement = document.createElement('img');
+    img.alt = '';
+    img.className = 'mt-1 block max-w-full rounded-lg animate-preview';
+    img.style.maxHeight = '70vh';
+    img.style.width = 'auto';
+    if (cachedUrl.startsWith('data:')) {
+      img.src = cachedUrl;
+    } else {
+      img.src = cachedUrl;
+      img.dataset.originalSrc = cachedUrl;
+      img.dataset.attempt = '0';
+      img.referrerPolicy = 'no-referrer';
+      img.loading = 'lazy';
+      img.onerror = (): void => handleImageError(img);
+    }
+    placeholder.replaceWith(img);
+    return;
+  }
+
   try {
     const dataUrl: string | null = await provider.resolve!(id, { fetchWithProxy });
     const el: HTMLElement | null = document.getElementById(placeholderId);
@@ -158,6 +184,8 @@ async function resolveAsyncImage(asyncMarker: string, placeholderId: string): Pr
       console.warn(`[GhostMesh] Async image proxy error: ${asyncMarker}`);
       replaceWithRetry(el, asyncMarker, placeholderId, 'Could not fetch preview — click to retry');
     } else if (dataUrl) {
+      // Cache async resolved images (data: URIs, proxy URLs) where resolved differs from original
+      imageCache.set(asyncMarker, dataUrl);
       const img: HTMLImageElement = document.createElement('img');
       img.alt = '';
       img.className = 'mt-1 block max-w-full rounded-lg animate-preview';

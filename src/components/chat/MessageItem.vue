@@ -6,6 +6,7 @@
   import { parseFormatting, stripFormatting, hasFormatting } from '@/utils/mirc-format.ts';
   import { formatPlainContent, formatHtmlContent, isImageUrl } from '@/services/message.service.ts';
   import { resolveImageProvider } from '@/services/image-providers.ts';
+  import * as imageCache from '@/services/image-cache.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import type { ChatMessage, UserClickPayload } from '@/types.ts';
 
@@ -34,6 +35,19 @@
     observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !previewReady.value) {
+          // Pre-resolve cached async markers so images render immediately
+          const text = props.message.content || '';
+          const urlMatches = text.match(/(?:https?:\/\/|www\.)[^\s<>"'()]+/gi);
+          if (urlMatches) {
+            for (const u of urlMatches) {
+              const normalized = u.startsWith('www.') ? `https://${u}` : u;
+              const resolved = resolveImageProvider(normalized);
+              if (resolved && resolved.imageUrl.startsWith('async:')) {
+                // Touch the cache entry to keep it warm
+                imageCache.get(resolved.imageUrl);
+              }
+            }
+          }
           previewReady.value = true;
           // Notify parent that this message has been seen (for unread tracking)
           if (props.message.type === 'message') {
