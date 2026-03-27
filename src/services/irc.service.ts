@@ -241,19 +241,15 @@ class IRCService extends EventEmitter {
    * @param message
    */
   sendMessage(serverId: string, channel: string, message: string): void {
-    const transformed = this.applyTransforms(serverId, message);
+    const transformed = this.transformUrls(serverId, message);
     this.send(serverId, `PRIVMSG ${channel} :${transformed}`);
   }
 
-  /** Apply server-specific message transforms before sending. */
-  applyTransforms(serverId: string, text: string): string {
+  /** Apply server-specific URL transforms to any URLs found in the message text. */
+  private transformUrls(serverId: string, text: string): string {
     const server: ServerConfig | undefined = this.serverConfigs.get(serverId);
-    if (!server?.messageTransforms?.length) return text;
-    let result = text;
-    for (const transform of server.messageTransforms) {
-      result = transform(result);
-    }
-    return result;
+    if (!server?.urlTransform) return text;
+    return text.replace(/https?:\/\/[^\s]+/g, (url: string) => server.urlTransform!(url));
   }
 
   /**
