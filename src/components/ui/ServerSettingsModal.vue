@@ -32,6 +32,7 @@
 
   const form = ref<Partial<ServerSettingsEntry>>({});
   const newFilter = ref('');
+  const confirmServerForget = ref(false);
 
   // Load form values when opening
   watch(
@@ -42,6 +43,7 @@
         form.value = { ...s };
         if (props.initialTab) activeTab.value = props.initialTab;
         else activeTab.value = 'general';
+        confirmServerForget.value = false;
         nextTick(() => backdrop.value?.focus());
       }
     },
@@ -101,6 +103,23 @@
   function removeFilter(idx: number) {
     const filters = form.value.filteredMessages || [];
     form.value.filteredMessages = filters.filter((_, i) => i !== idx);
+  }
+
+  /** Clear user identity overrides for this server. */
+  function handleServerForgetMe() {
+    if (!confirmServerForget.value) {
+      confirmServerForget.value = true;
+      return;
+    }
+    confirmServerForget.value = false;
+    form.value.nickname = '';
+    form.value.username = '';
+    form.value.realname = '';
+    settingsStore.updateSettings(props.serverId, {
+      nickname: '',
+      username: '',
+      realname: '',
+    });
   }
 </script>
 
@@ -287,6 +306,23 @@
                 placeholder="(use global)"
                 class="w-full rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
               />
+            </div>
+
+            <div class="mt-2 border-t border-slate-700 pt-3">
+              <p class="mb-2 text-[10px] text-slate-500">
+                Clear all user identity overrides for this server. Fields will revert to your global settings.
+              </p>
+              <button
+                class="rounded-lg px-3 py-1.5 text-xs transition-colors"
+                :class="
+                  confirmServerForget
+                    ? 'bg-red-600 text-white hover:bg-red-500'
+                    : 'bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-slate-300'
+                "
+                @click="handleServerForgetMe"
+              >
+                {{ confirmServerForget ? 'Confirm erase' : 'Forget me on this server' }}
+              </button>
             </div>
           </div>
 
