@@ -312,7 +312,7 @@
 <template>
   <div
     ref="scrollContainer"
-    class="flex-1 overflow-y-auto bg-white py-4 pr-6"
+    class="flex-1 overflow-x-hidden overflow-y-auto bg-white py-4 pr-6"
   >
     <!-- Empty state -->
     <div
