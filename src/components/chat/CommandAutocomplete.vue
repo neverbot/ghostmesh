@@ -99,16 +99,25 @@
     v-if="visible"
     class="absolute bottom-full left-4 mb-1 w-[28rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg"
   >
-    <div ref="listEl" class="max-h-56 overflow-y-auto py-1">
+    <div
+      ref="listEl"
+      class="max-h-56 overflow-y-auto py-1"
+    >
       <button
         v-for="(cmd, i) in matches"
         :key="cmd.name"
         class="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors"
-        :class="i === selectedIndex ? 'bg-emerald-100 text-emerald-800' : 'text-slate-600 hover:bg-slate-50'"
+        :class="
+          i === selectedIndex
+            ? 'bg-emerald-100 text-emerald-800'
+            : 'text-slate-600 hover:bg-slate-50'
+        "
         @mousedown.prevent="selectItem(i)"
       >
         <span class="w-16 shrink-0 font-mono font-bold">/{{ cmd.name }}</span>
-        <span class="w-28 shrink-0 font-mono text-slate-400">{{ cmd.usage.split(' ').slice(1).join(' ') }}</span>
+        <span class="w-28 shrink-0 font-mono text-slate-400">{{
+          cmd.usage.split(' ').slice(1).join(' ')
+        }}</span>
         <span class="truncate text-slate-400">{{ cmd.description }}</span>
       </button>
     </div>

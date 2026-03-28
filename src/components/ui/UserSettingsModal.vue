@@ -171,9 +171,7 @@
             v-if="activeTab === 'general'"
             class="flex flex-col gap-4"
           >
-            <p class="text-[10px] text-slate-500">
-              General application behavior.
-            </p>
+            <p class="text-[10px] text-slate-500">General application behavior.</p>
 
             <label class="flex items-center gap-2">
               <input
@@ -185,7 +183,8 @@
               <span class="text-xs text-slate-300">Clear channel data when closing</span>
             </label>
             <p class="text-[10px] text-slate-500">
-              When enabled, messages, user lists and topics are removed from memory when you close a channel or conversation. Disable to keep history until the page is reloaded.
+              When enabled, messages, user lists and topics are removed from memory when you close a
+              channel or conversation. Disable to keep history until the page is reloaded.
             </p>
           </div>
 
@@ -302,51 +301,54 @@
           <div
             v-if="activeTab === 'image uploads'"
             class="flex flex-col gap-4 overflow-y-auto"
-        >
-          <p class="text-[10px] text-slate-500">
-            Configure your own API keys for image hosting services. Your keys are stored locally in your browser and never sent to our servers.
-          </p>
-
-          <div
-            v-for="provider in privateUploadProviders"
-            :key="provider.configKey"
-            class="flex flex-col gap-2 rounded-lg border border-slate-700 p-3"
           >
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-medium text-slate-300">{{ provider.configLabel }}</span>
-              <div class="flex gap-3">
-                <a
-                  v-if="provider.signupUrl"
-                  :href="provider.signupUrl"
-                  target="_blank"
-                  rel="noopener"
-                  class="text-[10px] text-slate-400 hover:text-slate-300"
-                >
-                  Create account
-                </a>
-                <a
-                  :href="provider.configUrl"
-                  target="_blank"
-                  rel="noopener"
-                  class="text-[10px] text-emerald-400 hover:text-emerald-300"
-                >
-                  Get API key
-                </a>
+            <p class="text-[10px] text-slate-500">
+              Configure your own API keys for image hosting services. Your keys are stored locally
+              in your browser and never sent to our servers.
+            </p>
+
+            <div
+              v-for="provider in privateUploadProviders"
+              :key="provider.configKey"
+              class="flex flex-col gap-2 rounded-lg border border-slate-700 p-3"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-medium text-slate-300">{{ provider.configLabel }}</span>
+                <div class="flex gap-3">
+                  <a
+                    v-if="provider.signupUrl"
+                    :href="provider.signupUrl"
+                    target="_blank"
+                    rel="noopener"
+                    class="text-[10px] text-slate-400 hover:text-slate-300"
+                  >
+                    Create account
+                  </a>
+                  <a
+                    :href="provider.configUrl"
+                    target="_blank"
+                    rel="noopener"
+                    class="text-[10px] text-emerald-400 hover:text-emerald-300"
+                  >
+                    Get API key
+                  </a>
+                </div>
               </div>
+              <p
+                class="text-[10px] text-slate-500"
+                v-html="provider.configDescription"
+              />
+              <input
+                :value="form.uploadProviderKeys?.[provider.configKey] || ''"
+                type="text"
+                :placeholder="`Enter your ${provider.configLabel} API key`"
+                class="w-full rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 font-mono text-xs text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
+                @input="
+                  onProviderKeyInput(provider.configKey, ($event.target as HTMLInputElement).value)
+                "
+              />
             </div>
-            <p
-              class="text-[10px] text-slate-500"
-              v-html="provider.configDescription"
-            ></p>
-            <input
-              :value="form.uploadProviderKeys?.[provider.configKey] || ''"
-              type="text"
-              :placeholder="`Enter your ${provider.configLabel} API key`"
-              class="w-full rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 font-mono text-xs text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
-              @input="onProviderKeyInput(provider.configKey, ($event.target as HTMLInputElement).value)"
-            />
           </div>
-        </div>
         </div>
 
         <!-- Footer -->

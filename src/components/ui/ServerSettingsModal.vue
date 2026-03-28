@@ -308,7 +308,6 @@
                 class="w-full rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
               />
             </div>
-
           </div>
 
           <!-- Formatting tab -->
@@ -449,7 +448,8 @@
             class="flex flex-col gap-4"
           >
             <p class="text-[10px] text-slate-500">
-              Messages containing any of these texts will be hidden in public channels. Case-insensitive substring match.
+              Messages containing any of these texts will be hidden in public channels.
+              Case-insensitive substring match.
             </p>
 
             <!-- Add new filter -->
@@ -473,7 +473,7 @@
             <!-- Filter list -->
             <div class="max-h-48 overflow-y-auto">
               <div
-                v-for="(filter, idx) in (form.filteredMessages || [])"
+                v-for="(filter, idx) in form.filteredMessages || []"
                 :key="idx"
                 class="flex items-center justify-between border-b border-slate-700/50 py-1.5"
               >

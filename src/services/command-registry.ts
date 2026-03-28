@@ -11,13 +11,7 @@ interface CommandContext {
 /** Minimal store API needed by commands. */
 interface CommandStore {
   openDM(serverId: string, nick: string): void;
-  addMessage(
-    serverId: string,
-    channel: string,
-    nick: string,
-    content: string,
-    type?: string,
-  ): void;
+  addMessage(serverId: string, channel: string, nick: string, content: string, type?: string): void;
   clearMessages(serverId: string, channel: string): void;
   leaveChannel(serverId: string, channel: string): void;
   selectServer(serverId: string): void;
@@ -199,7 +193,13 @@ const commands: CommandDefinition[] = [
       if (!args[0] || !ctx.channel || ctx.channel === '*status') return false;
       const text = args.join(' ');
       ctx.service.send(ctx.serverId, `PRIVMSG ${ctx.channel} :\x01ACTION ${text}\x01`);
-      ctx.store.addMessage(ctx.serverId, ctx.channel, ctx.store.nickname, `* ${ctx.store.nickname} ${text}`, 'system');
+      ctx.store.addMessage(
+        ctx.serverId,
+        ctx.channel,
+        ctx.store.nickname,
+        `* ${ctx.store.nickname} ${text}`,
+        'system',
+      );
       return true;
     },
   },
@@ -243,9 +243,7 @@ function parseCommand(input: string): ParsedCommand | null {
 /** Find the command definition by name or alias. */
 function findCommand(name: string): CommandDefinition | null {
   const lower = name.toLowerCase();
-  return commands.find(
-    (cmd) => cmd.name === lower || cmd.aliases.includes(lower),
-  ) || null;
+  return commands.find((cmd) => cmd.name === lower || cmd.aliases.includes(lower)) || null;
 }
 
 /** Execute a parsed command. Returns true if handled. */
@@ -260,9 +258,7 @@ function getMatchingCommands(prefix: string): CommandDefinition[] {
   const lower = prefix.toLowerCase();
   if (!lower) return commands;
   return commands.filter(
-    (cmd) =>
-      cmd.name.startsWith(lower) ||
-      cmd.aliases.some((a) => a.startsWith(lower)),
+    (cmd) => cmd.name.startsWith(lower) || cmd.aliases.some((a) => a.startsWith(lower)),
   );
 }
 
