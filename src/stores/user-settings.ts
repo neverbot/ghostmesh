@@ -11,6 +11,8 @@ interface UserProfile {
   username: string;
   realname: string;
   avatarColor: string;
+  /** User-provided API keys for private upload providers. */
+  uploadProviderKeys?: Record<string, string>;
 }
 
 const STORAGE_KEY: string = config.storageKeys.userSettings;

@@ -10,7 +10,7 @@ import { useServerSettingsStore } from '@/stores/server-settings.ts';
 import { useUserSettingsStore } from '@/stores/user-settings.ts';
 import { useUserPrefsStore } from '@/stores/user-prefs.ts';
 import defaultServers from '@/servers.ts';
-import { uploadImage, providers as uploadProviders, disabledProviders as disabledUploadProviders } from '@/services/upload-providers.ts';
+import { uploadImage, hasAvailableProvider } from '@/services/upload-providers.ts';
 import type {
   AvailableChannel,
   ChatMessage,
@@ -727,7 +727,8 @@ const useIrcStore = defineStore('irc', () => {
     if (!selectedServerId.value) return false;
     const server = servers.value.find((s) => s.id === selectedServerId.value);
     const blocked = server?.blockedUploadProviders || [];
-    return uploadProviders.some((p) => !disabledUploadProviders.has(p.name) && !blocked.includes(p.name));
+    const userKeys = useUserSettingsStore().getProfile().uploadProviderKeys || {};
+    return hasAvailableProvider(blocked, userKeys);
   });
 
   /**
@@ -865,7 +866,8 @@ const useIrcStore = defineStore('irc', () => {
 
     try {
       const server = servers.value.find((s) => s.id === serverId);
-      const url = await uploadImage(file, server?.blockedUploadProviders);
+      const userKeys = useUserSettingsStore().getProfile().uploadProviderKeys || {};
+      const url = await uploadImage(file, server?.blockedUploadProviders, userKeys);
       // Send the URL directly — bypass URL transforms (upload URLs must not be modified)
       getService().send(serverId, `PRIVMSG ${channel} :${url}`);
       addMessage(serverId, channel, nickname.value, url, 'message');
