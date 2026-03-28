@@ -433,7 +433,7 @@
                   :delay="300"
                 >
                   <button
-                    class="absolute top-1/2 z-10 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-white text-slate-400 opacity-0 shadow transition-opacity hover:text-emerald-500 group-hover/fwd:opacity-100"
+                    class="absolute top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-white text-slate-400 opacity-0 shadow transition-opacity hover:text-emerald-500 group-hover/fwd:opacity-100"
                     :class="group.own ? '-left-7' : '-right-7'"
                     @click.stop="onForward({ content: msg.content, x: $event.clientX, y: $event.clientY })"
                   >
