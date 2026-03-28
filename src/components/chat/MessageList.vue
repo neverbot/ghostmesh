@@ -438,7 +438,7 @@
                     {{ new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
                   </span>
                   <InfoTooltip
-                    text="Forward"
+                    text="Forward message"
                     :delay="300"
                   >
                     <button
