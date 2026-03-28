@@ -374,7 +374,7 @@
 
           <!-- Content column -->
           <div
-            class="flex flex-col gap-1"
+            class="flex max-w-[75%] flex-col gap-1"
             :class="group.own ? 'items-end' : 'items-start'"
           >
             <!-- Nick -->
