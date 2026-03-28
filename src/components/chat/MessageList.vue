@@ -4,6 +4,7 @@
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
   import MessageItem from './MessageItem.vue';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
+  import ForwardMenu from './ForwardMenu.vue';
   import config from '@/config.ts';
   import type { ChatMessage, UserClickPayload } from '@/types.ts';
 
@@ -57,6 +58,19 @@
   const menuServerId = ref('');
   const menuX = ref(0);
   const menuY = ref(0);
+
+  // Forward menu state
+  const forwardOpen = ref(false);
+  const forwardContent = ref('');
+  const forwardX = ref(0);
+  const forwardY = ref(0);
+
+  function onForward(payload: { content: string; x: number; y: number }) {
+    forwardContent.value = payload.content;
+    forwardX.value = payload.x;
+    forwardY.value = payload.y;
+    forwardOpen.value = true;
+  }
 
   /** Whether to show the "scroll to bottom" button. */
   const showScrollBtn = ref(false);
@@ -408,6 +422,7 @@
                 :key="msg.id"
                 :message="msg"
                 @message-seen="onMessageSeen"
+                @forward="onForward"
               />
             </div>
 
@@ -466,5 +481,13 @@
     :open="menuOpen"
     @close="menuOpen = false"
     @open-dm="onOpenDM"
+  />
+
+  <ForwardMenu
+    :content="forwardContent"
+    :x="forwardX"
+    :y="forwardY"
+    :open="forwardOpen"
+    @close="forwardOpen = false"
   />
 </template>

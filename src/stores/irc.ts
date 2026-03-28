@@ -765,6 +765,9 @@ const useIrcStore = defineStore('irc', () => {
   const connectionError: Ref<string | null> = ref(null);
   const isUploading: Ref<boolean> = ref(false);
 
+  /** Text to prefill in the message input (set by forward). */
+  const prefillMessage: Ref<string> = ref('');
+
   /** Whether the current server has any upload providers available. */
   const canUpload: ComputedRef<boolean> = computed(() => {
     if (!selectedServerId.value) return false;
@@ -1164,6 +1167,7 @@ const useIrcStore = defineStore('irc', () => {
     sendMessage,
     uploadAndSend,
     isUploading,
+    prefillMessage,
     canUpload,
     clearMessages,
     leaveChannel,

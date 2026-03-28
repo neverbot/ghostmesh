@@ -16,6 +16,7 @@
 
   const emit = defineEmits<{
     'message-seen': [payload: { serverId: string; channel: string; timestamp: Date }];
+    forward: [payload: { content: string; x: number; y: number }];
   }>();
 
   const store = useIrcStore();
@@ -104,6 +105,15 @@
       resolveImages: canResolveImages.value,
     });
   });
+
+  /** Trigger the forward dropdown. */
+  function onForward(e: MouseEvent) {
+    emit('forward', {
+      content: props.message.content,
+      x: e.clientX,
+      y: e.clientY,
+    });
+  }
 </script>
 
 <template>
@@ -126,7 +136,7 @@
   <div
     v-else
     ref="messageEl"
-    class="text-sm leading-relaxed"
+    class="group/msg relative text-sm leading-relaxed"
   >
     <InfoTooltip :text="timeString">
       <div class="px-3 py-1">
@@ -136,5 +146,26 @@
         />
       </div>
     </InfoTooltip>
+    <!-- Forward button (visible on hover) -->
+    <button
+      class="absolute top-1 opacity-0 transition-opacity group-hover/msg:opacity-100"
+      :class="isOwn ? 'left-1' : 'right-1'"
+      title="Forward message"
+      @click.stop="onForward"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 16 16"
+        fill="currentColor"
+        class="h-3.5 w-3.5"
+        :class="isOwn ? 'text-white/50 hover:text-white/80' : 'text-slate-400 hover:text-slate-600'"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M15 8a.75.75 0 0 1-.75.75H4.56l3.22 3.22a.75.75 0 1 1-1.06 1.06l-4.5-4.5a.75.75 0 0 1 0-1.06l4.5-4.5a.75.75 0 0 1 1.06 1.06L4.56 7.25h9.69A.75.75 0 0 1 15 8Z"
+          clip-rule="evenodd"
+        />
+      </svg>
+    </button>
   </div>
 </template>

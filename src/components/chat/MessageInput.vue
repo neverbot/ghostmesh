@@ -23,6 +23,18 @@
     },
   );
 
+  // Prefill input when forwarding a message
+  watch(
+    () => store.prefillMessage,
+    (content) => {
+      if (content) {
+        text.value = content;
+        store.prefillMessage = '';
+        nextTick(() => inputEl.value?.focus());
+      }
+    },
+  );
+
   const emit = defineEmits<{
     send: [content: string];
     upload: [file: File];
