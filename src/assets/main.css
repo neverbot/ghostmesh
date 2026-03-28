@@ -1,4 +1,31 @@
 @import 'tailwindcss';
+@plugin '@tailwindcss/forms';
+
+/* === Form element overrides (emerald accent) === */
+[type='checkbox'],
+[type='radio'] {
+  color: var(--color-emerald-500);
+  border-color: var(--color-slate-500);
+  background-color: transparent;
+}
+[type='checkbox']:focus,
+[type='radio']:focus {
+  --tw-ring-color: var(--color-emerald-500);
+  border-color: var(--color-emerald-500);
+}
+[type='checkbox']:checked,
+[type='radio']:checked {
+  background-color: var(--color-emerald-500);
+  border-color: var(--color-emerald-500);
+}
+select {
+  background-color: transparent;
+  border-color: var(--color-slate-600);
+}
+select:focus {
+  --tw-ring-color: var(--color-emerald-500);
+  border-color: var(--color-emerald-500);
+}
 
 /*
  * GhostMesh Design Tokens
