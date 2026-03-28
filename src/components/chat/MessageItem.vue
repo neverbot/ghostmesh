@@ -103,7 +103,7 @@
     return gap >= config.chat.groupingInterval;
   });
 
-  /** Border radius classes for grouped bubbles. */
+  /** Border radius classes for grouped bubbles — zero on touching edges. */
   const groupBorderRadius = computed(() => {
     const standalone = !isGroupContinuation.value && isGroupEnd.value;
     if (standalone) return 'rounded-2xl';
@@ -111,13 +111,13 @@
     const end = isGroupContinuation.value && isGroupEnd.value;
     // middle = isGroupContinuation && !isGroupEnd
     if (isOwn.value) {
-      if (start) return 'rounded-2xl rounded-br-md';
-      if (end) return 'rounded-2xl rounded-tr-md';
-      return 'rounded-l-2xl rounded-r-md'; // middle
+      if (start) return 'rounded-t-2xl rounded-bl-2xl rounded-br-none';
+      if (end) return 'rounded-b-2xl rounded-tl-2xl rounded-tr-none';
+      return 'rounded-l-2xl rounded-r-none'; // middle
     }
-    if (start) return 'rounded-2xl rounded-bl-md';
-    if (end) return 'rounded-2xl rounded-tl-md';
-    return 'rounded-r-2xl rounded-l-md'; // middle
+    if (start) return 'rounded-t-2xl rounded-br-2xl rounded-bl-none';
+    if (end) return 'rounded-b-2xl rounded-tr-2xl rounded-tl-none';
+    return 'rounded-r-2xl rounded-l-none'; // middle
   });
 
   const timeString = computed(() => {
@@ -221,7 +221,7 @@
     class="flex gap-3 pl-6"
     :class="[
       isOwn ? 'flex-row-reverse pr-6' : 'flex-row',
-      isGroupContinuation ? 'py-px' : 'py-1.5',
+      isGroupContinuation ? 'py-0' : 'py-1.5',
     ]"
   >
     <!-- Avatar: visible on group start, invisible spacer on continuation -->
@@ -243,7 +243,8 @@
 
     <div
       :class="[isOwn ? 'items-end' : 'items-start', hasImage ? 'max-w-[75%]' : 'max-w-[70%]']"
-      class="flex flex-col gap-1"
+      class="flex flex-col"
+      :style="{ gap: isGroupContinuation || !isGroupEnd ? '0px' : '4px' }"
     >
       <!-- Nick: only on group start for non-own messages -->
       <span
@@ -254,8 +255,15 @@
         {{ message.nick }}
       </span>
       <div
-        class="p-3 text-sm leading-relaxed transition-colors duration-500"
-        :class="[bubbleClass, groupBorderRadius]"
+        class="text-sm leading-relaxed transition-colors duration-500"
+        :class="[
+          bubbleClass,
+          groupBorderRadius,
+          isGroupContinuation && !isGroupEnd ? 'px-3 py-1' : '',
+          isGroupContinuation && isGroupEnd ? 'px-3 pb-3 pt-1' : '',
+          !isGroupContinuation && !isGroupEnd ? 'px-3 pb-1 pt-3' : '',
+          !isGroupContinuation && isGroupEnd ? 'p-3' : '',
+        ]"
       >
         <span
           :class="isOwn ? '[&_img]:ml-auto' : ''"
