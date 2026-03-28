@@ -543,6 +543,7 @@
   bottom: 0;
   left: -9999px;
   right: -9999px;
-  z-index: 0;
+  z-index: -1;
+  pointer-events: none;
 }
 </style>
