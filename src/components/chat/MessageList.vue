@@ -406,35 +406,45 @@
               {{ group.nick }}
             </span>
 
-            <!-- Single bubble wrapping all messages in the group -->
-            <div
-              class="rounded-2xl text-sm leading-relaxed"
-              :class="[
-                group.own
-                  ? group.messages.some(m => m.warning)
-                    ? 'bg-bubble-warning text-white rounded-tr-sm'
-                    : 'bg-emerald-500 text-white rounded-tr-sm'
-                  : 'bg-slate-100 text-slate-800 rounded-tl-sm',
-              ]"
-            >
+            <!-- Messages with forward buttons — each row spans the full width -->
+            <div class="flex flex-col">
               <div
-                v-for="msg in group.messages"
+                v-for="(msg, msgIdx) in group.messages"
                 v-show="!userPrefs.isUserBlocked(msg.serverId, msg.nick)"
                 :key="msg.id"
-                class="group/fwd relative"
+                class="group/fwd flex items-center"
+                :class="group.own ? 'flex-row-reverse' : 'flex-row'"
               >
-                <MessageItem
-                  :message="msg"
-                  @message-seen="onMessageSeen"
-                />
-                <!-- Forward button (appears on hover, outside bubble) -->
+                <!-- Bubble segment -->
+                <div
+                  class="text-sm leading-relaxed"
+                  :class="[
+                    group.own
+                      ? group.messages.some(m => m.warning)
+                        ? 'bg-bubble-warning text-white'
+                        : 'bg-emerald-500 text-white'
+                      : 'bg-slate-100 text-slate-800',
+                    msgIdx === 0 && group.messages.length === 1
+                      ? group.own ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl rounded-tl-sm'
+                      : msgIdx === 0
+                        ? group.own ? 'rounded-t-2xl rounded-bl-2xl rounded-br-none rounded-tr-sm' : 'rounded-t-2xl rounded-br-2xl rounded-bl-none rounded-tl-sm'
+                        : msgIdx === group.messages.length - 1
+                          ? 'rounded-t-none rounded-b-2xl'
+                          : 'rounded-none',
+                  ]"
+                >
+                  <MessageItem
+                    :message="msg"
+                    @message-seen="onMessageSeen"
+                  />
+                </div>
+                <!-- Forward button -->
                 <InfoTooltip
                   text="Forward message"
                   :delay="300"
                 >
                   <button
-                    class="absolute top-1/2 z-10 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-white text-slate-400 opacity-0 shadow transition-opacity hover:text-emerald-500 group-hover/fwd:opacity-100"
-                    :class="group.own ? '-left-7' : '-right-7'"
+                    class="mx-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white text-slate-400 opacity-0 shadow transition-opacity hover:text-emerald-500 group-hover/fwd:opacity-100"
                     @click.stop="onForward({ content: msg.content, x: $event.clientX, y: $event.clientY })"
                   >
                     <svg
