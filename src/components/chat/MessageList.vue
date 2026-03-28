@@ -408,7 +408,7 @@
 
             <!-- Single bubble wrapping all messages in the group -->
             <div
-              class="rounded-2xl text-sm leading-relaxed"
+              class="rounded-2xl py-2 text-sm leading-relaxed"
               :class="[
                 group.own
                   ? group.messages.some(m => m.warning)
