@@ -429,12 +429,12 @@
                 />
                 <!-- Timestamp + Forward button (appear on hover) -->
                 <div
-                  class="absolute top-1 z-10 flex items-center gap-2 opacity-0 transition-opacity group-hover/fwd:opacity-100"
+                  class="absolute top-1.5 z-10 flex items-center gap-2 opacity-0 transition-opacity group-hover/fwd:opacity-100"
                   :class="[
                     group.own ? 'right-full mr-3 flex-row' : 'left-full ml-3 flex-row-reverse',
                   ]"
                 >
-                  <span class="whitespace-nowrap text-[10px] text-slate-300">
+                  <span class="mt-px whitespace-nowrap text-[10px] text-slate-300">
                     {{ new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
                   </span>
                   <InfoTooltip
