@@ -106,11 +106,18 @@
   /** Border radius: round top on first, round bottom on last, zero on all touching edges. */
   const groupBorderRadius = computed(() => {
     const standalone = !isGroupContinuation.value && isGroupEnd.value;
-    if (standalone) return 'rounded-2xl';
+    // Standalone: round all, with small corner pointing at avatar
+    if (standalone) {
+      return isOwn.value ? 'rounded-2xl rounded-tr-sm' : 'rounded-2xl rounded-tl-sm';
+    }
     const start = !isGroupContinuation.value && !isGroupEnd.value;
     const end = isGroupContinuation.value && isGroupEnd.value;
-    // start: round top, flat bottom
-    if (start) return 'rounded-t-2xl rounded-b-none';
+    // start: round top (small corner at avatar side), flat bottom
+    if (start) {
+      return isOwn.value
+        ? 'rounded-tl-2xl rounded-tr-sm rounded-b-none'
+        : 'rounded-tr-2xl rounded-tl-sm rounded-b-none';
+    }
     // end: flat top, round bottom
     if (end) return 'rounded-t-none rounded-b-2xl';
     // middle: all flat
