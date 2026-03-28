@@ -924,6 +924,11 @@ class IRCService extends EventEmitter {
         break;
       }
 
+      case '396': { // RPL_HOSTHIDDEN — displayed host changed
+        if (trailing) s.addSystemMessage(serverId, trailing, command);
+        break;
+      }
+
       case '376':
       case '422': {
         // Registration complete — confirm the nick
