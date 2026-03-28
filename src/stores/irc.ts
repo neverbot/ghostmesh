@@ -797,6 +797,8 @@ const useIrcStore = defineStore('irc', () => {
    */
   function disconnectFromServer(serverId: string): void {
     getService().disconnect(serverId);
+    // User initiated disconnect — clear the retained status channel immediately
+    clearDisconnectedServer(serverId);
   }
 
   /**
