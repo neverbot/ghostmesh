@@ -4,7 +4,48 @@
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
   import MessageItem from './MessageItem.vue';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
-  import type { UserClickPayload } from '@/types.ts';
+  import config from '@/config.ts';
+  import type { ChatMessage, UserClickPayload } from '@/types.ts';
+
+  /** A group of consecutive messages from the same user, or a single system message. */
+  interface MessageGroup {
+    id: string;
+    type: 'user' | 'system';
+    nick: string;
+    own: boolean;
+    messages: ChatMessage[];
+  }
+
+  /** Group consecutive user messages from the same nick within the time interval. */
+  function buildGroups(messages: ChatMessage[]): MessageGroup[] {
+    const groups: MessageGroup[] = [];
+    for (const msg of messages) {
+      const isUserMsg = msg.type === 'message';
+      const last = groups[groups.length - 1];
+      if (
+        isUserMsg &&
+        last &&
+        last.type === 'user' &&
+        last.nick === msg.nick &&
+        last.own === !!msg.own
+      ) {
+        const prevTs = last.messages[last.messages.length - 1].timestamp.getTime();
+        const gap = msg.timestamp.getTime() - prevTs;
+        if (gap < config.chat.groupingInterval) {
+          last.messages.push(msg);
+          continue;
+        }
+      }
+      groups.push({
+        id: msg.id,
+        type: isUserMsg ? 'user' : 'system',
+        nick: msg.nick,
+        own: !!msg.own,
+        messages: [msg],
+      });
+    }
+    return groups;
+  }
 
   const store = useIrcStore();
   const userPrefs = useUserPrefsStore();
@@ -294,16 +335,96 @@
       :key="key"
       class="flex flex-col"
     >
-      <MessageItem
-        v-for="(msg, idx) in store.messages[key]"
-        v-show="!userPrefs.isUserBlocked(msg.serverId, msg.nick)"
-        :key="msg.id"
-        :message="msg"
-        :prev-message="idx > 0 ? store.messages[key][idx - 1] : undefined"
-        :next-message="idx < store.messages[key].length - 1 ? store.messages[key][idx + 1] : undefined"
-        @user-click="onUserClick"
-        @message-seen="onMessageSeen"
-      />
+      <template
+        v-for="group in buildGroups(store.messages[key] || [])"
+        :key="group.id"
+      >
+        <!-- System messages: render individually -->
+        <template v-if="group.type === 'system'">
+          <MessageItem
+            v-for="msg in group.messages"
+            :key="msg.id"
+            :message="msg"
+            @message-seen="onMessageSeen"
+          />
+        </template>
+
+        <!-- User message group: shared bubble wrapper -->
+        <div
+          v-else
+          class="flex gap-3 py-1.5 pl-6"
+          :class="group.own ? 'flex-row-reverse pr-6' : 'flex-row'"
+        >
+          <!-- Avatar -->
+          <div
+            class="flex h-8 w-8 shrink-0 items-center justify-center self-start rounded-full text-xs font-bold"
+            :class="[
+              group.own ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-600',
+              !group.own ? 'cursor-pointer' : '',
+            ]"
+            @click="!group.own && onUserClick({
+              nick: group.nick,
+              serverId: group.messages[0].serverId,
+              x: $event.clientX,
+              y: $event.clientY,
+            })"
+          >
+            {{ (group.nick || '?')[0].toUpperCase() }}
+          </div>
+
+          <!-- Content column -->
+          <div
+            class="flex flex-col gap-1"
+            :class="group.own ? 'items-end' : 'items-start'"
+          >
+            <!-- Nick -->
+            <span
+              v-if="!group.own"
+              class="cursor-pointer text-xs font-semibold text-slate-500 hover:text-slate-700"
+              @click="onUserClick({
+                nick: group.nick,
+                serverId: group.messages[0].serverId,
+                x: $event.clientX,
+                y: $event.clientY,
+              })"
+            >
+              {{ group.nick }}
+            </span>
+
+            <!-- Single bubble wrapping all messages in the group -->
+            <div
+              class="overflow-hidden rounded-2xl text-sm leading-relaxed"
+              :class="[
+                group.own
+                  ? group.messages.some(m => m.warning)
+                    ? 'bg-bubble-warning text-white rounded-tr-sm'
+                    : 'bg-emerald-500 text-white rounded-tr-sm'
+                  : 'bg-slate-100 text-slate-800 rounded-tl-sm',
+              ]"
+            >
+              <MessageItem
+                v-for="msg in group.messages"
+                v-show="!userPrefs.isUserBlocked(msg.serverId, msg.nick)"
+                :key="msg.id"
+                :message="msg"
+                @message-seen="onMessageSeen"
+              />
+            </div>
+
+            <!-- Timestamp (last message) -->
+            <div class="flex items-center gap-1.5">
+              <span class="text-[10px] text-slate-400">
+                {{ new Date(group.messages[group.messages.length - 1].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) }}
+              </span>
+              <span
+                v-if="group.messages[group.messages.length - 1].warning"
+                class="cursor-help text-amber-500"
+                :title="group.messages[group.messages.length - 1].warning"
+              >⚠</span>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 
