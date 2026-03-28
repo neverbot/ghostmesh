@@ -29,7 +29,9 @@
 
   badgeTimer = setInterval(updateBadgeCache, 1000);
   updateBadgeCache();
-  onUnmounted(() => { if (badgeTimer) clearInterval(badgeTimer); });
+  onUnmounted(() => {
+    if (badgeTimer) clearInterval(badgeTimer);
+  });
 
   /** Get cached badge values for a channel. */
   function getBadge(serverId: string, channel: string): { unread: number; users: number } {
@@ -49,6 +51,24 @@
       const bConn = store.isConnected(b.id) ? 0 : 1;
       return aConn - bConn;
     }),
+  );
+
+  /** Visible servers: all when expanded, only connected when collapsed. */
+  const visibleServers = computed(() => {
+    if (!serversCollapsed.value) return sortedServers.value;
+    return sortedServers.value.filter(
+      (s) => store.isConnected(s.id) || store.connectingServers.includes(s.id),
+    );
+  });
+
+  // Auto-collapse server list when a new connection is established
+  watch(
+    () => store.connectedServers.length,
+    (newLen, oldLen) => {
+      if (newLen > (oldLen || 0)) {
+        serversCollapsed.value = true;
+      }
+    },
   );
 
   const channelsCollapsed = ref(false);
@@ -134,19 +154,18 @@
         Servers
       </button>
 
-      <div
-        class="grid transition-[grid-template-rows] duration-200"
-        :style="{ gridTemplateRows: serversCollapsed ? '0fr' : '1fr' }"
-      >
-        <div class="flex flex-col gap-0.5 overflow-hidden">
+      <div>
+        <div class="flex flex-col gap-0.5">
           <div
-            v-for="server in sortedServers"
+            v-for="server in visibleServers"
             :key="server.id"
             class="group flex items-center gap-3 rounded-lg px-3 py-2 transition-colors"
             :class="[
               store.isConnected(server.id)
                 ? 'text-slate-300 hover:bg-slate-700/40'
-                : 'text-slate-500 hover:bg-slate-700/30 hover:text-slate-400',
+                : store.statusRetainedServers.includes(server.id)
+                  ? 'text-amber-400/70 hover:bg-slate-700/30 hover:text-amber-400'
+                  : 'text-slate-500 hover:bg-slate-700/30 hover:text-slate-400',
               store.connectingServers.includes(server.id)
                 ? 'pointer-events-none opacity-60'
                 : 'cursor-pointer',
@@ -154,7 +173,9 @@
             @click="
               store.isConnected(server.id)
                 ? store.selectServer(server.id)
-                : store.connectToServer(server)
+                : store.statusRetainedServers.includes(server.id)
+                  ? store.selectServer(server.id)
+                  : store.connectToServer(server)
             "
           >
             <!-- Spinner when connecting -->
@@ -182,7 +203,13 @@
             <div
               v-else
               class="h-2 w-2 shrink-0 rounded-full"
-              :class="store.isConnected(server.id) ? 'bg-emerald-400' : 'bg-slate-600'"
+              :class="
+                store.isConnected(server.id)
+                  ? 'bg-emerald-400'
+                  : store.statusRetainedServers.includes(server.id)
+                    ? 'bg-amber-400'
+                    : 'bg-slate-600'
+              "
             />
             <div class="flex min-w-0 flex-1 flex-col">
               <span class="truncate text-sm">{{ server.name }}</span>
@@ -211,15 +238,19 @@
                 </svg>
               </button>
             </InfoTooltip>
-            <!-- Disconnect -->
+            <!-- Disconnect / Clear status -->
             <InfoTooltip
-              v-if="store.isConnected(server.id)"
-              text="Disconnect from server"
+              v-if="store.isConnected(server.id) || store.statusRetainedServers.includes(server.id)"
+              :text="store.isConnected(server.id) ? 'Disconnect from server' : 'Clear status log'"
               :delay="500"
             >
               <button
                 class="rounded p-1 text-transparent transition-colors hover:bg-slate-600 hover:text-red-400 group-hover:text-slate-500"
-                @click.stop="store.disconnectFromServer(server.id)"
+                @click.stop="
+                  store.isConnected(server.id)
+                    ? store.disconnectFromServer(server.id)
+                    : store.clearDisconnectedServer(server.id)
+                "
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -460,7 +491,9 @@
                   v-if="store.connectedServers.length > 1"
                   :text="entry.serverName"
                 >
-                  <span class="w-6 rounded bg-slate-700/60 py-0.5 text-center text-[9px] text-slate-500">
+                  <span
+                    class="w-6 rounded bg-slate-700/60 py-0.5 text-center text-[9px] text-slate-500"
+                  >
                     {{ serverAbbr(entry.serverName) }}
                   </span>
                 </InfoTooltip>
@@ -524,7 +557,9 @@
                   v-if="store.connectedServers.length > 1"
                   :text="ch._sname"
                 >
-                  <span class="w-6 rounded bg-slate-700/30 py-0.5 text-center text-[8px] text-slate-600">
+                  <span
+                    class="w-6 rounded bg-slate-700/30 py-0.5 text-center text-[8px] text-slate-600"
+                  >
                     {{ serverAbbr(ch._sname) }}
                   </span>
                 </InfoTooltip>
