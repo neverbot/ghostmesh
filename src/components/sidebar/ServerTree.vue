@@ -61,12 +61,14 @@
     );
   });
 
-  // Auto-collapse server list when a new connection is established
+  // Auto-collapse on connect, auto-expand when all disconnected
   watch(
     () => store.connectedServers.length,
     (newLen, oldLen) => {
       if (newLen > (oldLen || 0)) {
         serversCollapsed.value = true;
+      } else if (newLen === 0) {
+        serversCollapsed.value = false;
       }
     },
   );
