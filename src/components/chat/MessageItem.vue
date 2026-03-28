@@ -127,15 +127,11 @@
   <div
     v-else
     ref="messageEl"
-    class="text-sm leading-relaxed"
+    class="px-3 py-1 text-sm leading-relaxed"
   >
-    <InfoTooltip :text="timeString">
-      <div class="px-3 py-1">
-        <span
-          :class="isOwn ? '[&_img]:ml-auto' : ''"
-          v-html="renderedHtml || plainHtml"
-        />
-      </div>
-    </InfoTooltip>
+    <span
+      :class="isOwn ? '[&_img]:ml-auto' : ''"
+      v-html="renderedHtml || plainHtml"
+    />
   </div>
 </template>

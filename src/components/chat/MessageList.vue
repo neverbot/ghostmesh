@@ -427,35 +427,42 @@
                   :message="msg"
                   @message-seen="onMessageSeen"
                 />
-                <!-- Forward button (appears on hover across full row) -->
-                <InfoTooltip
-                  text="Forward message"
-                  :delay="300"
+                <!-- Timestamp + Forward button (appear on hover) -->
+                <div
+                  class="absolute top-0.5 z-10 flex items-center gap-1 opacity-0 transition-opacity group-hover/fwd:opacity-100"
+                  :class="group.own ? 'right-full mr-2' : 'left-full ml-2'"
                 >
-                  <button
-                    class="absolute top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-white text-slate-400 opacity-0 shadow transition-opacity hover:text-emerald-500 group-hover/fwd:opacity-100"
-                    :class="group.own ? '-left-7' : '-right-7'"
-                    @click.stop="onForward({ content: msg.content, x: $event.clientX, y: $event.clientY })"
+                  <span class="whitespace-nowrap text-[10px] text-slate-300">
+                    {{ new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+                  </span>
+                  <InfoTooltip
+                    text="Forward"
+                    :delay="300"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      class="h-3 w-3"
+                    <button
+                      class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-slate-400 shadow transition-colors hover:text-emerald-500"
+                      @click.stop="onForward({ content: msg.content, x: $event.clientX, y: $event.clientY })"
                     >
-                      <path
-                        fill-rule="evenodd"
-                        d="M10.21 14.77a.75.75 0 0 1 .02-1.06L14.168 10 10.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z"
-                        clip-rule="evenodd"
-                      />
-                      <path
-                        fill-rule="evenodd"
-                        d="M4.21 14.77a.75.75 0 0 1 .02-1.06L8.168 10 4.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z"
-                        clip-rule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </InfoTooltip>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        class="h-3 w-3"
+                      >
+                        <path
+                          fill-rule="evenodd"
+                          d="M10.21 14.77a.75.75 0 0 1 .02-1.06L14.168 10 10.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z"
+                          clip-rule="evenodd"
+                        />
+                        <path
+                          fill-rule="evenodd"
+                          d="M4.21 14.77a.75.75 0 0 1 .02-1.06L8.168 10 4.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z"
+                          clip-rule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </InfoTooltip>
+                </div>
               </div>
             </div>
 
