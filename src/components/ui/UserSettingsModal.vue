@@ -144,7 +144,7 @@
         <!-- Tabs -->
         <div class="flex border-b border-slate-700 px-5">
           <button
-            v-for="tab in ['profile', 'identity', 'uploads']"
+            v-for="tab in ['profile', 'identity', 'image uploads']"
             :key="tab"
             class="border-b-2 px-3 py-2.5 text-xs font-medium capitalize transition-colors"
             :class="
@@ -268,12 +268,11 @@
               <span class="text-xs text-slate-500">Auto-identify on connect</span>
             </label>
           </div>
-        </div>
 
-        <!-- Uploads tab -->
-        <div
-          v-if="activeTab === 'uploads'"
-          class="flex flex-col gap-4 overflow-y-auto px-5 pb-4"
+          <!-- Uploads tab -->
+          <div
+            v-if="activeTab === 'image uploads'"
+            class="flex flex-col gap-4 overflow-y-auto"
         >
           <p class="text-[10px] text-slate-500">
             Configure your own API keys for image hosting services. Your keys are stored locally in your browser and never sent to our servers.
@@ -306,9 +305,10 @@
                 </a>
               </div>
             </div>
-            <p class="text-[10px] text-slate-500">
-              {{ provider.configDescription }}
-            </p>
+            <p
+              class="text-[10px] text-slate-500"
+              v-html="provider.configDescription"
+            ></p>
             <input
               :value="form.uploadProviderKeys?.[provider.configKey] || ''"
               type="text"
@@ -317,6 +317,7 @@
               @input="onProviderKeyInput(provider.configKey, ($event.target as HTMLInputElement).value)"
             />
           </div>
+        </div>
         </div>
 
         <!-- Footer -->
