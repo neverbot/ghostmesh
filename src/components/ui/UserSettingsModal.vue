@@ -273,7 +273,7 @@
         <!-- Uploads tab -->
         <div
           v-if="activeTab === 'uploads'"
-          class="flex flex-col gap-5 overflow-y-auto px-5 py-4"
+          class="flex flex-col gap-4 overflow-y-auto px-5 pb-4"
         >
           <p class="text-[10px] text-slate-500">
             Configure your own API keys for image hosting services. Your keys are stored locally in your browser and never sent to our servers.
@@ -286,14 +286,25 @@
           >
             <div class="flex items-center justify-between">
               <span class="text-sm font-medium text-slate-300">{{ provider.configLabel }}</span>
-              <a
-                :href="provider.configUrl"
-                target="_blank"
-                rel="noopener"
-                class="text-[10px] text-emerald-400 hover:text-emerald-300"
-              >
-                Get API key
-              </a>
+              <div class="flex gap-3">
+                <a
+                  v-if="provider.signupUrl"
+                  :href="provider.signupUrl"
+                  target="_blank"
+                  rel="noopener"
+                  class="text-[10px] text-slate-400 hover:text-slate-300"
+                >
+                  Create account
+                </a>
+                <a
+                  :href="provider.configUrl"
+                  target="_blank"
+                  rel="noopener"
+                  class="text-[10px] text-emerald-400 hover:text-emerald-300"
+                >
+                  Get API key
+                </a>
+              </div>
             </div>
             <p class="text-[10px] text-slate-500">
               {{ provider.configDescription }}
