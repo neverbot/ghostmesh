@@ -18,6 +18,25 @@
   background-color: var(--color-emerald-500);
   border-color: var(--color-emerald-500);
 }
+[type='text'],
+[type='password'],
+[type='email'],
+[type='url'],
+[type='number'],
+[type='search'],
+textarea {
+  --tw-ring-color: var(--color-emerald-500);
+}
+[type='text']:focus,
+[type='password']:focus,
+[type='email']:focus,
+[type='url']:focus,
+[type='number']:focus,
+[type='search']:focus,
+textarea:focus {
+  --tw-ring-color: var(--color-emerald-500);
+  border-color: var(--color-emerald-500);
+}
 select {
   background-color: transparent;
   border-color: var(--color-slate-600);
