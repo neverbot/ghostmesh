@@ -14,6 +14,11 @@ dist-ssr
 *.local
 .env*
 
+# TypeScript build artifacts
+*.tsbuildinfo
+*.d.ts
+!src/env.d.ts
+
 # Claude Code
 .claude
 skills-lock.json
