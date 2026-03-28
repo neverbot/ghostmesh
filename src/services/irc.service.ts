@@ -185,20 +185,26 @@ class IRCService extends EventEmitter {
     };
 
     socket.onerror = (): void => {
-      this.store.removeConnection(serverId);
       const msg = server.tcpHost
         ? `Error connecting to ${server.name} — proxy service may be unavailable`
         : `Error connecting to ${server.name}`;
       this.store.addSystemMessage(serverId, msg);
+      const wasRegistered: boolean = this.registered.has(serverId);
+      this.store.removeConnection(serverId);
       this.cleanupConnection(serverId);
-      this.scheduleReconnect(serverId);
+      if (wasRegistered) {
+        this.scheduleReconnect(serverId);
+      }
     };
 
     socket.onclose = (): void => {
-      this.store.removeConnection(serverId);
       this.store.addSystemMessage(serverId, `Disconnected from ${server.name}`);
+      const wasRegistered: boolean = this.registered.has(serverId);
+      this.store.removeConnection(serverId);
       this.cleanupConnection(serverId);
-      this.scheduleReconnect(serverId);
+      if (wasRegistered) {
+        this.scheduleReconnect(serverId);
+      }
     };
 
     this.connections.set(serverId, connection);
@@ -562,9 +568,7 @@ class IRCService extends EventEmitter {
         const ourNick: string = connection?.config?.nickname || '';
 
         // CTCP ACTION: \x01ACTION text\x01 → render as "* nick text"
-        const actionMatch: RegExpMatchArray | null = msgText.match(
-          /^\x01ACTION (.*)\x01?$/,
-        );
+        const actionMatch: RegExpMatchArray | null = msgText.match(/^\x01ACTION (.*)\x01?$/);
         const isAction: boolean = !!actionMatch;
         const content: string = isAction ? `* ${nick} ${actionMatch![1]}` : msgText;
         const msgType: string = isAction ? 'system' : 'message';
@@ -705,7 +709,13 @@ class IRCService extends EventEmitter {
       case '404': {
         // ERR_CANNOTSENDTOCHAN — message blocked by server
         const target: string = params[1] || '';
-        s.addMessage(serverId, target || '*status', '', trailing || 'Cannot send to channel', 'system');
+        s.addMessage(
+          serverId,
+          target || '*status',
+          '',
+          trailing || 'Cannot send to channel',
+          'system',
+        );
         s.warnLastOwnMessage(serverId, trailing || 'Message blocked');
         break;
       }
@@ -835,12 +845,9 @@ class IRCService extends EventEmitter {
         }
         // Detect VERIFY challenge from anti-bot systems
         if (/QUOTE\s+VERIFY/i.test(text)) {
-          const codeMatch: RegExpMatchArray | null = text.match(
-            /QUOTE\s+VERIFY\s+(\S+)/i,
-          );
+          const codeMatch: RegExpMatchArray | null = text.match(/QUOTE\s+VERIFY\s+(\S+)/i);
           const code: string = codeMatch ? codeMatch[1] : '';
-          const serverName: string =
-            this.serverConfigs.get(serverId)?.name || serverId;
+          const serverName: string = this.serverConfigs.get(serverId)?.name || serverId;
           s.addMessage(
             serverId,
             '*status',
@@ -879,6 +886,40 @@ class IRCService extends EventEmitter {
         break;
       }
 
+      // ─── Registration & server info (shown without numeric code) ─────────
+      case '001': // RPL_WELCOME
+      case '002': // RPL_YOURHOST
+      case '003': // RPL_CREATED
+      case '004': { // RPL_MYINFO
+        if (trailing) s.addSystemMessage(serverId, trailing);
+        break;
+      }
+
+      case '005': { // RPL_ISUPPORT
+        // "are supported by this server" — not useful to display
+        break;
+      }
+
+      case '250': // RPL_STATSCONN (highest connection count)
+      case '251': // RPL_LUSERCLIENT
+      case '255': // RPL_LUSERME
+      case '265': // RPL_LOCALUSERS
+      case '266': { // RPL_GLOBALUSERS
+        // These have the full text in trailing
+        if (trailing) s.addSystemMessage(serverId, trailing);
+        break;
+      }
+
+      case '252': // RPL_LUSEROP
+      case '253': // RPL_LUSERUNKNOWN
+      case '254': { // RPL_LUSERCHANNELS
+        // These have the count in params[1] and label in trailing
+        const count: string = params[1] || '';
+        const label: string = trailing || '';
+        s.addSystemMessage(serverId, `${count} ${label}`);
+        break;
+      }
+
       case '376':
       case '422': {
         // Registration complete — confirm the nick
@@ -911,6 +952,14 @@ class IRCService extends EventEmitter {
           }
         }
         if (trailing) s.addSystemMessage(serverId, trailing);
+        break;
+      }
+
+      case '465': {
+        // ERR_YOUREBANNEDCREEP — banned from server
+        if (trailing) {
+          s.addSystemMessage(serverId, trailing);
+        }
         break;
       }
 
