@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@plugin '@tailwindcss/forms';
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
 
 /* === Form element overrides (emerald accent) === */
 [type='checkbox'],
