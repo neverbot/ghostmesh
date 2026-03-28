@@ -15,6 +15,8 @@ interface IrcDefaults {
 
 interface ChatConfig {
   maxMessages: number;
+  /** Max ms between consecutive messages to group them visually. */
+  groupingInterval: number;
 }
 
 interface ListConfig {
@@ -82,6 +84,8 @@ const config: AppConfig = {
   chat: {
     /** Maximum messages to keep per channel. Older messages are discarded. */
     maxMessages: 1000,
+    /** Max ms between consecutive messages to group them visually (default: 10 min). */
+    groupingInterval: 10 * 60 * 1000,
   },
 
   /** Channel LIST defaults. */

@@ -295,10 +295,12 @@
       class="flex flex-col gap-0.5"
     >
       <MessageItem
-        v-for="msg in store.messages[key]"
+        v-for="(msg, idx) in store.messages[key]"
         v-show="!userPrefs.isUserBlocked(msg.serverId, msg.nick)"
         :key="msg.id"
         :message="msg"
+        :prev-message="idx > 0 ? store.messages[key][idx - 1] : undefined"
+        :next-message="idx < store.messages[key].length - 1 ? store.messages[key][idx + 1] : undefined"
         @user-click="onUserClick"
         @message-seen="onMessageSeen"
       />

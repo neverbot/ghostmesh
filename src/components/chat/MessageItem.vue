@@ -8,10 +8,13 @@
   import { resolveImageProvider } from '@/services/image-providers.ts';
   import * as imageCache from '@/services/image-cache.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
+  import config from '@/config.ts';
   import type { ChatMessage, UserClickPayload } from '@/types.ts';
 
   const props = defineProps<{
     message: ChatMessage;
+    prevMessage?: ChatMessage;
+    nextMessage?: ChatMessage;
   }>();
 
   const emit = defineEmits<{
@@ -77,6 +80,28 @@
   const isSystem = computed(() =>
     ['system', 'join', 'part', 'quit', 'nick'].includes(props.message.type),
   );
+
+  /** Whether this message continues a group from the previous message. */
+  const isGroupContinuation = computed(() => {
+    const prev = props.prevMessage;
+    if (!prev) return false;
+    if (props.message.type !== 'message' || prev.type !== 'message') return false;
+    if (props.message.nick !== prev.nick) return false;
+    if (props.message.own !== prev.own) return false;
+    const gap = props.message.timestamp.getTime() - prev.timestamp.getTime();
+    return gap < config.chat.groupingInterval;
+  });
+
+  /** Whether this is the last message in a group. */
+  const isGroupEnd = computed(() => {
+    const next = props.nextMessage;
+    if (!next) return true;
+    if (props.message.type !== 'message' || next.type !== 'message') return true;
+    if (props.message.nick !== next.nick) return true;
+    if (props.message.own !== next.own) return true;
+    const gap = next.timestamp.getTime() - props.message.timestamp.getTime();
+    return gap >= config.chat.groupingInterval;
+  });
 
   const timeString = computed(() => {
     const d = new Date(props.message.timestamp);
@@ -176,10 +201,15 @@
   <div
     v-else
     ref="messageEl"
-    class="flex gap-3 py-1.5 pl-6"
-    :class="isOwn ? 'flex-row-reverse pr-6' : 'flex-row'"
+    class="flex gap-3 pl-6"
+    :class="[
+      isOwn ? 'flex-row-reverse pr-6' : 'flex-row',
+      isGroupContinuation ? 'py-0.5' : 'py-1.5',
+    ]"
   >
+    <!-- Avatar: visible on group start, invisible spacer on continuation -->
     <div
+      v-if="!isGroupContinuation"
       class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
       :class="[
         isOwn ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-600',
@@ -189,13 +219,18 @@
     >
       {{ avatarLetter }}
     </div>
+    <div
+      v-else
+      class="w-8 shrink-0"
+    />
 
     <div
       :class="[isOwn ? 'items-end' : 'items-start', hasImage ? 'max-w-[75%]' : 'max-w-[70%]']"
       class="flex flex-col gap-1"
     >
+      <!-- Nick: only on group start for non-own messages -->
       <span
-        v-if="!isOwn"
+        v-if="!isOwn && !isGroupContinuation"
         class="cursor-pointer text-xs font-semibold text-slate-500 hover:text-slate-700"
         @click="onUserClick($event)"
       >
@@ -210,7 +245,11 @@
           v-html="renderedHtml || plainHtml"
         />
       </div>
-      <div class="flex items-center gap-1.5">
+      <!-- Timestamp + warning: only on group end -->
+      <div
+        v-if="isGroupEnd"
+        class="flex items-center gap-1.5"
+      >
         <span class="text-[10px] text-slate-400">{{ timeString }}</span>
         <InfoTooltip
           v-if="message.warning"
