@@ -80,7 +80,9 @@
 
   const timeString = computed(() => {
     const d = new Date(props.message.timestamp);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    if (props.message.numericCode) return `${time}  [${props.message.numericCode}]`;
+    return time;
   });
 
   const avatarLetter = computed(() => (props.message.nick || '?')[0].toUpperCase());

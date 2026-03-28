@@ -78,6 +78,8 @@ const useIrcStore = defineStore('irc', () => {
   const servers: Ref<ServerConfig[]> = ref([...defaultServers]);
 
   const activeConnections: Ref<string[]> = ref([]);
+  /** Servers that disconnected but still have a *status channel with messages to show. */
+  const statusRetainedServers: Ref<string[]> = ref([]);
   const connectingServers: Ref<string[]> = ref([]);
   const selectedServerId: Ref<string | null> = ref(null);
   const selectedChannel: Ref<string | null> = ref(null);
@@ -194,7 +196,9 @@ const useIrcStore = defineStore('irc', () => {
   const allJoinedChannels: ComputedRef<JoinedChannelEntry[]> = computed(() => {
     const chans: JoinedChannelEntry[] = [];
     const dms: JoinedChannelEntry[] = [];
-    for (const serverId of activeConnections.value) {
+    // Include both active and disconnected servers that still have channels
+    const visibleServers: string[] = [...activeConnections.value, ...statusRetainedServers.value];
+    for (const serverId of visibleServers) {
       const server: ServerConfig | undefined = servers.value.find((s) => s.id === serverId);
       const serverName: string = server?.name || serverId;
       for (const channel of channels.value[serverId] || []) {
@@ -303,6 +307,7 @@ const useIrcStore = defineStore('irc', () => {
    */
   function addConnection(serverId: string): void {
     connectingServers.value = connectingServers.value.filter((id) => id !== serverId);
+    statusRetainedServers.value = statusRetainedServers.value.filter((id) => id !== serverId);
     if (connectTimers[serverId]) {
       clearTimeout(connectTimers[serverId]);
       delete connectTimers[serverId];
@@ -330,22 +335,46 @@ const useIrcStore = defineStore('irc', () => {
       delete connectTimers[serverId];
     }
 
-    // Clean up all data for this server
+    // Clean up all data for this server, but preserve *status channel and its messages
     const serverChannels: string[] = channels.value[serverId] || [];
     for (const ch of serverChannels) {
+      if (ch === '*status') continue;
       const key: string = `${serverId}:${ch}`;
       delete messages.value[key];
       delete users.value[key];
       delete topics.value[key];
     }
-    delete channels.value[serverId];
+    // Keep only *status in the channel list
+    channels.value[serverId] = ['*status'];
     users.value = { ...users.value };
     delete availableChannels.value[serverId];
     triggerRef(availableChannels);
 
-    // Switch selection if we were viewing this server
+    // Track as disconnected so the status channel remains visible
+    if (!statusRetainedServers.value.includes(serverId)) {
+      statusRetainedServers.value.push(serverId);
+    }
+
+    // Select the status channel so the user can see disconnect messages
     if (selectedServerId.value === serverId) {
-      const remaining: string[] = activeConnections.value;
+      selectedChannel.value = '*status';
+    } else if (!selectedServerId.value) {
+      selectedServerId.value = serverId;
+      selectedChannel.value = '*status';
+    }
+  }
+
+  /**
+   * Remove a disconnected server's status channel and all its data.
+   */
+  function clearDisconnectedServer(serverId: string): void {
+    getService().cancelReconnect(serverId);
+    statusRetainedServers.value = statusRetainedServers.value.filter((id) => id !== serverId);
+    const key: string = `${serverId}:*status`;
+    delete messages.value[key];
+    delete channels.value[serverId];
+    if (selectedServerId.value === serverId) {
+      const remaining: string[] = [...activeConnections.value, ...statusRetainedServers.value];
       if (remaining.length > 0) {
         selectedServerId.value = remaining[0];
         selectedChannel.value = (channels.value[remaining[0]] || [])[0] || null;
@@ -429,6 +458,7 @@ const useIrcStore = defineStore('irc', () => {
     nick: string,
     content: string,
     type: MessageType = 'message',
+    numericCode?: string,
   ): void {
     const key: string = `${serverId}:${channel}`;
     if (!messages.value[key]) messages.value[key] = [];
@@ -443,6 +473,7 @@ const useIrcStore = defineStore('irc', () => {
       timestamp: new Date(),
       type,
       own: nick.toLowerCase() === currentNick.toLowerCase(),
+      numericCode,
     });
     // Trim old messages to stay within limit
     const max: number = config.chat.maxMessages;
@@ -518,8 +549,8 @@ const useIrcStore = defineStore('irc', () => {
   /**
    * Add a system message to the server's status channel (and current channel if same server).
    */
-  function addSystemMessage(serverId: string, content: string): void {
-    addMessage(serverId, '*status', '', content, 'system');
+  function addSystemMessage(serverId: string, content: string, numericCode?: string): void {
+    addMessage(serverId, '*status', '', content, 'system', numericCode);
     if (
       selectedServerId.value === serverId &&
       selectedChannel.value &&
@@ -705,9 +736,7 @@ const useIrcStore = defineStore('irc', () => {
     if (connectingServers.value.includes(server.id)) return;
 
     // Check if another active connection points to the same IRC server
-    const targetKey = server.tcpHost
-      ? `${server.tcpHost}:${server.tcpPort || 6667}`
-      : server.host;
+    const targetKey = server.tcpHost ? `${server.tcpHost}:${server.tcpPort || 6667}` : server.host;
     const duplicate = servers.value.find((s) => {
       if (s.id === server.id) return false;
       if (!isConnected(s.id)) return false;
@@ -841,16 +870,8 @@ const useIrcStore = defineStore('irc', () => {
         const handled = executeCommand(parsed, ctx);
         if (!handled) {
           const cmd = findCommand(parsed.name);
-          const msg = cmd
-            ? `Usage: ${cmd.usage}`
-            : `Unknown command: /${parsed.name}`;
-          addMessage(
-            selectedServerId.value,
-            selectedChannel.value,
-            '',
-            msg,
-            'system',
-          );
+          const msg = cmd ? `Usage: ${cmd.usage}` : `Unknown command: /${parsed.name}`;
+          addMessage(selectedServerId.value, selectedChannel.value, '', msg, 'system');
         }
       }
       return;
@@ -921,7 +942,9 @@ const useIrcStore = defineStore('irc', () => {
       if (ch?.length) selectChannel(serverId, ch[0]);
     },
     isDM,
-    get nickname() { return nickname.value; },
+    get nickname() {
+      return nickname.value;
+    },
   };
 
   /**
@@ -1090,6 +1113,7 @@ const useIrcStore = defineStore('irc', () => {
     // State
     servers,
     activeConnections,
+    statusRetainedServers,
     connectingServers,
     connectionError,
     openSettingsRequest,
@@ -1124,6 +1148,7 @@ const useIrcStore = defineStore('irc', () => {
 
     // Mutations
     isConnected,
+    clearDisconnectedServer,
     selectServer,
     selectChannel,
 

@@ -587,10 +587,10 @@ class IRCService extends EventEmitter {
           if (!serverChannels.includes(nick)) {
             s.addJoinedChannel(serverId, nick);
           }
-          s.addMessage(serverId, nick, nick, content, msgType);
+          s.addMessage(serverId, nick, nick, content, msgType, command);
           s.setDMOnline(serverId, nick, true);
         } else {
-          s.addMessage(serverId, target, nick, content, msgType);
+          s.addMessage(serverId, target, nick, content, msgType, command);
         }
         break;
       }
@@ -606,10 +606,10 @@ class IRCService extends EventEmitter {
           const serverChannels: string[] = s.channels[serverId] || [];
           if (serverChannels.includes(nick)) {
             s.setDMOnline(serverId, nick, true);
-            s.addMessage(serverId, nick, '', `${nick} is back online`, 'join');
+            s.addMessage(serverId, nick, '', `${nick} is back online`, 'join', command);
           }
         }
-        s.addMessage(serverId, channel, nick, `${nick} has joined ${channel}`, 'join');
+        s.addMessage(serverId, channel, nick, `${nick} has joined ${channel}`, 'join', command);
         break;
       }
 
@@ -629,6 +629,7 @@ class IRCService extends EventEmitter {
             nick,
             `You were kicked from ${channel} by ${nick} (${reason})`,
             'system',
+            command,
           );
         } else {
           s.removeUser(serverId, channel, target);
@@ -638,6 +639,7 @@ class IRCService extends EventEmitter {
             nick,
             `${target} was kicked by ${nick} (${reason})`,
             'part',
+            command,
           );
         }
         break;
@@ -650,7 +652,7 @@ class IRCService extends EventEmitter {
         } else {
           s.removeUser(serverId, channel, nick);
         }
-        s.addMessage(serverId, channel, nick, `${nick} has left ${channel}`, 'part');
+        s.addMessage(serverId, channel, nick, `${nick} has left ${channel}`, 'part', command);
         break;
       }
 
@@ -662,12 +664,12 @@ class IRCService extends EventEmitter {
             CHANNEL_PREFIXES.some((p: string) => channel.startsWith(p)) ||
             channel === '*status'
           ) {
-            s.addMessage(serverId, channel, nick, `${nick} has quit (${trailing || ''})`, 'quit');
+            s.addMessage(serverId, channel, nick, `${nick} has quit (${trailing || ''})`, 'quit', command);
           }
         }
         // If we have a DM open with this user, notify and mark offline
         if (serverChannels.includes(nick)) {
-          s.addMessage(serverId, nick, '', `${nick} has disconnected`, 'quit');
+          s.addMessage(serverId, nick, '', `${nick} has disconnected`, 'quit', command);
           s.setDMOnline(serverId, nick, false);
         }
         break;
@@ -691,7 +693,7 @@ class IRCService extends EventEmitter {
             CHANNEL_PREFIXES.some((p: string) => channel.startsWith(p)) ||
             channel === '*status'
           ) {
-            s.addMessage(serverId, channel, nick, `${nick} is now known as ${newNick}`, 'nick');
+            s.addMessage(serverId, channel, nick, `${nick} is now known as ${newNick}`, 'nick', command);
           }
         }
         break;
@@ -715,6 +717,7 @@ class IRCService extends EventEmitter {
           '',
           trailing || 'Cannot send to channel',
           'system',
+          command,
         );
         s.warnLastOwnMessage(serverId, trailing || 'Message blocked');
         break;
@@ -724,10 +727,10 @@ class IRCService extends EventEmitter {
         // ERR_NOSUCHNICK — target nick/channel doesn't exist
         const target: string = params[1];
         if (target && s.isDM(target)) {
-          s.addMessage(serverId, target, '', `${target} is not connected`, 'system');
+          s.addMessage(serverId, target, '', `${target} is not connected`, 'system', command);
           s.setDMOnline(serverId, target, false);
         } else {
-          s.addSystemMessage(serverId, trailing || `${target}: No such nick/channel`);
+          s.addSystemMessage(serverId, trailing || `${target}: No such nick/channel`, command);
         }
         s.warnLastOwnMessage(serverId, trailing || 'No such nick/channel');
         break;
@@ -739,14 +742,14 @@ class IRCService extends EventEmitter {
         // ERR_NICKCOLLISION
         const failedNick: string = params[1];
         const connection: IRCConnection | undefined = this.connections.get(serverId);
-        s.addSystemMessage(serverId, trailing || 'Nickname error');
+        s.addSystemMessage(serverId, trailing || 'Nickname error', command);
         // During registration (not yet received 376/422), try fallback nicks
         if (connection && !this.registered.has(serverId)) {
           const base: string = failedNick.replace(/_+$/, '').replace(/\d+$/, '');
           const fallback: string = base + '_' + Math.floor(Math.random() * 1000);
           connection.config.nickname = fallback;
           this.send(serverId, `NICK ${fallback}`);
-          s.addSystemMessage(serverId, `Trying fallback nick: ${fallback}`);
+          s.addSystemMessage(serverId, `Trying fallback nick: ${fallback}`, command);
         } else {
           // Post-registration: revert to confirmed nick
           if (connection) {
@@ -774,7 +777,7 @@ class IRCService extends EventEmitter {
             month: 'short',
             day: 'numeric',
           });
-          s.addMessage(serverId, channel, '', `Topic set by ${setter} on ${dateStr}`, 'system');
+          s.addMessage(serverId, channel, '', `Topic set by ${setter} on ${dateStr}`, 'system', command);
         }
         break;
       }
@@ -803,13 +806,13 @@ class IRCService extends EventEmitter {
         this.listLoading.delete(serverId);
         this.store.clearListLoading(serverId);
         if (command === '263' && trailing) {
-          s.addSystemMessage(serverId, trailing);
+          s.addSystemMessage(serverId, trailing, command);
         }
         break;
 
       case 'NOTICE': {
         const text: string = trailing || '';
-        s.addSystemMessage(serverId, text);
+        s.addSystemMessage(serverId, text, command);
         // Generic LIST delay detection: look for seconds + LIST in any NOTICE
         // Matches patterns like "wait 15s", "15 seconds", "wait 15 sec" near "LIST"
         if (/list/i.test(text)) {
@@ -854,6 +857,7 @@ class IRCService extends EventEmitter {
             '',
             `${serverName} requires verification. Send: VERIFY ${code}`,
             'system',
+            command,
           );
           s.selectChannel(serverId, '*status');
           // Delay focus to ensure Vue has flushed the channel switch
@@ -871,7 +875,7 @@ class IRCService extends EventEmitter {
       case '375': {
         // MOTD lines — strip the leading "- " prefix to preserve ASCII art
         const motdText: string = (trailing || '').replace(/^- ?/, '');
-        s.addSystemMessage(serverId, motdText);
+        s.addSystemMessage(serverId, motdText, command);
         break;
       }
 
@@ -891,7 +895,7 @@ class IRCService extends EventEmitter {
       case '002': // RPL_YOURHOST
       case '003': // RPL_CREATED
       case '004': { // RPL_MYINFO
-        if (trailing) s.addSystemMessage(serverId, trailing);
+        if (trailing) s.addSystemMessage(serverId, trailing, command);
         break;
       }
 
@@ -906,7 +910,7 @@ class IRCService extends EventEmitter {
       case '265': // RPL_LOCALUSERS
       case '266': { // RPL_GLOBALUSERS
         // These have the full text in trailing
-        if (trailing) s.addSystemMessage(serverId, trailing);
+        if (trailing) s.addSystemMessage(serverId, trailing, command);
         break;
       }
 
@@ -916,7 +920,7 @@ class IRCService extends EventEmitter {
         // These have the count in params[1] and label in trailing
         const count: string = params[1] || '';
         const label: string = trailing || '';
-        s.addSystemMessage(serverId, `${count} ${label}`);
+        s.addSystemMessage(serverId, `${count} ${label}`, command);
         break;
       }
 
@@ -951,14 +955,14 @@ class IRCService extends EventEmitter {
             });
           }
         }
-        if (trailing) s.addSystemMessage(serverId, trailing);
+        if (trailing) s.addSystemMessage(serverId, trailing, command);
         break;
       }
 
       case '465': {
         // ERR_YOUREBANNEDCREEP — banned from server
         if (trailing) {
-          s.addSystemMessage(serverId, trailing);
+          s.addSystemMessage(serverId, trailing, command);
         }
         break;
       }
@@ -967,7 +971,7 @@ class IRCService extends EventEmitter {
         const code: number = parseInt(command, 10);
         const isError: boolean = code >= 400 && code < 600;
         if (trailing) {
-          s.addSystemMessage(serverId, `[${command}] ${trailing}`);
+          s.addSystemMessage(serverId, `[${command}] ${trailing}`, command);
           // Errors also appear in DMs (addSystemMessage skips DMs by default)
           if (
             isError &&
@@ -976,7 +980,7 @@ class IRCService extends EventEmitter {
             s.selectedChannel !== '*status' &&
             s.isDM(s.selectedChannel)
           ) {
-            s.addMessage(serverId, s.selectedChannel, '', `[${command}] ${trailing}`, 'system');
+            s.addMessage(serverId, s.selectedChannel, '', `[${command}] ${trailing}`, 'system', command);
           }
         }
         if (isError && trailing) {

@@ -65,6 +65,8 @@ interface ChatMessage {
   warning?: string;
   /** Whether this message was sent by the local user. Persists across nick changes. */
   own?: boolean;
+  /** IRC numeric reply code (e.g. "001", "332"). Shown in tooltip for system messages. */
+  numericCode?: string;
 }
 
 // ─── UI events ───────────────────────────────────────────────────────────────
@@ -117,11 +119,12 @@ interface IrcStoreApi {
     nick: string,
     content: string,
     type?: MessageType,
+    numericCode?: string,
   ): void;
   /** Attach a warning badge to the last message sent by the local user. */
   warnLastOwnMessage(serverId: string, warningText: string): void;
   /** Add a system-level message to the active server's status channel. */
-  addSystemMessage(serverId: string, content: string): void;
+  addSystemMessage(serverId: string, content: string, numericCode?: string): void;
   /** Set the topic for a channel. */
   setTopic(serverId: string, channel: string, topic: string): void;
   /** Add a single user to a channel's member list. */
