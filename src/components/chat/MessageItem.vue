@@ -159,12 +159,12 @@
   /** CSS classes for the message bubble. */
   const bubbleClass = computed(() => {
     if (isOwn.value && props.message.warning) {
-      return 'rounded-tr-sm bg-bubble-warning text-white';
+      return 'bg-bubble-warning text-white';
     }
     if (isOwn.value) {
-      return 'rounded-tr-sm bg-emerald-500 text-white';
+      return 'bg-emerald-500 text-white';
     }
-    return 'rounded-tl-sm bg-slate-100 text-slate-800';
+    return 'bg-slate-100 text-slate-800';
   });
 
   /**
@@ -218,7 +218,7 @@
     class="flex gap-3 pl-6"
     :class="[
       isOwn ? 'flex-row-reverse pr-6' : 'flex-row',
-      isGroupContinuation ? 'py-0' : 'py-1.5',
+      isGroupContinuation ? 'py-0' : isGroupEnd ? 'py-1.5' : 'pt-1.5 pb-0',
     ]"
   >
     <!-- Avatar: visible on group start, invisible spacer on continuation -->
