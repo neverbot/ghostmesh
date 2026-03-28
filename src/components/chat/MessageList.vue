@@ -292,7 +292,7 @@
       v-for="key in messageKeys"
       v-show="key === selectedKey"
       :key="key"
-      class="flex flex-col gap-0.5"
+      class="flex flex-col"
     >
       <MessageItem
         v-for="(msg, idx) in store.messages[key]"

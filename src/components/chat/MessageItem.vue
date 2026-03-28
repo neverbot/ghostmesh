@@ -103,21 +103,18 @@
     return gap >= config.chat.groupingInterval;
   });
 
-  /** Border radius classes for grouped bubbles — zero on touching edges. */
+  /** Border radius: round top on first, round bottom on last, zero on all touching edges. */
   const groupBorderRadius = computed(() => {
     const standalone = !isGroupContinuation.value && isGroupEnd.value;
     if (standalone) return 'rounded-2xl';
     const start = !isGroupContinuation.value && !isGroupEnd.value;
     const end = isGroupContinuation.value && isGroupEnd.value;
-    // middle = isGroupContinuation && !isGroupEnd
-    if (isOwn.value) {
-      if (start) return 'rounded-t-2xl rounded-bl-2xl rounded-br-none';
-      if (end) return 'rounded-b-2xl rounded-tl-2xl rounded-tr-none';
-      return 'rounded-l-2xl rounded-r-none'; // middle
-    }
-    if (start) return 'rounded-t-2xl rounded-br-2xl rounded-bl-none';
-    if (end) return 'rounded-b-2xl rounded-tr-2xl rounded-tl-none';
-    return 'rounded-r-2xl rounded-l-none'; // middle
+    // start: round top, flat bottom
+    if (start) return 'rounded-t-2xl rounded-b-none';
+    // end: flat top, round bottom
+    if (end) return 'rounded-t-none rounded-b-2xl';
+    // middle: all flat
+    return 'rounded-none';
   });
 
   const timeString = computed(() => {
