@@ -103,6 +103,23 @@
     return gap >= config.chat.groupingInterval;
   });
 
+  /** Border radius classes for grouped bubbles. */
+  const groupBorderRadius = computed(() => {
+    const standalone = !isGroupContinuation.value && isGroupEnd.value;
+    if (standalone) return 'rounded-2xl';
+    const start = !isGroupContinuation.value && !isGroupEnd.value;
+    const end = isGroupContinuation.value && isGroupEnd.value;
+    // middle = isGroupContinuation && !isGroupEnd
+    if (isOwn.value) {
+      if (start) return 'rounded-2xl rounded-br-md';
+      if (end) return 'rounded-2xl rounded-tr-md';
+      return 'rounded-l-2xl rounded-r-md'; // middle
+    }
+    if (start) return 'rounded-2xl rounded-bl-md';
+    if (end) return 'rounded-2xl rounded-tl-md';
+    return 'rounded-r-2xl rounded-l-md'; // middle
+  });
+
   const timeString = computed(() => {
     const d = new Date(props.message.timestamp);
     const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -204,7 +221,7 @@
     class="flex gap-3 pl-6"
     :class="[
       isOwn ? 'flex-row-reverse pr-6' : 'flex-row',
-      isGroupContinuation ? 'py-0.5' : 'py-1.5',
+      isGroupContinuation ? 'py-px' : 'py-1.5',
     ]"
   >
     <!-- Avatar: visible on group start, invisible spacer on continuation -->
@@ -237,8 +254,8 @@
         {{ message.nick }}
       </span>
       <div
-        class="rounded-2xl p-3 text-sm leading-relaxed transition-colors duration-500"
-        :class="bubbleClass"
+        class="p-3 text-sm leading-relaxed transition-colors duration-500"
+        :class="[bubbleClass, groupBorderRadius]"
       >
         <span
           :class="isOwn ? '[&_img]:ml-auto' : ''"
