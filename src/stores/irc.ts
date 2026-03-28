@@ -400,6 +400,20 @@ const useIrcStore = defineStore('irc', () => {
     if (channels.value[serverId]) {
       channels.value[serverId] = channels.value[serverId].filter((c) => c !== channel);
     }
+    // Clean up channel data if global pref is enabled (default: true)
+    const prefs = useUserSettingsStore().getProfile().globalPrefs;
+    const shouldClear = prefs?.clearOnClose !== false;
+    if (shouldClear) {
+      const key = `${serverId}:${channel}`;
+      delete messages.value[key];
+      const usersData = users.value;
+      if (usersData[key]) {
+        delete usersData[key];
+        triggerRef(users);
+      }
+      delete topics.value[key];
+      delete lastReadTimestamp.value[key];
+    }
     if (selectedServerId.value === serverId && selectedChannel.value === channel) {
       const remaining: string[] = channels.value[serverId] || [];
       selectedChannel.value = remaining[0] || null;

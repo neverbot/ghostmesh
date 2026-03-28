@@ -13,6 +13,13 @@ interface UserProfile {
   avatarColor: string;
   /** User-provided API keys for private upload providers. */
   uploadProviderKeys?: Record<string, string>;
+  /** Global application preferences. */
+  globalPrefs?: GlobalPrefs;
+}
+
+interface GlobalPrefs {
+  /** Clear messages, users and topics when closing a channel or DM. Default: true. */
+  clearOnClose?: boolean;
 }
 
 const STORAGE_KEY: string = config.storageKeys.userSettings;
@@ -130,5 +137,5 @@ const useUserSettingsStore = defineStore('user-settings', () => {
   };
 });
 
-export type { UserProfile };
+export type { UserProfile, GlobalPrefs };
 export { useUserSettingsStore };

@@ -27,7 +27,7 @@
   const serverSettings = useServerSettingsStore();
   const userPrefs = useUserPrefsStore();
   const ircStore = useIrcStore();
-  const activeTab = ref('profile');
+  const activeTab = ref('general');
   const confirmForget = ref(false);
 
   const presetColors = [
@@ -77,6 +77,12 @@
     emit('close');
   }
 
+  /** Update the clearOnClose preference. */
+  function onClearOnCloseChange(checked: boolean) {
+    if (!form.value.globalPrefs) form.value.globalPrefs = {};
+    form.value.globalPrefs.clearOnClose = checked;
+  }
+
   /** Update a provider key in the form. */
   function onProviderKeyInput(configKey: string, value: string) {
     if (!form.value.uploadProviderKeys) {
@@ -121,7 +127,7 @@
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-slate-700 px-5 py-4">
           <div>
-            <h3 class="text-sm font-bold text-white">User Settings</h3>
+            <h3 class="text-sm font-bold text-white">Global Settings</h3>
             <p class="text-xs text-slate-500">Your IRC identity</p>
           </div>
           <button
@@ -144,7 +150,7 @@
         <!-- Tabs -->
         <div class="flex border-b border-slate-700 px-5">
           <button
-            v-for="tab in ['profile', 'identity', 'image uploads']"
+            v-for="tab in ['general', 'profile', 'identity', 'image uploads']"
             :key="tab"
             class="border-b-2 px-3 py-2.5 text-xs font-medium capitalize transition-colors"
             :class="
@@ -160,6 +166,29 @@
 
         <!-- Tab content -->
         <div class="px-5 py-4">
+          <!-- General tab -->
+          <div
+            v-if="activeTab === 'general'"
+            class="flex flex-col gap-4"
+          >
+            <p class="text-[10px] text-slate-500">
+              General application behavior.
+            </p>
+
+            <label class="flex items-center gap-2">
+              <input
+                type="checkbox"
+                :checked="form.globalPrefs?.clearOnClose !== false"
+                class="rounded border-slate-600"
+                @change="onClearOnCloseChange(($event.target as HTMLInputElement).checked)"
+              />
+              <span class="text-xs text-slate-300">Clear channel data when closing</span>
+            </label>
+            <p class="text-[10px] text-slate-500">
+              When enabled, messages, user lists and topics are removed from memory when you close a channel or conversation. Disable to keep history until the page is reloaded.
+            </p>
+          </div>
+
           <!-- Profile tab -->
           <div
             v-if="activeTab === 'profile'"
