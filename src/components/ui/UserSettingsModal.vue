@@ -6,6 +6,7 @@
   import { useIrcStore } from '@/stores/irc.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import type { UserProfile } from '@/stores/user-settings.ts';
+  import { privateProviders as privateUploadProviders } from '@/services/upload-providers.ts';
 
   const backdrop = ref<HTMLElement | null>(null);
 
@@ -76,6 +77,14 @@
     emit('close');
   }
 
+  /** Update a provider key in the form. */
+  function onProviderKeyInput(configKey: string, value: string) {
+    if (!form.value.uploadProviderKeys) {
+      form.value.uploadProviderKeys = {};
+    }
+    form.value.uploadProviderKeys[configKey] = value;
+  }
+
   function handleForgetMe() {
     if (!confirmForget.value) {
       confirmForget.value = true;
@@ -135,7 +144,7 @@
         <!-- Tabs -->
         <div class="flex border-b border-slate-700 px-5">
           <button
-            v-for="tab in ['profile', 'identity']"
+            v-for="tab in ['profile', 'identity', 'uploads']"
             :key="tab"
             class="border-b-2 px-3 py-2.5 text-xs font-medium capitalize transition-colors"
             :class="
@@ -258,6 +267,44 @@
               />
               <span class="text-xs text-slate-500">Auto-identify on connect</span>
             </label>
+          </div>
+        </div>
+
+        <!-- Uploads tab -->
+        <div
+          v-if="activeTab === 'uploads'"
+          class="flex flex-col gap-5 overflow-y-auto px-5 py-4"
+        >
+          <p class="text-[10px] text-slate-500">
+            Configure your own API keys for image hosting services. Your keys are stored locally in your browser and never sent to our servers.
+          </p>
+
+          <div
+            v-for="provider in privateUploadProviders"
+            :key="provider.configKey"
+            class="flex flex-col gap-2 rounded-lg border border-slate-700 p-3"
+          >
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-medium text-slate-300">{{ provider.configLabel }}</span>
+              <a
+                :href="provider.configUrl"
+                target="_blank"
+                rel="noopener"
+                class="text-[10px] text-emerald-400 hover:text-emerald-300"
+              >
+                Get API key
+              </a>
+            </div>
+            <p class="text-[10px] text-slate-500">
+              {{ provider.configDescription }}
+            </p>
+            <input
+              :value="form.uploadProviderKeys?.[provider.configKey] || ''"
+              type="text"
+              :placeholder="`Enter your ${provider.configLabel} API key`"
+              class="w-full rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 font-mono text-xs text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
+              @input="onProviderKeyInput(provider.configKey, ($event.target as HTMLInputElement).value)"
+            />
           </div>
         </div>
 
