@@ -4,27 +4,27 @@
 /* === Form element overrides (emerald accent) === */
 [type='checkbox'],
 [type='radio'] {
-  color: var(--color-emerald-500);
-  border-color: var(--color-slate-500);
+  color: #10b981;
+  border-color: #64748b;
   background-color: transparent;
 }
 [type='checkbox']:focus,
 [type='radio']:focus {
-  --tw-ring-color: var(--color-emerald-500);
-  border-color: var(--color-emerald-500);
+  --tw-ring-color: #10b981;
+  border-color: #10b981;
 }
 [type='checkbox']:checked,
 [type='radio']:checked {
-  background-color: var(--color-emerald-500);
-  border-color: var(--color-emerald-500);
+  background-color: #10b981;
+  border-color: #10b981;
 }
 select {
   background-color: transparent;
-  border-color: var(--color-slate-600);
+  border-color: #475569;
 }
 select:focus {
-  --tw-ring-color: var(--color-emerald-500);
-  border-color: var(--color-emerald-500);
+  --tw-ring-color: #10b981;
+  border-color: #10b981;
 }
 
 /*
