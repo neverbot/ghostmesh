@@ -94,6 +94,7 @@
     "global": {
       "title": "Ajustes globales",
       "subtitle": "Tu identidad IRC",
+      "language": "Idioma",
       "generalBehavior": "Comportamiento general de la aplicación.",
       "clearOnClose": "Limpiar datos del canal al cerrar",
       "clearOnCloseDescription": "Cuando está activado, los mensajes, listas de usuarios y temas se eliminan de la memoria al cerrar un canal o conversación. Desactiva para mantener el historial hasta recargar la página.",

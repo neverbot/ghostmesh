@@ -7,6 +7,7 @@
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import type { UserProfile } from '@/stores/user-settings.ts';
   import { privateProviders as privateUploadProviders } from '@/services/upload-providers.ts';
+  import { setLocale } from '@/i18n/index.ts';
 
   const backdrop = ref<HTMLElement | null>(null);
 
@@ -68,6 +69,11 @@
     // If nickname changed and we're connected, update on servers using global nick
     if (newNick && newNick !== oldNick && ircStore.activeConnections.length > 0) {
       ircStore.changeNickGlobal(newNick);
+    }
+
+    // Apply locale change immediately
+    if (form.value.locale) {
+      setLocale(form.value.locale);
     }
 
     emit('close');
@@ -192,6 +198,18 @@
             v-if="activeTab === 'profile'"
             class="flex flex-col gap-4"
           >
+            <!-- Language -->
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-slate-300">{{ $t('settings.global.language') }}</label>
+              <select
+                v-model="form.locale"
+                class="w-40 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-emerald-500"
+              >
+                <option value="en">English</option>
+                <option value="es">Español</option>
+              </select>
+            </div>
+
             <!-- Nickname -->
             <div class="flex flex-col gap-1">
               <label class="text-xs font-medium text-slate-300">{{

@@ -94,6 +94,7 @@
     "global": {
       "title": "Global Settings",
       "subtitle": "Your IRC identity",
+      "language": "Language",
       "generalBehavior": "General application behavior.",
       "clearOnClose": "Clear channel data when closing",
       "clearOnCloseDescription": "When enabled, messages, user lists and topics are removed from memory when you close a channel or conversation. Disable to keep history until the page is reloaded.",
