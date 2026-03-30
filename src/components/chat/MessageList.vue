@@ -214,14 +214,19 @@
   let mutationObserver: MutationObserver | null = null;
   let lastScrollHeight = 0;
 
-  /** Check if scrollHeight changed and re-scroll if in auto mode. */
+  /** Check if scrollHeight changed and re-scroll if in auto mode. Debounced to avoid layout thrashing. */
+  let scrollCheckTimer: ReturnType<typeof setTimeout> | null = null;
   function checkScrollHeightChange() {
-    const el = scrollContainer.value;
-    if (!el || !autoScroll || suppressMarkRead) return;
-    if (el.scrollHeight !== lastScrollHeight) {
-      lastScrollHeight = el.scrollHeight;
-      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-    }
+    if (scrollCheckTimer) return;
+    scrollCheckTimer = setTimeout(() => {
+      scrollCheckTimer = null;
+      const el = scrollContainer.value;
+      if (!el || !autoScroll || suppressMarkRead) return;
+      if (el.scrollHeight !== lastScrollHeight) {
+        lastScrollHeight = el.scrollHeight;
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      }
+    }, 50);
   }
 
   /** Re-scroll after CSS animation completes + remove animation class to prevent replay. */
