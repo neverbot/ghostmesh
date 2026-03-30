@@ -33,6 +33,14 @@
   const userPrefs = useUserPrefsStore();
   const activeTab = ref('general');
 
+  const serverTabs = computed(() => [
+    { key: 'user', label: t('tabs.user') },
+    { key: 'general', label: t('tabs.general') },
+    { key: 'formatting', label: t('tabs.formatting') },
+    { key: 'filtered', label: t('tabs.filtered') },
+    { key: 'blocked', label: t('tabs.blocked') },
+  ]);
+
   const form = ref<Partial<ServerSettingsEntry>>({});
   const newFilter = ref('');
   const confirmServerForget = ref(false);
@@ -164,17 +172,17 @@
         <!-- Tabs -->
         <div class="flex border-b border-slate-700 px-5">
           <button
-            v-for="tab in ['user', 'general', 'formatting', 'filtered', 'blocked']"
-            :key="tab"
-            class="border-b-2 px-3 py-2.5 text-xs font-medium capitalize transition-colors"
+            v-for="tab in serverTabs"
+            :key="tab.key"
+            class="border-b-2 px-3 py-2.5 text-xs font-medium transition-colors"
             :class="
-              activeTab === tab
+              activeTab === tab.key
                 ? 'border-emerald-500 text-emerald-400'
                 : 'border-transparent text-slate-400 hover:text-slate-300'
             "
-            @click="activeTab = tab"
+            @click="activeTab = tab.key"
           >
-            {{ tab }}
+            {{ tab.label }}
           </button>
         </div>
 

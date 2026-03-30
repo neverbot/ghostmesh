@@ -1,4 +1,14 @@
 {
+  "tabs": {
+    "profile": "Perfil",
+    "general": "General",
+    "identity": "Identidad",
+    "imageUploads": "Subida de imágenes",
+    "user": "Usuario",
+    "formatting": "Formato",
+    "filtered": "Filtrados",
+    "blocked": "Bloqueados"
+  },
   "common": {
     "save": "Guardar",
     "cancel": "Cancelar",

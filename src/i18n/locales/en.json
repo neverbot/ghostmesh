@@ -1,4 +1,14 @@
 {
+  "tabs": {
+    "profile": "Profile",
+    "general": "General",
+    "identity": "Identity",
+    "imageUploads": "Image uploads",
+    "user": "User",
+    "formatting": "Formatting",
+    "filtered": "Filtered",
+    "blocked": "Blocked"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",

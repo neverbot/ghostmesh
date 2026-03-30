@@ -1,5 +1,6 @@
 <script setup lang="ts">
-  import { ref, watch, nextTick } from 'vue';
+  import { ref, computed, watch, nextTick } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import { useUserSettingsStore } from '@/stores/user-settings.ts';
   import { useServerSettingsStore } from '@/stores/server-settings.ts';
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
@@ -28,7 +29,15 @@
   const serverSettings = useServerSettingsStore();
   const userPrefs = useUserPrefsStore();
   const ircStore = useIrcStore();
+  const { t } = useI18n();
   const activeTab = ref('profile');
+
+  const globalTabs = computed(() => [
+    { key: 'profile', label: t('tabs.profile') },
+    { key: 'general', label: t('tabs.general') },
+    { key: 'identity', label: t('tabs.identity') },
+    { key: 'image uploads', label: t('tabs.imageUploads') },
+  ]);
   const confirmForget = ref(false);
 
   const presetColors = [
@@ -156,17 +165,17 @@
         <!-- Tabs -->
         <div class="flex border-b border-slate-700 px-5">
           <button
-            v-for="tab in ['profile', 'general', 'identity', 'image uploads']"
-            :key="tab"
-            class="border-b-2 px-3 py-2.5 text-xs font-medium capitalize transition-colors"
+            v-for="tab in globalTabs"
+            :key="tab.key"
+            class="border-b-2 px-3 py-2.5 text-xs font-medium transition-colors"
             :class="
-              activeTab === tab
+              activeTab === tab.key
                 ? 'border-emerald-500 text-emerald-400'
                 : 'border-transparent text-slate-400 hover:text-slate-300'
             "
-            @click="activeTab = tab"
+            @click="activeTab = tab.key"
           >
-            {{ tab }}
+            {{ tab.label }}
           </button>
         </div>
 
