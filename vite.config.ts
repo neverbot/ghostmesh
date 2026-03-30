@@ -12,9 +12,17 @@ export default defineConfig({
     vue(),
     tailwindcss(),
     VueI18nPlugin({
-      include: resolve(dirname(fileURLToPath(import.meta.url)), './src/i18n/locales/**'),
+      include: [resolve(dirname(fileURLToPath(import.meta.url)), './src/i18n/locales/*.json')],
+      strictMessage: false,
+      runtimeOnly: true,
     }),
   ],
+  define: {
+    __VUE_I18N_FULL_INSTALL__: true,
+    __VUE_I18N_LEGACY_API__: false,
+    __INTLIFY_JIT_COMPILATION__: true,
+    __INTLIFY_DROP_MESSAGE_COMPILER__: false,
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
