@@ -1,19 +1,18 @@
 <script setup lang="ts">
   import { computed } from 'vue';
-  import { useI18n } from 'vue-i18n';
   import { useIrcStore } from '@/stores/irc.ts';
+  import { i18n } from '@/i18n/index.ts';
 
-  const { t } = useI18n();
   const store = useIrcStore();
 
   const title = computed(() => {
     if (!store.selectedChannel) return 'GhostMesh';
-    if (store.selectedChannel === '*status') return t('panel.serverStatus');
+    if (store.selectedChannel === '*status') return i18n.global.t('panel.serverStatus');
     return store.selectedChannel;
   });
 
   const subtitle = computed(() => {
-    if (!store.selectedServer) return t('panel.selectServer');
+    if (!store.selectedServer) return i18n.global.t('panel.selectServer');
     return store.selectedServer.name;
   });
 

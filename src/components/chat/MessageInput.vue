@@ -1,11 +1,11 @@
 <script setup lang="ts">
   import { ref, computed, watch, nextTick } from 'vue';
-  import { useI18n } from 'vue-i18n';
   import { useIrcStore } from '@/stores/irc.ts';
   import CommandAutocomplete from './CommandAutocomplete.vue';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
+  import { i18n } from '@/i18n/index.ts';
 
-  const { t } = useI18n();
+  const t = i18n.global.t;
 
   const store = useIrcStore();
   const text = ref('');

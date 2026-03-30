@@ -1,10 +1,10 @@
 <script setup lang="ts">
   import { ref, computed } from 'vue';
-  import { useI18n } from 'vue-i18n';
   import { useIrcStore } from '@/stores/irc.ts';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
+  import { i18n } from '@/i18n/index.ts';
 
-  const { t } = useI18n();
+  const t = i18n.global.t;
   const store = useIrcStore();
 
   const isPrivate = computed(() =>

@@ -1,6 +1,5 @@
 <script setup lang="ts">
   import { ref, computed, watch, nextTick } from 'vue';
-  import { useI18n } from 'vue-i18n';
   import { useUserSettingsStore } from '@/stores/user-settings.ts';
   import { useServerSettingsStore } from '@/stores/server-settings.ts';
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
@@ -8,7 +7,7 @@
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import type { UserProfile } from '@/stores/user-settings.ts';
   import { privateProviders as privateUploadProviders } from '@/services/upload-providers.ts';
-  import { setLocale } from '@/i18n/index.ts';
+  import { i18n, setLocale } from '@/i18n/index.ts';
 
   const backdrop = ref<HTMLElement | null>(null);
 
@@ -29,7 +28,7 @@
   const serverSettings = useServerSettingsStore();
   const userPrefs = useUserPrefsStore();
   const ircStore = useIrcStore();
-  const { t } = useI18n();
+  const t = i18n.global.t;
   const activeTab = ref('profile');
 
   const globalTabs = computed(() => [
