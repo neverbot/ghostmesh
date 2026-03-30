@@ -68,6 +68,7 @@ class IRCService extends EventEmitter {
   connectedAt: Record<string, number>;
   /** Servers currently loading LIST. */
   listLoading: Set<string>;
+  listTimeouts: Map<string, ReturnType<typeof setTimeout>>;
   /** Servers where mIRC formatting was detected. */
   mircDetected: Set<string>;
   /** Servers that completed registration (received 376/422). */
@@ -110,6 +111,7 @@ class IRCService extends EventEmitter {
     this.listWaitOverrides = {};
     this.connectedAt = {};
     this.listLoading = new Set();
+    this.listTimeouts = new Map();
     this.mircDetected = new Set();
     this.registered = new Set();
     this.keepaliveTimers = new Map();
@@ -308,6 +310,18 @@ class IRCService extends EventEmitter {
     this.store.setListLoading(serverId);
     this.store.clearAvailableChannels(serverId);
     this.send(serverId, 'LIST');
+    // Safety timeout: clear loading state if LIST never completes
+    const existingTimeout = this.listTimeouts.get(serverId);
+    if (existingTimeout) clearTimeout(existingTimeout);
+    const lt: ReturnType<typeof setTimeout> = setTimeout(() => {
+      this.listTimeouts.delete(serverId);
+      if (this.listLoading.has(serverId)) {
+        this.listLoading.delete(serverId);
+        this.store.clearListLoading(serverId);
+        this.store.flushChannelBuffer(serverId, true);
+      }
+    }, config.list.listTimeout * 1000);
+    this.listTimeouts.set(serverId, lt);
   }
 
   /**
@@ -822,7 +836,9 @@ class IRCService extends EventEmitter {
         break;
 
       case '323': // RPL_LISTEND
-      case '263': // RPL_TRYAGAIN — LIST was rate-limited
+      case '263': { // RPL_TRYAGAIN — LIST was rate-limited
+        const lt2 = this.listTimeouts.get(serverId);
+        if (lt2) { clearTimeout(lt2); this.listTimeouts.delete(serverId); }
         this.store.flushChannelBuffer(serverId, true);
         this.listLoading.delete(serverId);
         this.store.clearListLoading(serverId);
@@ -830,6 +846,7 @@ class IRCService extends EventEmitter {
           s.addSystemMessage(serverId, trailing, command);
         }
         break;
+      }
 
       case 'NOTICE': {
         const text: string = trailing || '';

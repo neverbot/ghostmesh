@@ -44,9 +44,11 @@
   const serversCollapsed = ref(false);
 
   /** True when connected but LIST hasn't started yet (waiting for delay timer). */
+  /** True when any server is connecting or waiting for its LIST delay. */
   const isWaitingForList = computed(
     () =>
-      store.connectedServers.length > 0 && !store.isListLoading && store.totalAvailableCount === 0,
+      store.connectingServers.length > 0 ||
+      (store.connectedServers.length > 0 && !store.isListLoading && store.totalAvailableCount === 0),
   );
   /** Servers sorted with connected ones first. */
   const sortedServers = computed(() =>

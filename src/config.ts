@@ -21,6 +21,8 @@ interface ChatConfig {
 
 interface ListConfig {
   browseLimit: number;
+  /** Max seconds to wait for LIST to complete before clearing loading state. */
+  listTimeout: number;
 }
 
 interface ImagesConfig {
@@ -92,6 +94,8 @@ const config: AppConfig = {
   list: {
     /** Maximum channels to render in the browse list. */
     browseLimit: 200,
+    /** Max seconds to wait for LIST to complete before clearing loading state. */
+    listTimeout: 30,
   },
 
   /** Image preview settings. */
