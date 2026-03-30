@@ -16,18 +16,22 @@
   let badgeTimer: ReturnType<typeof setInterval> | null = null;
 
   function updateBadgeCache(): void {
-    const cache: Record<string, { unread: number; users: number }> = {};
+    const prev = badgeCache.value;
+    let changed = false;
+    const next: Record<string, { unread: number; users: number }> = {};
     for (const entry of store.allJoinedChannels) {
       const key = `${entry.serverId}:${entry.channel}`;
-      cache[key] = {
-        unread: store.unreadCount(entry.serverId, entry.channel),
-        users: entry.userCount,
-      };
+      const unread = store.unreadCount(entry.serverId, entry.channel);
+      const users = entry.userCount;
+      next[key] = { unread, users };
+      const old = prev[key];
+      if (!old || old.unread !== unread || old.users !== users) changed = true;
     }
-    badgeCache.value = cache;
+    if (Object.keys(prev).length !== Object.keys(next).length) changed = true;
+    if (changed) badgeCache.value = next;
   }
 
-  badgeTimer = setInterval(updateBadgeCache, 1000);
+  badgeTimer = setInterval(updateBadgeCache, 3000);
   updateBadgeCache();
   onUnmounted(() => {
     if (badgeTimer) clearInterval(badgeTimer);
