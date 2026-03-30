@@ -9,7 +9,7 @@
     }>(),
     {
       delay: 0,
-      maxWidth: 300,
+      maxWidth: 220,
     },
   );
 
@@ -94,7 +94,7 @@
       >
         <div
           v-if="visible"
-          class="pointer-events-none fixed z-[100] rounded-md bg-surface-tooltip px-2.5 py-1.5 text-xs leading-relaxed text-text-tooltip shadow-lg"
+          class="pointer-events-none fixed z-[100] rounded-md bg-surface-tooltip px-2.5 py-1.5 text-xs leading-relaxed text-text-tooltip shadow-lg [text-wrap:balance]"
           :style="tooltipStyle"
         >
           {{ text }}
