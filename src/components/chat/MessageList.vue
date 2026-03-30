@@ -117,14 +117,21 @@
   /** All channel keys that have messages. */
   const messageKeys = computed(() => Object.keys(store.messages));
 
-  /** Grouped messages per channel key — cached to avoid re-creating objects on every render. */
-  const groupedMessages = computed(() => {
-    const result: Record<string, MessageGroup[]> = {};
-    for (const key of messageKeys.value) {
-      result[key] = buildGroups(store.messages[key] || []);
-    }
-    return result;
-  });
+  /**
+   * Grouped messages per channel key.
+   * Uses a manual cache to avoid recomputing all channels when one channel changes.
+   */
+  const groupCache: Record<string, { length: number; groups: MessageGroup[] }> = {};
+
+  function getGroups(key: string): MessageGroup[] {
+    const msgs = store.messages[key];
+    if (!msgs) return [];
+    const cached = groupCache[key];
+    if (cached && cached.length === msgs.length) return cached.groups;
+    const groups = buildGroups(msgs);
+    groupCache[key] = { length: msgs.length, groups };
+    return groups;
+  }
 
   /**
    * Check if the user is scrolled near the bottom (within 150px).
@@ -362,7 +369,7 @@
       class="flex flex-col"
     >
       <template
-        v-for="group in groupedMessages[key]"
+        v-for="group in getGroups(key)"
         :key="group.id"
       >
         <!-- System messages: render individually -->
