@@ -45,7 +45,7 @@
       left: left + 'px',
       top: top + 'px',
       maxWidth: tooltipW + 'px',
-      width: 'fit-content',
+      width: 'max-content',
     };
   });
 
