@@ -11,6 +11,8 @@ interface UserProfile {
   username: string;
   realname: string;
   avatarColor: string;
+  /** Preferred UI language code (e.g. 'en', 'es'). */
+  locale?: string;
   /** User-provided API keys for private upload providers. */
   uploadProviderKeys?: Record<string, string>;
   /** Global application preferences. */

@@ -1,0 +1,15 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "ok": "OK",
+    "add": "Add",
+    "remove": "Remove",
+    "removeAll": "Remove all",
+    "unblock": "Unblock",
+    "confirm": "Confirm",
+    "forgetMe": "Forget me",
+    "confirmErase": "Confirm erase"
+  }
+}

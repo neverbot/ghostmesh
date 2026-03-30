@@ -1,0 +1,15 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "ok": "Aceptar",
+    "add": "Añadir",
+    "remove": "Eliminar",
+    "removeAll": "Eliminar todo",
+    "unblock": "Desbloquear",
+    "confirm": "Confirmar",
+    "forgetMe": "Olvídame",
+    "confirmErase": "Confirmar borrado"
+  }
+}
