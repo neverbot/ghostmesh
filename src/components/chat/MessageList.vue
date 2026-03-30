@@ -117,6 +117,15 @@
   /** All channel keys that have messages. */
   const messageKeys = computed(() => Object.keys(store.messages));
 
+  /** Grouped messages per channel key — cached to avoid re-creating objects on every render. */
+  const groupedMessages = computed(() => {
+    const result: Record<string, MessageGroup[]> = {};
+    for (const key of messageKeys.value) {
+      result[key] = buildGroups(store.messages[key] || []);
+    }
+    return result;
+  });
+
   /**
    * Check if the user is scrolled near the bottom (within 150px).
    * @returns {boolean}
@@ -353,7 +362,7 @@
       class="flex flex-col"
     >
       <template
-        v-for="group in buildGroups(store.messages[key] || [])"
+        v-for="group in groupedMessages[key]"
         :key="group.id"
       >
         <!-- System messages: render individually -->
