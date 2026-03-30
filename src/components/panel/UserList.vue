@@ -53,7 +53,7 @@
   <div class="flex flex-1 flex-col overflow-hidden pt-4">
     <div class="mb-3 flex items-center justify-between">
       <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400">
-        Members
+        {{ $t('panel.members') }}
         <span
           v-if="store.currentUsers.length"
           class="ml-1 text-slate-500"
@@ -62,7 +62,7 @@
         </span>
       </h3>
       <InfoTooltip
-        text="Filter members"
+        :text="$t('tooltips.filterMembers')"
         :delay="500"
       >
         <button
@@ -98,7 +98,7 @@
         ref="userFilterInput"
         v-model="filterText"
         type="text"
-        placeholder="Search by name..."
+        :placeholder="$t('panel.searchByName')"
         class="w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] text-slate-600 outline-none placeholder:text-slate-400 focus:border-emerald-500/50"
       />
     </div>
@@ -132,7 +132,12 @@
         v-if="filterText && filteredUsers.length !== store.currentUsers.length"
         class="px-2 py-2 text-center text-[10px] text-slate-400"
       >
-        {{ filteredUsers.length }} of {{ store.currentUsers.length }} members
+        {{
+          $t('panel.filteredCount', {
+            filtered: filteredUsers.length,
+            total: store.currentUsers.length,
+          })
+        }}
       </div>
     </div>
 
@@ -140,7 +145,7 @@
       v-if="store.currentUsers.length === 0"
       class="py-6 text-center text-xs text-slate-400"
     >
-      No users
+      {{ $t('panel.noUsers') }}
     </div>
   </div>
 

@@ -334,9 +334,11 @@
           d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z"
         />
       </svg>
-      <p class="text-sm">No messages yet</p>
+      <p class="text-sm">{{ $t('chat.noMessages') }}</p>
       <p class="mt-1 text-xs text-slate-400">
-        {{ store.selectedChannel ? 'Messages will appear here' : 'Select a channel to start' }}
+        {{
+          store.selectedChannel ? $t('chat.messagesWillAppear') : $t('chat.selectChannelToStart')
+        }}
       </p>
     </div>
 
@@ -377,12 +379,15 @@
               group.own ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-600',
               !group.own ? 'cursor-pointer' : '',
             ]"
-            @click="!group.own && onUserClick({
-              nick: group.nick,
-              serverId: group.messages[0].serverId,
-              x: $event.clientX,
-              y: $event.clientY,
-            })"
+            @click="
+              !group.own &&
+              onUserClick({
+                nick: group.nick,
+                serverId: group.messages[0].serverId,
+                x: $event.clientX,
+                y: $event.clientY,
+              })
+            "
           >
             {{ (group.nick || '?')[0].toUpperCase() }}
           </div>
@@ -396,12 +401,14 @@
             <span
               v-if="!group.own"
               class="cursor-pointer text-xs font-semibold text-slate-500 hover:text-slate-700"
-              @click="onUserClick({
-                nick: group.nick,
-                serverId: group.messages[0].serverId,
-                x: $event.clientX,
-                y: $event.clientY,
-              })"
+              @click="
+                onUserClick({
+                  nick: group.nick,
+                  serverId: group.messages[0].serverId,
+                  x: $event.clientX,
+                  y: $event.clientY,
+                })
+              "
             >
               {{ group.nick }}
             </span>
@@ -411,7 +418,7 @@
               class="rounded-2xl py-2 text-sm leading-relaxed"
               :class="[
                 group.own
-                  ? group.messages.some(m => m.warning)
+                  ? group.messages.some((m) => m.warning)
                     ? 'bg-bubble-warning text-white rounded-tr-sm'
                     : 'bg-emerald-500 text-white rounded-tr-sm'
                   : 'bg-slate-100 text-slate-800 rounded-tl-sm',
@@ -435,15 +442,22 @@
                   ]"
                 >
                   <span class="mt-px whitespace-nowrap text-[10px] text-slate-300">
-                    {{ new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}
+                    {{
+                      new Date(msg.timestamp).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    }}
                   </span>
                   <InfoTooltip
-                    text="Forward message"
+                    :text="$t('tooltips.forwardMessage')"
                     :delay="300"
                   >
                     <button
                       class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-slate-400 shadow transition-colors hover:text-emerald-500"
-                      @click.stop="onForward({ content: msg.content, x: $event.clientX, y: $event.clientY })"
+                      @click.stop="
+                        onForward({ content: msg.content, x: $event.clientX, y: $event.clientY })
+                      "
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -471,13 +485,19 @@
             <!-- Timestamp (last message) -->
             <div class="flex items-center gap-1.5">
               <span class="text-[10px] text-slate-400">
-                {{ new Date(group.messages[group.messages.length - 1].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) }}
+                {{
+                  new Date(group.messages[group.messages.length - 1].timestamp).toLocaleTimeString(
+                    [],
+                    { hour: '2-digit', minute: '2-digit', second: '2-digit' },
+                  )
+                }}
               </span>
               <span
                 v-if="group.messages[group.messages.length - 1].warning"
                 class="cursor-help text-amber-500"
                 :title="group.messages[group.messages.length - 1].warning"
-              >⚠</span>
+                >⚠</span
+              >
             </div>
           </div>
         </div>
@@ -497,7 +517,7 @@
     <button
       v-if="showScrollBtn"
       class="absolute bottom-24 right-5 flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-colors hover:bg-slate-50"
-      title="Scroll to bottom"
+      :title="$t('chat.scrollToBottom')"
       @click="scrollToBottom"
     >
       <svg
@@ -535,15 +555,15 @@
 </template>
 
 <style scoped>
-/* Extend hover zone of each message row to full chat width */
-.fwd-row::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -9999px;
-  right: -9999px;
-  z-index: -1;
-  pointer-events: none;
-}
+  /* Extend hover zone of each message row to full chat width */
+  .fwd-row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -9999px;
+    right: -9999px;
+    z-index: -1;
+    pointer-events: none;
+  }
 </style>

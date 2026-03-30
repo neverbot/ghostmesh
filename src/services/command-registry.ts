@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n/index.ts';
 import type IRCService from '@/services/irc.service.ts';
 
 /** Context passed to command executors. */
@@ -41,12 +42,25 @@ interface ParsedCommand {
 
 // ─── Command definitions ─────────────────────────────────────────────────────
 
-const commands: CommandDefinition[] = [
+/** Helper to translate a command key. */
+function t(key: string): string {
+  return i18n.global.t(key) as string;
+}
+
+/** Command definitions without descriptions — those are resolved lazily via i18n. */
+interface CommandEntry {
+  name: string;
+  aliases: string[];
+  /** Usage syntax (not translated — contains command syntax). */
+  usage: string;
+  execute: (args: string[], ctx: CommandContext) => boolean;
+}
+
+const commandEntries: CommandEntry[] = [
   // --- IRC commands ---
   {
     name: 'nick',
     aliases: [],
-    description: 'Change your nickname',
     usage: '/nick <newname>',
     execute: (args, ctx) => {
       if (!args[0]) return false;
@@ -57,7 +71,6 @@ const commands: CommandDefinition[] = [
   {
     name: 'join',
     aliases: ['j'],
-    description: 'Join a channel',
     usage: '/join <channel>',
     execute: (args, ctx) => {
       if (!args[0]) return false;
@@ -69,7 +82,6 @@ const commands: CommandDefinition[] = [
   {
     name: 'part',
     aliases: ['leave'],
-    description: 'Leave a channel',
     usage: '/part [channel]',
     execute: (args, ctx) => {
       const channel = args[0] || ctx.channel;
@@ -81,7 +93,6 @@ const commands: CommandDefinition[] = [
   {
     name: 'msg',
     aliases: ['privmsg', 'pm'],
-    description: 'Send a private message',
     usage: '/msg <nick> <message>',
     execute: (args, ctx) => {
       if (args.length < 2) return false;
@@ -96,7 +107,6 @@ const commands: CommandDefinition[] = [
   {
     name: 'query',
     aliases: ['q'],
-    description: 'Open a private conversation',
     usage: '/query <nick>',
     execute: (args, ctx) => {
       if (!args[0]) return false;
@@ -107,7 +117,6 @@ const commands: CommandDefinition[] = [
   {
     name: 'quit',
     aliases: ['disconnect'],
-    description: 'Disconnect from server',
     usage: '/quit [reason]',
     execute: (args, ctx) => {
       const reason = args.join(' ') || 'Leaving';
@@ -118,7 +127,6 @@ const commands: CommandDefinition[] = [
   {
     name: 'topic',
     aliases: [],
-    description: 'View or set channel topic',
     usage: '/topic [new topic]',
     execute: (args, ctx) => {
       if (!ctx.channel || ctx.channel === '*status') return false;
@@ -133,7 +141,6 @@ const commands: CommandDefinition[] = [
   {
     name: 'mode',
     aliases: [],
-    description: 'Set channel or user modes',
     usage: '/mode <target> <flags>',
     execute: (args, ctx) => {
       if (!args[0]) return false;
@@ -144,7 +151,6 @@ const commands: CommandDefinition[] = [
   {
     name: 'list',
     aliases: [],
-    description: 'Refresh channel list',
     usage: '/list',
     execute: (_args, ctx) => {
       ctx.service.requestList(ctx.serverId);
@@ -154,7 +160,6 @@ const commands: CommandDefinition[] = [
   {
     name: 'whois',
     aliases: [],
-    description: 'Query user information',
     usage: '/whois <nick>',
     execute: (args, ctx) => {
       if (!args[0]) return false;
@@ -165,7 +170,6 @@ const commands: CommandDefinition[] = [
   {
     name: 'login',
     aliases: ['identify', 'id'],
-    description: 'Authenticate with NickServ',
     usage: '/login <nick> <password>',
     execute: (args, ctx) => {
       if (args.length < 2) return false;
@@ -176,7 +180,6 @@ const commands: CommandDefinition[] = [
   {
     name: 'raw',
     aliases: ['quote'],
-    description: 'Send a raw IRC command',
     usage: '/raw <command>',
     execute: (args, ctx) => {
       if (!args[0]) return false;
@@ -187,7 +190,6 @@ const commands: CommandDefinition[] = [
   {
     name: 'me',
     aliases: ['action'],
-    description: 'Send an action message',
     usage: '/me <action>',
     execute: (args, ctx) => {
       if (!args[0] || !ctx.channel || ctx.channel === '*status') return false;
@@ -208,7 +210,6 @@ const commands: CommandDefinition[] = [
   {
     name: 'clear',
     aliases: [],
-    description: 'Clear current channel messages',
     usage: '/clear',
     execute: (_args, ctx) => {
       if (!ctx.channel) return false;
@@ -219,7 +220,6 @@ const commands: CommandDefinition[] = [
   {
     name: 'close',
     aliases: [],
-    description: 'Close current channel or conversation',
     usage: '/close',
     execute: (_args, ctx) => {
       if (!ctx.channel || ctx.channel === '*status') return false;
@@ -228,6 +228,14 @@ const commands: CommandDefinition[] = [
     },
   },
 ];
+
+/** Lazily resolved command definitions with translated descriptions. */
+const commands: CommandDefinition[] = commandEntries.map((entry) => ({
+  ...entry,
+  get description(): string {
+    return t(`commands.${entry.name}.description`);
+  },
+}));
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 

@@ -664,7 +664,14 @@ class IRCService extends EventEmitter {
             CHANNEL_PREFIXES.some((p: string) => channel.startsWith(p)) ||
             channel === '*status'
           ) {
-            s.addMessage(serverId, channel, nick, `${nick} has quit (${trailing || ''})`, 'quit', command);
+            s.addMessage(
+              serverId,
+              channel,
+              nick,
+              `${nick} has quit (${trailing || ''})`,
+              'quit',
+              command,
+            );
           }
         }
         // If we have a DM open with this user, notify and mark offline
@@ -693,7 +700,14 @@ class IRCService extends EventEmitter {
             CHANNEL_PREFIXES.some((p: string) => channel.startsWith(p)) ||
             channel === '*status'
           ) {
-            s.addMessage(serverId, channel, nick, `${nick} is now known as ${newNick}`, 'nick', command);
+            s.addMessage(
+              serverId,
+              channel,
+              nick,
+              `${nick} is now known as ${newNick}`,
+              'nick',
+              command,
+            );
           }
         }
         break;
@@ -777,7 +791,14 @@ class IRCService extends EventEmitter {
             month: 'short',
             day: 'numeric',
           });
-          s.addMessage(serverId, channel, '', `Topic set by ${setter} on ${dateStr}`, 'system', command);
+          s.addMessage(
+            serverId,
+            channel,
+            '',
+            `Topic set by ${setter} on ${dateStr}`,
+            'system',
+            command,
+          );
         }
         break;
       }
@@ -894,12 +915,14 @@ class IRCService extends EventEmitter {
       case '001': // RPL_WELCOME
       case '002': // RPL_YOURHOST
       case '003': // RPL_CREATED
-      case '004': { // RPL_MYINFO
+      case '004': {
+        // RPL_MYINFO
         if (trailing) s.addSystemMessage(serverId, trailing, command);
         break;
       }
 
-      case '005': { // RPL_ISUPPORT
+      case '005': {
+        // RPL_ISUPPORT
         // "are supported by this server" — not useful to display
         break;
       }
@@ -908,7 +931,8 @@ class IRCService extends EventEmitter {
       case '251': // RPL_LUSERCLIENT
       case '255': // RPL_LUSERME
       case '265': // RPL_LOCALUSERS
-      case '266': { // RPL_GLOBALUSERS
+      case '266': {
+        // RPL_GLOBALUSERS
         // These have the full text in trailing
         if (trailing) s.addSystemMessage(serverId, trailing, command);
         break;
@@ -916,7 +940,8 @@ class IRCService extends EventEmitter {
 
       case '252': // RPL_LUSEROP
       case '253': // RPL_LUSERUNKNOWN
-      case '254': { // RPL_LUSERCHANNELS
+      case '254': {
+        // RPL_LUSERCHANNELS
         // These have the count in params[1] and label in trailing
         const count: string = params[1] || '';
         const label: string = trailing || '';
@@ -924,7 +949,8 @@ class IRCService extends EventEmitter {
         break;
       }
 
-      case '396': { // RPL_HOSTHIDDEN — displayed host changed
+      case '396': {
+        // RPL_HOSTHIDDEN — displayed host changed
         if (trailing) s.addSystemMessage(serverId, trailing, command);
         break;
       }
@@ -985,7 +1011,14 @@ class IRCService extends EventEmitter {
             s.selectedChannel !== '*status' &&
             s.isDM(s.selectedChannel)
           ) {
-            s.addMessage(serverId, s.selectedChannel, '', `[${command}] ${trailing}`, 'system', command);
+            s.addMessage(
+              serverId,
+              s.selectedChannel,
+              '',
+              `[${command}] ${trailing}`,
+              'system',
+              command,
+            );
           }
         }
         if (isError && trailing) {

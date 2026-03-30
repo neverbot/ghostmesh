@@ -1,8 +1,11 @@
 <script setup lang="ts">
   import { ref, computed, watch, nextTick } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import { useIrcStore } from '@/stores/irc.ts';
   import CommandAutocomplete from './CommandAutocomplete.vue';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
+
+  const { t } = useI18n();
 
   const store = useIrcStore();
   const text = ref('');
@@ -69,7 +72,7 @@
         store.selectedServerId!,
         store.selectedChannel!,
         '',
-        'Only image files are supported',
+        t('errors.onlyImages'),
         'system',
       );
       return;
@@ -79,7 +82,7 @@
         store.selectedServerId!,
         store.selectedChannel!,
         '',
-        `File too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)`,
+        t('errors.fileTooLarge', { size: MAX_FILE_SIZE / 1024 / 1024 }),
         'system',
       );
       return;
@@ -144,10 +147,10 @@
         type="text"
         :placeholder="
           isDisabled
-            ? 'Select a channel to chat...'
+            ? $t('chat.selectChannelToChat')
             : isStatusChannel
-              ? 'Send raw IRC command...'
-              : 'Write your message...'
+              ? $t('chat.sendRawCommand')
+              : $t('chat.writeMessage')
         "
         :disabled="isDisabled"
         class="flex-1 rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white disabled:cursor-not-allowed disabled:opacity-50"
@@ -168,10 +171,10 @@
         v-if="!isStatusChannel"
         :text="
           store.isUploading
-            ? 'Uploading...'
+            ? $t('tooltips.uploading')
             : store.canUpload
-              ? 'Attach image'
-              : 'Image upload unavailable — this server treats image links as advertising and blocks them'
+              ? $t('tooltips.attachImage')
+              : $t('tooltips.uploadUnavailable')
         "
       >
         <button

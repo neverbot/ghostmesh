@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, shallowRef, computed, triggerRef, watch } from 'vue';
 import type { Ref, ShallowRef, ComputedRef } from 'vue';
+import { i18n } from '@/i18n/index.ts';
 import config from '@/config.ts';
 import IRCService from '@/services/irc.service.ts';
 import type { ServerSettingsApi } from '@/services/irc.service.ts';
@@ -744,9 +745,10 @@ const useIrcStore = defineStore('irc', () => {
       return otherKey === targetKey;
     });
     if (duplicate) {
-      connectionError.value =
-        `${server.name} is part of the same IRC network as ${duplicate.name}. ` +
-        `You are already connected to ${duplicate.name}.`;
+      connectionError.value = i18n.global.t('errors.duplicateNetwork', {
+        server: server.name,
+        duplicate: duplicate.name,
+      }) as string;
       return;
     }
 
@@ -756,7 +758,9 @@ const useIrcStore = defineStore('irc', () => {
     connectTimers[server.id] = setTimeout(() => {
       if (!isConnected(server.id)) {
         connectingServers.value = connectingServers.value.filter((id) => id !== server.id);
-        connectionError.value = `Could not connect to ${server.name}. The server may be offline or unreachable.`;
+        connectionError.value = i18n.global.t('errors.connectionTimeout', {
+          server: server.name,
+        }) as string;
         getService().cleanupConnection(server.id);
       }
     }, 15000);
@@ -875,7 +879,9 @@ const useIrcStore = defineStore('irc', () => {
         const handled = executeCommand(parsed, ctx);
         if (!handled) {
           const cmd = findCommand(parsed.name);
-          const msg = cmd ? `Usage: ${cmd.usage}` : `Unknown command: /${parsed.name}`;
+          const msg = cmd
+            ? (i18n.global.t('errors.commandUsage', { usage: cmd.usage }) as string)
+            : (i18n.global.t('errors.unknownCommand', { name: parsed.name }) as string);
           addMessage(selectedServerId.value, selectedChannel.value, '', msg, 'system');
         }
       }
@@ -902,7 +908,13 @@ const useIrcStore = defineStore('irc', () => {
     const channel = selectedChannel.value;
 
     isUploading.value = true;
-    addMessage(serverId, channel, '', `Uploading ${file.name}...`, 'system');
+    addMessage(
+      serverId,
+      channel,
+      '',
+      i18n.global.t('errors.uploadingFile', { name: file.name }) as string,
+      'system',
+    );
 
     try {
       const server = servers.value.find((s) => s.id === serverId);
@@ -913,7 +925,13 @@ const useIrcStore = defineStore('irc', () => {
       addMessage(serverId, channel, nickname.value, url, 'message');
       markReadUpTo(serverId, channel, Date.now());
     } catch (err: unknown) {
-      addMessage(serverId, channel, '', `Upload failed: ${(err as Error).message}`, 'system');
+      addMessage(
+        serverId,
+        channel,
+        '',
+        i18n.global.t('errors.uploadFailed', { message: (err as Error).message }) as string,
+        'system',
+      );
     } finally {
       isUploading.value = false;
     }

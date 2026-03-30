@@ -68,7 +68,7 @@
       v-if="isDragging"
       class="pointer-events-none absolute inset-0 z-40 flex items-center justify-center rounded-lg border-2 border-dashed border-emerald-400 bg-emerald-50/80"
     >
-      <span class="text-lg font-medium text-emerald-600">Drop image here</span>
+      <span class="text-lg font-medium text-emerald-600">{{ $t('chat.dropImageHere') }}</span>
     </div>
   </div>
 </template>

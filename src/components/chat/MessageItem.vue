@@ -74,7 +74,11 @@
 
   const timeString = computed(() => {
     const d = new Date(props.message.timestamp);
-    const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const time = d.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
     if (props.message.numericCode) return `${time}  [${props.message.numericCode}]`;
     return time;
   });
@@ -104,7 +108,6 @@
       resolveImages: canResolveImages.value,
     });
   });
-
 </script>
 
 <template>

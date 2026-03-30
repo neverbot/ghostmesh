@@ -1,8 +1,10 @@
 <script setup lang="ts">
   import { ref, computed } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import { useIrcStore } from '@/stores/irc.ts';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
 
+  const { t } = useI18n();
   const store = useIrcStore();
 
   const isPrivate = computed(() =>
@@ -17,7 +19,7 @@
 
   const channelName = computed(() => {
     if (!store.selectedChannel) return '';
-    if (store.selectedChannel === '*status') return 'Status';
+    if (store.selectedChannel === '*status') return t('common.status');
     return store.selectedChannel;
   });
 
@@ -63,7 +65,7 @@
     class="border-b border-slate-200 pb-4"
   >
     <h3 class="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">
-      {{ isPrivate ? 'Conversation' : 'Channel Info' }}
+      {{ isPrivate ? $t('panel.conversation') : $t('panel.channelInfo') }}
     </h3>
 
     <div class="flex flex-col gap-2">
@@ -87,7 +89,7 @@
             class="text-[10px]"
             :class="isOnline ? 'text-emerald-500' : 'text-slate-400'"
           >
-            {{ isSelfDM ? 'You' : isOnline ? 'Online' : 'Offline' }}
+            {{ isSelfDM ? $t('user.you') : isOnline ? $t('user.online') : $t('user.offline') }}
           </span>
         </div>
       </div>
@@ -111,25 +113,25 @@
         v-else-if="!isPrivate"
         class="text-xs italic text-slate-400"
       >
-        No topic set
+        {{ $t('panel.noTopicSet') }}
       </p>
       <p
         v-else-if="isSelfDM"
         class="text-xs italic text-slate-400"
       >
-        This is a conversation with yourself. Use it as a notepad or to test chat features.
+        {{ $t('panel.selfDMDescription') }}
       </p>
       <p
         v-else
         class="text-xs italic text-slate-400"
       >
-        Private message
+        {{ $t('panel.privateMessage') }}
       </p>
 
       <div class="mt-1 flex gap-4">
         <div class="flex flex-col items-center rounded-lg bg-slate-100 px-4 py-2">
           <span class="text-lg font-bold text-emerald-600">{{ memberCount }}</span>
-          <span class="text-[10px] text-slate-400">Members</span>
+          <span class="text-[10px] text-slate-400">{{ $t('panel.members') }}</span>
         </div>
       </div>
     </div>

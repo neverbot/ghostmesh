@@ -18,7 +18,7 @@
       />
       <div class="flex flex-col">
         <span class="text-sm font-bold text-white">GhostMesh</span>
-        <span class="text-[10px] text-slate-500">IRC Client</span>
+        <span class="text-[10px] text-slate-500">{{ $t('sidebar.ircClient') }}</span>
       </div>
     </div>
 

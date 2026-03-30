@@ -127,8 +127,8 @@
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-slate-700 px-5 py-4">
           <div>
-            <h3 class="text-sm font-bold text-white">Global Settings</h3>
-            <p class="text-xs text-slate-500">Your IRC identity</p>
+            <h3 class="text-sm font-bold text-white">{{ $t('settings.global.title') }}</h3>
+            <p class="text-xs text-slate-500">{{ $t('settings.global.subtitle') }}</p>
           </div>
           <button
             class="rounded p-1 text-slate-400 transition-colors hover:bg-slate-700 hover:text-white"
@@ -171,7 +171,7 @@
             v-if="activeTab === 'general'"
             class="flex flex-col gap-4"
           >
-            <p class="text-[10px] text-slate-500">General application behavior.</p>
+            <p class="text-[10px] text-slate-500">{{ $t('settings.global.generalBehavior') }}</p>
 
             <label class="flex items-center gap-2">
               <input
@@ -180,11 +180,10 @@
                 class="rounded border-slate-600"
                 @change="onClearOnCloseChange(($event.target as HTMLInputElement).checked)"
               />
-              <span class="text-xs text-slate-300">Clear channel data when closing</span>
+              <span class="text-xs text-slate-300">{{ $t('settings.global.clearOnClose') }}</span>
             </label>
             <p class="text-[10px] text-slate-500">
-              When enabled, messages, user lists and topics are removed from memory when you close a
-              channel or conversation. Disable to keep history until the page is reloaded.
+              {{ $t('settings.global.clearOnCloseDescription') }}
             </p>
           </div>
 
@@ -195,49 +194,57 @@
           >
             <!-- Nickname -->
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-slate-300">Nickname</label>
+              <label class="text-xs font-medium text-slate-300">{{
+                $t('settings.global.nickname')
+              }}</label>
               <p class="text-[10px] text-slate-500">
-                Your display name on IRC servers. Leave empty for a random name.
+                {{ $t('settings.global.nicknameDescription') }}
               </p>
               <input
                 v-model="form.nickname"
                 type="text"
-                placeholder="ghostmesh_xxx (random)"
+                :placeholder="$t('settings.global.nicknamePlaceholder')"
                 class="w-56 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
               />
             </div>
 
             <!-- Username -->
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-slate-300">Username</label>
+              <label class="text-xs font-medium text-slate-300">{{
+                $t('settings.global.username')
+              }}</label>
               <p class="text-[10px] text-slate-500">
-                Sent during registration. Only takes effect on next connection.
+                {{ $t('settings.global.usernameDescription') }}
               </p>
               <input
                 v-model="form.username"
                 type="text"
-                placeholder="ghostmesh"
+                :placeholder="$t('settings.global.usernamePlaceholder')"
                 class="w-56 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
               />
             </div>
 
             <!-- Real Name -->
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-slate-300">Real Name</label>
+              <label class="text-xs font-medium text-slate-300">{{
+                $t('settings.global.realname')
+              }}</label>
               <p class="text-[10px] text-slate-500">
-                Visible in WHOIS. Only takes effect on next connection.
+                {{ $t('settings.global.realnameDescription') }}
               </p>
               <input
                 v-model="form.realname"
                 type="text"
-                placeholder="GhostMesh IRC Client"
+                :placeholder="$t('settings.global.realnamePlaceholder')"
                 class="w-full rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
               />
             </div>
 
             <!-- Avatar color -->
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-slate-300">Avatar color</label>
+              <label class="text-xs font-medium text-slate-300">{{
+                $t('settings.global.avatarColor')
+              }}</label>
               <div class="flex gap-2">
                 <button
                   v-for="color in presetColors"
@@ -250,7 +257,7 @@
                   @click="form.avatarColor = color"
                 />
                 <InfoTooltip
-                  text="Auto (from nickname)"
+                  :text="$t('settings.global.avatarColorAuto')"
                   :delay="0"
                 >
                   <button
@@ -271,18 +278,22 @@
             class="flex flex-col gap-4"
           >
             <div class="rounded-lg bg-slate-700/30 px-4 py-3">
-              <p class="text-xs font-medium text-slate-400">NickServ Integration</p>
+              <p class="text-xs font-medium text-slate-400">
+                {{ $t('settings.global.nickservIntegration') }}
+              </p>
               <p class="mt-1 text-[10px] text-slate-500">
-                Automatic identification with NickServ will be available in a future update.
+                {{ $t('settings.global.nickservDescription') }}
               </p>
             </div>
 
             <div class="flex flex-col gap-1 opacity-50">
-              <label class="text-xs font-medium text-slate-300">NickServ password</label>
+              <label class="text-xs font-medium text-slate-300">{{
+                $t('settings.global.nickservPassword')
+              }}</label>
               <input
                 type="password"
                 disabled
-                placeholder="Coming soon"
+                :placeholder="$t('settings.global.nickservComingSoon')"
                 class="w-56 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-500 outline-none"
               />
             </div>
@@ -293,7 +304,7 @@
                 disabled
                 class="rounded border-slate-600"
               />
-              <span class="text-xs text-slate-500">Auto-identify on connect</span>
+              <span class="text-xs text-slate-500">{{ $t('settings.global.autoIdentify') }}</span>
             </label>
           </div>
 
@@ -303,8 +314,7 @@
             class="flex flex-col gap-4 overflow-y-auto"
           >
             <p class="text-[10px] text-slate-500">
-              Configure your own API keys for image hosting services. Your keys are stored locally
-              in your browser and never sent to our servers.
+              {{ $t('settings.global.imageUploads') }}
             </p>
 
             <div
@@ -322,7 +332,7 @@
                     rel="noopener"
                     class="text-[10px] text-slate-400 hover:text-slate-300"
                   >
-                    Create account
+                    {{ $t('settings.global.createAccount') }}
                   </a>
                   <a
                     :href="provider.configUrl"
@@ -330,7 +340,7 @@
                     rel="noopener"
                     class="text-[10px] text-emerald-400 hover:text-emerald-300"
                   >
-                    Get API key
+                    {{ $t('settings.global.getApiKey') }}
                   </a>
                 </div>
               </div>
@@ -341,7 +351,7 @@
               <input
                 :value="form.uploadProviderKeys?.[provider.configKey] || ''"
                 type="text"
-                :placeholder="`Enter your ${provider.configLabel} API key`"
+                :placeholder="$t('settings.global.enterApiKey', { provider: provider.configLabel })"
                 class="w-full rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 font-mono text-xs text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
                 @input="
                   onProviderKeyInput(provider.configKey, ($event.target as HTMLInputElement).value)
@@ -362,25 +372,25 @@
             "
             :title="
               confirmForget
-                ? 'Click again to confirm — this will erase all your settings'
-                : 'Erase all user data and server settings from this browser'
+                ? $t('settings.global.forgetMeConfirmTitle')
+                : $t('settings.global.forgetMeTitle')
             "
             @click="handleForgetMe"
           >
-            {{ confirmForget ? 'Confirm erase' : 'Forget me' }}
+            {{ confirmForget ? $t('common.confirmErase') : $t('settings.global.forgetMe') }}
           </button>
           <div class="flex gap-2">
             <button
               class="rounded-lg px-4 py-1.5 text-xs text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-300"
               @click="close"
             >
-              Cancel
+              {{ $t('common.cancel') }}
             </button>
             <button
               class="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
               @click="save"
             >
-              Save
+              {{ $t('common.save') }}
             </button>
           </div>
         </div>

@@ -22,13 +22,20 @@
 
   /** All joined channels across all servers, excluding current. */
   const destinations = computed(() => {
-    const result: { serverId: string; serverName: string; channel: string; label: string; isDM: boolean }[] = [];
+    const result: {
+      serverId: string;
+      serverName: string;
+      channel: string;
+      label: string;
+      isDM: boolean;
+    }[] = [];
     const multiServer = store.connectedServers.length > 1;
     for (const entry of store.allJoinedChannels) {
       // Skip status channels
       if (entry.channel === '*status') continue;
       // Skip current channel
-      if (entry.serverId === store.selectedServerId && entry.channel === store.selectedChannel) continue;
+      if (entry.serverId === store.selectedServerId && entry.channel === store.selectedChannel)
+        continue;
       result.push({
         serverId: entry.serverId,
         serverName: entry.serverName,
@@ -77,8 +84,10 @@
       class="fixed z-[200] w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
       :style="{ left: `${x}px`, top: `${y}px` }"
     >
-      <div class="border-b border-slate-100 px-3 py-2 text-[10px] font-medium uppercase tracking-wider text-slate-400">
-        Forward to
+      <div
+        class="border-b border-slate-100 px-3 py-2 text-[10px] font-medium uppercase tracking-wider text-slate-400"
+      >
+        {{ $t('forward.forwardTo') }}
       </div>
       <div class="max-h-48 overflow-y-auto py-1">
         <button

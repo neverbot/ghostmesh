@@ -38,8 +38,11 @@
 
 <script setup lang="ts">
   import { computed } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import { useIrcStore } from '@/stores/irc.ts';
   import { useUserSettingsStore } from '@/stores/user-settings.ts';
+
+  const { t } = useI18n();
 
   defineEmits<{
     'open-settings': [];
@@ -55,7 +58,7 @@
     }
     if (store.nickname) return store.nickname;
     const profile = userSettings.getProfile();
-    return profile.nickname || 'Not configured';
+    return profile.nickname || t('user.notConfigured');
   });
 
   const initial = computed(() => {
@@ -81,7 +84,7 @@
 
   const statusText = computed(() => {
     const count = store.activeConnections.length;
-    if (count === 0) return 'Offline';
-    return `Connected to ${count} server${count > 1 ? 's' : ''}`;
+    if (count === 0) return t('user.offline');
+    return t('user.connectedTo', { count }, count);
   });
 </script>

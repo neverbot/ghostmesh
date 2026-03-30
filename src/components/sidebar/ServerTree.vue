@@ -153,7 +153,7 @@
             clip-rule="evenodd"
           />
         </svg>
-        Servers
+        {{ $t('sidebar.servers') }}
       </button>
 
       <div>
@@ -163,7 +163,9 @@
             :key="server.id"
             class="group flex items-center gap-3 rounded-lg transition-all duration-200"
             :class="[
-              serversCollapsed && !store.isConnected(server.id) && !store.connectingServers.includes(server.id)
+              serversCollapsed &&
+              !store.isConnected(server.id) &&
+              !store.connectingServers.includes(server.id)
                 ? 'max-h-0 overflow-hidden py-0 opacity-0'
                 : 'max-h-12 px-3 py-2 opacity-100',
               store.isConnected(server.id)
@@ -222,7 +224,7 @@
             </div>
             <!-- Settings gear -->
             <InfoTooltip
-              text="Server settings"
+              :text="$t('tooltips.serverSettings')"
               :delay="500"
             >
               <button
@@ -246,7 +248,11 @@
             <!-- Disconnect / Clear status -->
             <InfoTooltip
               v-if="store.isConnected(server.id) || store.statusRetainedServers.includes(server.id)"
-              :text="store.isConnected(server.id) ? 'Disconnect from server' : 'Clear status log'"
+              :text="
+                store.isConnected(server.id)
+                  ? $t('tooltips.disconnect')
+                  : $t('tooltips.clearStatusLog')
+              "
               :delay="500"
             >
               <button
@@ -297,7 +303,7 @@
               clip-rule="evenodd"
             />
           </svg>
-          Channels
+          {{ $t('sidebar.channels') }}
         </button>
 
         <!-- Refresh channels -->
@@ -305,10 +311,10 @@
           v-if="store.connectedServers.length > 0"
           :text="
             store.isListLoading
-              ? 'Loading channel list...'
+              ? $t('tooltips.loadingChannels')
               : isWaitingForList
-                ? 'Waiting for server before requesting channels...'
-                : 'Refresh channel list from all servers'
+                ? $t('tooltips.waitingForChannels')
+                : $t('tooltips.refreshChannels')
           "
           :delay="500"
         >
@@ -342,7 +348,7 @@
         <!-- Filter toggle -->
         <InfoTooltip
           v-if="store.connectedServers.length > 0"
-          text="Filter and sort channels"
+          :text="$t('tooltips.filterChannels')"
           :delay="500"
         >
           <button
@@ -382,18 +388,18 @@
               ref="channelFilterInput"
               v-model="store.filterText"
               type="text"
-              placeholder="Search name or topic"
+              :placeholder="$t('sidebar.searchNameOrTopic')"
               class="w-full rounded-md border border-slate-600/50 bg-slate-700/40 px-2 py-1 text-[11px] text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500/50"
             />
 
             <!-- Server filter -->
             <div class="flex items-center gap-1.5">
-              <span class="text-[10px] text-slate-500">Server</span>
+              <span class="text-[10px] text-slate-500">{{ $t('sidebar.server') }}</span>
               <select
                 v-model="store.filterServer"
                 class="flex-1 rounded-md border border-slate-600/50 bg-slate-700/40 px-1.5 py-0.5 text-[11px] text-slate-300 outline-none"
               >
-                <option :value="null">All</option>
+                <option :value="null">{{ $t('sidebar.all') }}</option>
                 <option
                   v-for="s in store.connectedServers"
                   :key="s.id"
@@ -406,7 +412,7 @@
 
             <!-- Min users -->
             <div class="flex items-center gap-1.5">
-              <span class="text-[10px] text-slate-500">Min users</span>
+              <span class="text-[10px] text-slate-500">{{ $t('sidebar.minUsers') }}</span>
               <input
                 v-model.number="store.filterMinUsers"
                 type="number"
@@ -417,13 +423,13 @@
 
             <!-- Sort -->
             <div class="flex items-center gap-1.5">
-              <span class="text-[10px] text-slate-500">Sort by</span>
+              <span class="text-[10px] text-slate-500">{{ $t('sidebar.sortBy') }}</span>
               <select
                 v-model="store.sortBy"
                 class="flex-1 rounded-md border border-slate-600/50 bg-slate-700/40 px-1.5 py-0.5 text-[11px] text-slate-300 outline-none"
               >
-                <option value="users">Users (most first)</option>
-                <option value="name">Name (A-Z)</option>
+                <option value="users">{{ $t('sidebar.sortUsersMost') }}</option>
+                <option value="name">{{ $t('sidebar.sortNameAZ') }}</option>
               </select>
             </div>
 
@@ -432,7 +438,7 @@
               class="self-start text-[10px] text-slate-500 transition-colors hover:text-slate-400"
               @click="resetFilters"
             >
-              Reset filters
+              {{ $t('sidebar.resetFilters') }}
             </button>
           </div>
 
@@ -463,7 +469,7 @@
               >
                 {{
                   entry.channel === '*status'
-                    ? 'status'
+                    ? $t('common.status')
                     : entry.isDM
                       ? entry.channel
                       : entry.channel.replace(/^#/, '')
@@ -505,7 +511,9 @@
                 <!-- Leave button — always rendered for consistent width, invisible for status -->
                 <InfoTooltip
                   v-if="entry.channel !== '*status'"
-                  :text="entry.isDM ? 'Close conversation' : 'Leave channel'"
+                  :text="
+                    entry.isDM ? $t('tooltips.closeConversation') : $t('tooltips.leaveChannel')
+                  "
                   :delay="500"
                 >
                   <button
@@ -538,7 +546,12 @@
             >
               <div class="flex-1 border-t border-slate-700/50" />
               <span class="text-[9px] text-slate-600">
-                {{ store.allAvailableChannels.length }} of {{ store.totalAvailableCount }} available
+                {{
+                  $t('sidebar.available', {
+                    filtered: store.allAvailableChannels.length,
+                    total: store.totalAvailableCount,
+                  })
+                }}
               </span>
               <div class="flex-1 border-t border-slate-700/50" />
             </div>
@@ -576,8 +589,12 @@
               v-if="store.allAvailableChannels.length > config.list.browseLimit"
               class="px-5 py-2 text-center text-[10px] text-slate-600"
             >
-              Showing {{ config.list.browseLimit }} of
-              {{ store.allAvailableChannels.length }} channels. Use filters to narrow results.
+              {{
+                $t('sidebar.showingChannels', {
+                  limit: config.list.browseLimit,
+                  total: store.allAvailableChannels.length,
+                })
+              }}
             </div>
 
             <!-- Empty state -->
@@ -585,7 +602,7 @@
               v-if="store.allJoinedChannels.length === 0 && store.allAvailableChannels.length === 0"
               class="px-3 py-4 text-center text-xs text-slate-500"
             >
-              No channels yet
+              {{ $t('sidebar.noChannelsYet') }}
             </div>
           </div>
 
@@ -597,7 +614,7 @@
             <input
               v-model="joinInput"
               type="text"
-              placeholder="Join #channel"
+              :placeholder="$t('sidebar.joinChannel')"
               class="flex-1 rounded-md border border-slate-600/50 bg-slate-700/30 px-2 py-1 text-[11px] text-slate-400 outline-none placeholder:text-slate-600 focus:border-emerald-500/50"
               @keyup.enter="handleJoin"
             />
@@ -646,7 +663,7 @@
               class="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
               @click="store.dismissConnectionError()"
             >
-              OK
+              {{ $t('common.ok') }}
             </button>
           </div>
         </div>

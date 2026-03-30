@@ -1,10 +1,13 @@
 <script setup lang="ts">
   import { ref, computed, watch, nextTick } from 'vue';
+  import { useI18n } from 'vue-i18n';
   import { useServerSettingsStore } from '@/stores/server-settings.ts';
   import { useIrcStore } from '@/stores/irc.ts';
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import type { ServerSettingsEntry } from '@/stores/server-settings.ts';
+
+  const { t } = useI18n();
 
   const backdrop = ref<HTMLElement | null>(null);
 
@@ -62,10 +65,10 @@
 
   const mircStatus = computed(() => {
     const s = settingsStore.getSettings(props.serverId);
-    if (s.mircFormatting === true) return 'Enabled (manual)';
-    if (s.mircFormatting === false) return 'Disabled (manual)';
-    if (s.mircDetected) return 'Auto-detected: active';
-    return 'Auto-detect (not detected yet)';
+    if (s.mircFormatting === true) return t('settings.server.mircStatusEnabled');
+    if (s.mircFormatting === false) return t('settings.server.mircStatusDisabled');
+    if (s.mircDetected) return t('settings.server.mircStatusAutoDetected');
+    return t('settings.server.mircStatusAutoNotDetected');
   });
 
   function save() {
@@ -138,7 +141,7 @@
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-slate-700 px-5 py-4">
           <div>
-            <h3 class="text-sm font-bold text-white">Server Settings</h3>
+            <h3 class="text-sm font-bold text-white">{{ $t('settings.server.title') }}</h3>
             <p class="text-xs text-slate-500">{{ serverName }}</p>
           </div>
           <button
@@ -184,10 +187,11 @@
           >
             <!-- LIST delay -->
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-slate-300">LIST delay (seconds)</label>
+              <label class="text-xs font-medium text-slate-300">{{
+                $t('settings.server.listDelay')
+              }}</label>
               <p class="text-[10px] text-slate-500">
-                Time to wait after connecting before requesting the channel list. Some servers
-                require a minimum wait.
+                {{ $t('settings.server.listDelayDescription') }}
               </p>
               <input
                 v-model.number="form.listDelay"
@@ -201,10 +205,10 @@
             <!-- LIST refresh interval -->
             <div class="flex flex-col gap-1">
               <label class="text-xs font-medium text-slate-300">
-                LIST refresh interval (seconds)
+                {{ $t('settings.server.listRefreshInterval') }}
               </label>
               <p class="text-[10px] text-slate-500">
-                How often to re-request the channel list. Set to 0 to disable.
+                {{ $t('settings.server.listRefreshDescription') }}
               </p>
               <input
                 v-model.number="form.listRefreshInterval"
@@ -224,11 +228,10 @@
                   type="checkbox"
                   class="rounded border-slate-600"
                 />
-                Send keepalive PING
+                {{ $t('settings.server.keepalivePing') }}
               </label>
               <p class="text-[10px] text-slate-500">
-                Proactively ping the server to detect dead connections. Recommended for background
-                tabs.
+                {{ $t('settings.server.keepaliveDescription') }}
               </p>
             </div>
 
@@ -238,9 +241,11 @@
               class="flex flex-col gap-1"
             >
               <label class="text-xs font-medium text-slate-300">
-                Keepalive interval (seconds)
+                {{ $t('settings.server.keepaliveInterval') }}
               </label>
-              <p class="text-[10px] text-slate-500">Seconds of inactivity before sending a PING.</p>
+              <p class="text-[10px] text-slate-500">
+                {{ $t('settings.server.keepaliveIntervalDescription') }}
+              </p>
               <input
                 v-model.number="form.keepaliveInterval"
                 type="number"
@@ -258,10 +263,10 @@
                   type="checkbox"
                   class="rounded border-slate-600"
                 />
-                Auto-reconnect on disconnect
+                {{ $t('settings.server.autoReconnect') }}
               </label>
               <p class="text-[10px] text-slate-500">
-                Automatically reconnect with exponential backoff (up to 5 attempts).
+                {{ $t('settings.server.autoReconnectDescription') }}
               </p>
             </div>
           </div>
@@ -272,39 +277,45 @@
             class="flex flex-col gap-4"
           >
             <p class="text-[10px] text-slate-500">
-              Override identity for this server. Leave fields empty to use your global settings.
+              {{ $t('settings.server.overrideIdentity') }}
             </p>
 
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-slate-300">Nickname</label>
+              <label class="text-xs font-medium text-slate-300">{{
+                $t('settings.server.nickname')
+              }}</label>
               <input
                 v-model="form.nickname"
                 type="text"
-                placeholder="(use global)"
+                :placeholder="$t('settings.server.useGlobal')"
                 class="w-48 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
               />
             </div>
 
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-slate-300">Username</label>
-              <p class="text-[10px] text-slate-500">Only takes effect on next connection.</p>
+              <label class="text-xs font-medium text-slate-300">{{
+                $t('settings.server.username')
+              }}</label>
+              <p class="text-[10px] text-slate-500">{{ $t('settings.server.usernameNote') }}</p>
               <input
                 v-model="form.username"
                 type="text"
-                placeholder="(use global)"
+                :placeholder="$t('settings.server.useGlobal')"
                 class="w-48 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
               />
             </div>
 
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-slate-300">Real name</label>
+              <label class="text-xs font-medium text-slate-300">{{
+                $t('settings.server.realname')
+              }}</label>
               <p class="text-[10px] text-slate-500">
-                Visible in WHOIS. Only takes effect on next connection.
+                {{ $t('settings.server.realnameNote') }}
               </p>
               <input
                 v-model="form.realname"
                 type="text"
-                placeholder="(use global)"
+                :placeholder="$t('settings.server.useGlobal')"
                 class="w-full rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500"
               />
             </div>
@@ -316,33 +327,40 @@
             class="flex flex-col gap-4"
           >
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-slate-300">mIRC formatting</label>
+              <label class="text-xs font-medium text-slate-300">{{
+                $t('settings.server.mircFormatting')
+              }}</label>
               <p class="text-[10px] text-slate-500">
-                mIRC formatting uses control characters for bold, italic, colors, etc. When set to
-                Auto, formatting will be enabled if the server sends formatted content.
+                {{ $t('settings.server.mircDescription') }}
               </p>
-              <p class="mt-1 text-[10px] text-emerald-500">Status: {{ mircStatus }}</p>
+              <p class="mt-1 text-[10px] text-emerald-500">
+                {{ $t('settings.server.mircStatusLabel', { status: mircStatus }) }}
+              </p>
               <select
                 v-model="form.mircFormatting"
                 class="mt-1 w-40 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-emerald-500"
               >
-                <option :value="null">Auto-detect</option>
-                <option :value="true">Always enabled</option>
-                <option :value="false">Always disabled</option>
+                <option :value="null">{{ $t('settings.server.mircAutoDetect') }}</option>
+                <option :value="true">{{ $t('settings.server.mircAlwaysEnabled') }}</option>
+                <option :value="false">{{ $t('settings.server.mircAlwaysDisabled') }}</option>
               </select>
             </div>
 
             <div class="rounded-lg bg-slate-700/30 px-3 py-2">
-              <p class="text-[10px] font-medium text-slate-400">Supported</p>
+              <p class="text-[10px] font-medium text-slate-400">
+                {{ $t('settings.server.mircSupported') }}
+              </p>
               <ul class="mt-1 list-inside list-disc text-[10px] text-slate-500">
-                <li>Bold, italic, underline, strikethrough, monospace</li>
-                <li>Foreground and background colors (16 standard + 83 extended)</li>
-                <li>Reverse video (swap fg/bg)</li>
-                <li>Reset formatting</li>
+                <li>{{ $t('settings.server.mircSupportedList1') }}</li>
+                <li>{{ $t('settings.server.mircSupportedList2') }}</li>
+                <li>{{ $t('settings.server.mircSupportedList3') }}</li>
+                <li>{{ $t('settings.server.mircSupportedList4') }}</li>
               </ul>
-              <p class="mt-2 text-[10px] font-medium text-slate-400">Not yet supported</p>
+              <p class="mt-2 text-[10px] font-medium text-slate-400">
+                {{ $t('settings.server.mircNotSupported') }}
+              </p>
               <ul class="mt-1 list-inside list-disc text-[10px] text-slate-500">
-                <li>Hex color codes (\x04RRGGBB)</li>
+                <li>{{ $t('settings.server.mircNotSupportedList1') }}</li>
               </ul>
             </div>
           </div>
@@ -352,34 +370,36 @@
             class="flex flex-col gap-4"
           >
             <p class="text-[10px] text-slate-500">
-              User restrictions on this server. Entries are automatically removed after 24 hours.
+              {{ $t('settings.server.userRestrictions') }}
             </p>
 
             <!-- Hidden previews (first) -->
             <div class="flex flex-col gap-1">
               <div class="flex items-center justify-between pr-3">
-                <label class="text-xs font-medium text-slate-300">Hidden previews</label>
+                <label class="text-xs font-medium text-slate-300">{{
+                  $t('settings.server.hiddenPreviews')
+                }}</label>
                 <InfoTooltip
                   v-if="userPrefs.hiddenPreviewsForServer(serverId).length > 0"
-                  text="Restore all previews"
+                  :text="$t('tooltips.restorePreviews')"
                   :delay="300"
                 >
                   <button
                     class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
                     @click="userPrefs.clearHiddenPreviews(serverId)"
                   >
-                    Remove all
+                    {{ $t('common.removeAll') }}
                   </button>
                 </InfoTooltip>
               </div>
               <p class="text-[10px] text-slate-500">
-                Messages from these users show links but no image previews.
+                {{ $t('settings.server.hiddenPreviewsDescription') }}
               </p>
               <div
                 v-if="userPrefs.hiddenPreviewsForServer(serverId).length === 0"
                 class="text-[10px] italic text-slate-500"
               >
-                No users with hidden previews
+                {{ $t('settings.server.noHiddenPreviews') }}
               </div>
               <div class="flex max-h-32 flex-col gap-1 overflow-y-auto">
                 <div
@@ -392,7 +412,7 @@
                     class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
                     @click="userPrefs.togglePreviewHidden(serverId, entry.nick)"
                   >
-                    Remove
+                    {{ $t('common.remove') }}
                   </button>
                 </div>
               </div>
@@ -401,28 +421,30 @@
             <!-- Blocked users (second) -->
             <div class="flex flex-col gap-1">
               <div class="flex items-center justify-between pr-3">
-                <label class="text-xs font-medium text-slate-300">Blocked users</label>
+                <label class="text-xs font-medium text-slate-300">{{
+                  $t('settings.server.blockedUsers')
+                }}</label>
                 <InfoTooltip
                   v-if="userPrefs.blockedUsersForServer(serverId).length > 0"
-                  text="Unblock all users"
+                  :text="$t('tooltips.unblockAll')"
                   :delay="300"
                 >
                   <button
                     class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
                     @click="userPrefs.clearBlockedUsers(serverId)"
                   >
-                    Remove all
+                    {{ $t('common.removeAll') }}
                   </button>
                 </InfoTooltip>
               </div>
               <p class="text-[10px] text-slate-500">
-                Messages from blocked users are hidden and DM attempts are ignored.
+                {{ $t('settings.server.blockedUsersDescription') }}
               </p>
               <div
                 v-if="userPrefs.blockedUsersForServer(serverId).length === 0"
                 class="text-[10px] italic text-slate-500"
               >
-                No users blocked
+                {{ $t('settings.server.noBlockedUsers') }}
               </div>
               <div class="flex max-h-32 flex-col gap-1 overflow-y-auto">
                 <div
@@ -435,7 +457,7 @@
                     class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
                     @click="userPrefs.toggleUserBlocked(serverId, entry.nick)"
                   >
-                    Unblock
+                    {{ $t('common.unblock') }}
                   </button>
                 </div>
               </div>
@@ -448,8 +470,7 @@
             class="flex flex-col gap-4"
           >
             <p class="text-[10px] text-slate-500">
-              Messages containing any of these texts will be hidden in public channels.
-              Case-insensitive substring match.
+              {{ $t('settings.server.filteredMessages') }}
             </p>
 
             <!-- Add new filter -->
@@ -457,7 +478,7 @@
               <input
                 v-model="newFilter"
                 type="text"
-                placeholder="Text to filter..."
+                :placeholder="$t('settings.server.textToFilter')"
                 class="flex-1 rounded-lg border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-xs text-slate-300 outline-none placeholder:text-slate-500 focus:border-emerald-500/50"
                 @keyup.enter="addFilter"
               />
@@ -466,7 +487,7 @@
                 :disabled="!newFilter.trim()"
                 @click="addFilter"
               >
-                Add
+                {{ $t('common.add') }}
               </button>
             </div>
 
@@ -482,14 +503,14 @@
                   class="text-[10px] text-slate-500 transition-colors hover:text-red-400"
                   @click="removeFilter(idx)"
                 >
-                  Remove
+                  {{ $t('common.remove') }}
                 </button>
               </div>
               <p
                 v-if="!form.filteredMessages?.length"
                 class="py-2 text-center text-[10px] italic text-slate-600"
               >
-                No filters configured
+                {{ $t('settings.server.noFilters') }}
               </p>
             </div>
           </div>
@@ -506,25 +527,27 @@
             "
             :title="
               confirmServerForget
-                ? 'Click again to confirm — this will erase user identity for this server'
-                : 'Clear nickname, username and realname overrides for this server'
+                ? $t('settings.server.forgetServerConfirmTitle')
+                : $t('settings.server.forgetServerTitle')
             "
             @click="handleServerForgetMe"
           >
-            {{ confirmServerForget ? 'Confirm erase' : 'Forget me on this server' }}
+            {{
+              confirmServerForget ? $t('common.confirmErase') : $t('settings.server.forgetServer')
+            }}
           </button>
           <div class="flex gap-2">
             <button
               class="rounded-lg px-4 py-1.5 text-xs text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-300"
               @click="close"
             >
-              Cancel
+              {{ $t('common.cancel') }}
             </button>
             <button
               class="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
               @click="save"
             >
-              Save
+              {{ $t('common.save') }}
             </button>
           </div>
         </div>
