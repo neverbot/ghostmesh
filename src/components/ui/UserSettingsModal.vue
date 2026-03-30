@@ -27,7 +27,7 @@
   const serverSettings = useServerSettingsStore();
   const userPrefs = useUserPrefsStore();
   const ircStore = useIrcStore();
-  const activeTab = ref('general');
+  const activeTab = ref('profile');
   const confirmForget = ref(false);
 
   const presetColors = [
@@ -150,7 +150,7 @@
         <!-- Tabs -->
         <div class="flex border-b border-slate-700 px-5">
           <button
-            v-for="tab in ['general', 'profile', 'identity', 'image uploads']"
+            v-for="tab in ['profile', 'general', 'identity', 'image uploads']"
             :key="tab"
             class="border-b-2 px-3 py-2.5 text-xs font-medium capitalize transition-colors"
             :class="
