@@ -65,12 +65,6 @@
     }
   }
 
-  function onMove(e: MouseEvent) {
-    if (!currentTarget) return;
-    x.value = e.clientX;
-    y.value = e.clientY;
-  }
-
   function onLeave(e: Event) {
     const el = findTooltipEl(e);
     if (el && el === currentTarget) {
@@ -90,13 +84,11 @@
   onMounted(() => {
     document.addEventListener('mouseenter', onEnter, true);
     document.addEventListener('mouseleave', onLeave, true);
-    document.addEventListener('mousemove', onMove, { passive: true });
   });
 
   onUnmounted(() => {
     document.removeEventListener('mouseenter', onEnter, true);
     document.removeEventListener('mouseleave', onLeave, true);
-    document.removeEventListener('mousemove', onMove);
     hide();
   });
 </script>
