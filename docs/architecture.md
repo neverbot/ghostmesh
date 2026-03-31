@@ -8,7 +8,7 @@ Vue 3 + Pinia IRC client with full TypeScript, Tailwind CSS v4, vue-i18n, and We
 - **Stores** (Pinia): Pure state, getters, mutations — no business logic
 - **Components**: Vue SFCs with `<script setup lang="ts">`, read from stores, call store actions
 
-**19 Vue components, 4 Pinia stores, 6+ services.**
+**21 Vue components, 4 Pinia stores, 6+ services.**
 
 ---
 
@@ -20,7 +20,9 @@ App.vue
 └── AppLayout.vue
     ├── SidebarLeft.vue
     │   ├── UserProfile.vue
-    │   ├── ServerTree.vue
+    │   ├── ServerTree.vue (wrapper)
+    │   │   ├── ServerList.vue
+    │   │   ├── ChannelList.vue
     │   │   └── ServerSettingsModal.vue
     │   └── UserSettingsModal.vue
     ├── ChatPanel.vue
@@ -108,20 +110,47 @@ App.vue
 
 ---
 
-### ServerTree.vue
+### ServerTree.vue (wrapper)
 
-|                   |                                                                                                                                                                                                                                                                                              |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Path**          | `src/components/sidebar/ServerTree.vue` (682 lines)                                                                                                                                                                                                                                          |
-| **Purpose**       | Server list, joined channels, available channel browser, join input                                                                                                                                                                                                                          |
-| **Stores**        | `useIrcStore()`                                                                                                                                                                                                                                                                              |
-| **Refs**          | `badgeCache`, `serversCollapsed`, `channelsCollapsed`, `showFilters`, `channelFilterInput`, `joinInput`, `settingsModalOpen`, `settingsServerId`, `settingsServerName`, `settingsInitialTab`                                                                                                 |
-| **Computed**      | `isWaitingForList`, `sortedServers`, `visibleServers`, `limitedAvailable()`                                                                                                                                                                                                                  |
-| **Watchers**      | `connectedServers.length` (auto-collapse), `openSettingsRequest` (external settings open)                                                                                                                                                                                                    |
-| **Timers**        | `setInterval(updateBadgeCache, 3000)` — throttled badge snapshot, cleared `onUnmounted`                                                                                                                                                                                                      |
-| **Observers**     | —                                                                                                                                                                                                                                                                                            |
-| **Key functions** | `updateBadgeCache()` scans all joined channels, only triggers if changed. `getBadge()`, `openSettings()`, `handleJoin()`, `serverAbbr()`, `resetFilters()`                                                                                                                                   |
-| **Template**      | Collapsible SERVERS section (status dot, name, host, settings gear, disconnect). Collapsible CHANNELS section (filter panel, joined list with badges + leave button, available list capped at `browseLimit`). Join input at bottom. Tooltips via `data-tooltip` attributes. ServerSettingsModal |
+| | |
+|---|---|
+| **Path** | `src/components/sidebar/ServerTree.vue` (~70 lines) |
+| **Purpose** | Thin wrapper composing ServerList + ChannelList + settings modal + error popup |
+| **Stores** | `useIrcStore()` |
+| **Refs** | `settingsModalOpen`, `settingsServerId`, `settingsServerName`, `settingsInitialTab` |
+| **Watchers** | `openSettingsRequest` (external settings open) |
+| **Key functions** | `openSettings()` |
+| **Template** | ServerList, divider, ChannelList, ServerSettingsModal, connection error Teleport |
+
+---
+
+### ServerList.vue
+
+| | |
+|---|---|
+| **Path** | `src/components/sidebar/ServerList.vue` (~170 lines) |
+| **Purpose** | Collapsible server list with connect/disconnect, settings gear |
+| **Stores** | `useIrcStore()` |
+| **Refs** | `collapsed` |
+| **Computed** | `sortedServers` (connected first) |
+| **Watchers** | `connectedServers.length` (auto-collapse on connect, expand when all disconnect) |
+| **Emits** | `open-settings` |
+| **Template** | Collapsible list with status dot/spinner, server name + host, settings gear, disconnect/clear button. CSS transition `max-h-0`/`max-h-12` for collapse animation |
+
+---
+
+### ChannelList.vue
+
+| | |
+|---|---|
+| **Path** | `src/components/sidebar/ChannelList.vue` (~350 lines) |
+| **Purpose** | Joined channels, available channel browser, filters, join input |
+| **Stores** | `useIrcStore()` |
+| **Refs** | `collapsed`, `showFilters`, `channelFilterInput`, `joinInput`, `badgeCache` |
+| **Computed** | `isWaitingForList` |
+| **Timers** | `setInterval(updateBadgeCache, 3000)` — throttled badge snapshot, cleared `onUnmounted` |
+| **Key functions** | `updateBadgeCache()`, `getBadge()`, `handleJoin()`, `serverAbbr()`, `resetFilters()`, `limitedAvailable()` |
+| **Template** | Collapsible with spinner/filter buttons. Filter panel (text, server, min users, sort). Joined channels (badges, user count, server badge, leave). Separator. Available channels (capped at `browseLimit`). Join input at bottom |
 
 ---
 
@@ -575,7 +604,7 @@ All timers tracked in Maps, cleaned on `cleanupConnection()`.
 
 | Type                     | Location                                             | Lifecycle             |
 | ------------------------ | ---------------------------------------------------- | --------------------- |
-| `setInterval` 3s         | ServerTree (badge cache)                             | `onUnmounted` cleanup |
+| `setInterval` 3s         | ChannelList (badge cache)                            | `onUnmounted` cleanup |
 | `setInterval` 5min       | image-cache.ts (cleanup)                             | **Never stopped**     |
 | `setInterval` per server | irc.service.ts (keepalive, LIST refresh)             | Cleanup on disconnect |
 | `setTimeout` 50ms        | MessageList (scroll debounce)                        | Self-clearing         |
