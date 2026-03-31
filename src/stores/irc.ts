@@ -99,6 +99,8 @@ const useIrcStore = defineStore('irc', () => {
    * Messages with timestamp > this value are considered unread.
    */
   const lastReadTimestamp: Ref<Record<string, number>> = ref({});
+  /** Cached unread message counts per channel key. Incremented on message arrival, reset on markRead. */
+  const unreadCounts: Ref<Record<string, number>> = ref({});
 
   const channels: Ref<Record<string, string[]>> = ref({});
   /**
@@ -469,6 +471,7 @@ const useIrcStore = defineStore('irc', () => {
       }
       delete topics.value[key];
       delete lastReadTimestamp.value[key];
+      delete unreadCounts.value[key];
     }
     if (selectedServerId.value === serverId && selectedChannel.value === channel) {
       const remaining: string[] = channels.value[serverId] || [];
@@ -508,23 +511,18 @@ const useIrcStore = defineStore('irc', () => {
       arr.splice(0, arr.length - max);
     }
     triggerRef(messages);
+    // Increment unread counter for non-active channels
+    if (type === 'message') {
+      const lastRead: number = lastReadTimestamp.value[key] || 0;
+      if (Date.now() > lastRead) {
+        unreadCounts.value[key] = (unreadCounts.value[key] || 0) + 1;
+      }
+    }
   }
 
-  /**
-   * Get the unread message count for a channel.
-   * Only counts user messages (type === 'message') with timestamp after last read.
-   */
+  /** Get the cached unread message count for a channel. O(1) lookup. */
   function unreadCount(serverId: string, channel: string): number {
-    const key: string = `${serverId}:${channel}`;
-    const msgs: ChatMessage[] = messages.value[key] || [];
-    const lastRead: number = lastReadTimestamp.value[key] || 0;
-    let count: number = 0;
-    for (let i = msgs.length - 1; i >= 0; i--) {
-      const msg: ChatMessage = msgs[i];
-      if (msg.timestamp.getTime() <= lastRead) break;
-      if (msg.type === 'message') count++;
-    }
-    return count;
+    return unreadCounts.value[`${serverId}:${channel}`] || 0;
   }
 
   /**
@@ -536,6 +534,7 @@ const useIrcStore = defineStore('irc', () => {
     const current: number = lastReadTimestamp.value[key] || 0;
     if (timestamp > current) {
       lastReadTimestamp.value[key] = timestamp;
+      unreadCounts.value[key] = 0;
     }
   }
 
