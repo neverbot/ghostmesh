@@ -107,7 +107,8 @@ const useIrcStore = defineStore('irc', () => {
    * after mutations, or by replacing the whole value.
    */
   const availableChannels: ShallowRef<Record<string, AvailableChannel[]>> = shallowRef({});
-  const messages: Ref<Record<string, ChatMessage[]>> = ref({});
+  /** Message history per channel. shallowRef — avoids deep reactivity on thousands of messages. */
+  const messages: ShallowRef<Record<string, ChatMessage[]>> = shallowRef({});
   /**
    * User lists per channel. shallowRef — channels like #linux have 2000+ users.
    */
@@ -366,6 +367,7 @@ const useIrcStore = defineStore('irc', () => {
     }
     // Keep only *status in the channel list
     channels.value[serverId] = ['*status'];
+    triggerRef(messages);
     users.value = { ...users.value };
     delete availableChannels.value[serverId];
     triggerRef(availableChannels);
@@ -392,6 +394,7 @@ const useIrcStore = defineStore('irc', () => {
     statusRetainedServers.value = statusRetainedServers.value.filter((id) => id !== serverId);
     const key: string = `${serverId}:*status`;
     delete messages.value[key];
+    triggerRef(messages);
     delete channels.value[serverId];
     if (selectedServerId.value === serverId) {
       const remaining: string[] = [...activeConnections.value, ...statusRetainedServers.value];
@@ -438,7 +441,10 @@ const useIrcStore = defineStore('irc', () => {
       channels.value[serverId].push(channel);
     }
     const key: string = `${serverId}:${channel}`;
-    if (!messages.value[key]) messages.value[key] = [];
+    if (!messages.value[key]) {
+      messages.value[key] = [];
+      triggerRef(messages);
+    }
     if (!users.value[key]) users.value[key] = [];
   }
 
@@ -455,6 +461,7 @@ const useIrcStore = defineStore('irc', () => {
     if (shouldClear) {
       const key = `${serverId}:${channel}`;
       delete messages.value[key];
+      triggerRef(messages);
       const usersData = users.value;
       if (usersData[key]) {
         delete usersData[key];
@@ -500,6 +507,7 @@ const useIrcStore = defineStore('irc', () => {
     if (arr.length > max) {
       arr.splice(0, arr.length - max);
     }
+    triggerRef(messages);
   }
 
   /**
@@ -561,6 +569,7 @@ const useIrcStore = defineStore('irc', () => {
     for (let i = list.length - 1; i >= 0; i--) {
       if (list[i].nick === nickname.value && list[i].type === 'message') {
         list[i].warning = warningText;
+        triggerRef(messages);
         break;
       }
     }
@@ -961,6 +970,7 @@ const useIrcStore = defineStore('irc', () => {
     const key: string = `${serverId}:${channel}`;
     if (messages.value[key]) {
       messages.value[key] = [];
+      triggerRef(messages);
     }
   }
 
