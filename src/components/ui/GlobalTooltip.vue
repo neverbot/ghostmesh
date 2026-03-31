@@ -113,7 +113,7 @@
     >
       <div
         v-if="visible"
-        class="pointer-events-none fixed z-[100] rounded-md bg-surface-tooltip px-2.5 py-1.5 text-xs leading-relaxed text-text-tooltip shadow-lg [text-wrap:balance]"
+        class="pointer-events-none fixed z-[200] rounded-md bg-surface-tooltip px-2.5 py-1.5 text-xs leading-relaxed text-text-tooltip shadow-lg [text-wrap:balance]"
         :style="getStyle()"
       >
         {{ text }}
