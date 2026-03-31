@@ -208,7 +208,9 @@
           >
             <!-- Language -->
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-slate-300">{{ $t('settings.global.language') }}</label>
+              <label class="text-xs font-medium text-slate-300">{{
+                $t('settings.global.language')
+              }}</label>
               <select
                 v-model="form.locale"
                 class="w-40 rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-emerald-500"

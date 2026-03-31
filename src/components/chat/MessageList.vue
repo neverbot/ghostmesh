@@ -7,7 +7,7 @@
   import ForwardMenu from './ForwardMenu.vue';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import config from '@/config.ts';
-  import type { ChatMessage, UserClickPayload } from '@/types.ts';
+  import type { ChatMessage, UserClickPayload, UserMode } from '@/types.ts';
 
   /** A group of consecutive messages from the same user, or a single system message. */
   interface MessageGroup {
@@ -56,6 +56,7 @@
   // Context menu state
   const menuOpen = ref(false);
   const menuNick = ref('');
+  const menuMode = ref<UserMode>('');
   const menuServerId = ref('');
   const menuX = ref(0);
   const menuY = ref(0);
@@ -94,6 +95,7 @@
    */
   function onUserClick(payload: UserClickPayload) {
     menuNick.value = payload.nick;
+    menuMode.value = payload.mode || '';
     menuServerId.value = payload.serverId;
     menuX.value = payload.x;
     menuY.value = payload.y;
@@ -558,6 +560,7 @@
 
   <UserContextMenu
     :nick="menuNick"
+    :mode="menuMode"
     :server-id="menuServerId"
     :x="menuX"
     :y="menuY"

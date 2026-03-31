@@ -3,6 +3,27 @@
   import { useIrcStore } from '@/stores/irc.ts';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
   import InfoTooltip from '@/components/ui/InfoTooltip.vue';
+  import type { ChannelUser, UserMode } from '@/types.ts';
+
+  /** IRC prefix symbol per mode. */
+  const MODE_PREFIX: Record<UserMode, string> = {
+    owner: '~',
+    admin: '&',
+    op: '@',
+    halfop: '%',
+    voice: '+',
+    '': '',
+  };
+
+  /** Tailwind color class for the mode dot. */
+  const MODE_DOT_COLOR: Record<UserMode, string> = {
+    owner: 'bg-purple-500',
+    admin: 'bg-red-500',
+    op: 'bg-green-500',
+    halfop: 'bg-yellow-500',
+    voice: 'bg-blue-500',
+    '': '',
+  };
 
   const store = useIrcStore();
 
@@ -14,6 +35,7 @@
 
   const menuOpen = ref(false);
   const menuNick = ref('');
+  const menuMode = ref<UserMode>('');
   const menuX = ref(0);
   const menuY = ref(0);
 
@@ -25,16 +47,17 @@
   const filteredUsers = computed(() => {
     const query = filterText.value.trim().toLowerCase();
     if (!query) return store.currentUsers;
-    return store.currentUsers.filter((u) => u.toLowerCase().includes(query));
+    return store.currentUsers.filter((u: ChannelUser) => u.nick.toLowerCase().includes(query));
   });
 
   /**
    * Open context menu on a user.
-   * @param {string} nick
+   * @param {ChannelUser} user
    * @param {MouseEvent} e
    */
-  function onUserClick(nick: string, e: MouseEvent) {
-    menuNick.value = nick;
+  function onUserClick(user: ChannelUser, e: MouseEvent) {
+    menuNick.value = user.nick;
+    menuMode.value = user.mode;
     menuX.value = e.clientX;
     menuY.value = e.clientY;
     menuOpen.value = true;
@@ -108,22 +131,34 @@
     >
       <div
         v-for="user in filteredUsers"
-        :key="user"
+        :key="user.nick"
         class="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors"
-        :class="isOwnNick(user) ? 'bg-emerald-50 hover:bg-emerald-100' : 'hover:bg-slate-100'"
+        :class="isOwnNick(user.nick) ? 'bg-emerald-50 hover:bg-emerald-100' : 'hover:bg-slate-100'"
         @click="onUserClick(user, $event)"
       >
-        <div
-          class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold"
-          :class="isOwnNick(user) ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'"
-        >
-          {{ user[0].toUpperCase() }}
+        <div class="relative flex h-7 w-7 shrink-0 items-center justify-center">
+          <div
+            class="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold"
+            :class="
+              isOwnNick(user.nick) ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-500'
+            "
+          >
+            {{ user.nick[0].toUpperCase() }}
+          </div>
+          <span
+            v-if="user.mode"
+            class="absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-white"
+            :class="MODE_DOT_COLOR[user.mode]"
+          />
         </div>
         <span
           class="truncate text-sm"
-          :class="isOwnNick(user) ? 'font-medium text-emerald-700' : 'text-slate-600'"
+          :class="isOwnNick(user.nick) ? 'font-medium text-emerald-700' : 'text-slate-600'"
         >
-          {{ user }}
+          <span
+            v-if="MODE_PREFIX[user.mode]"
+            class="text-slate-400"
+          >{{ MODE_PREFIX[user.mode] }}</span>{{ user.nick }}
         </span>
       </div>
 
@@ -151,6 +186,7 @@
 
   <UserContextMenu
     :nick="menuNick"
+    :mode="menuMode"
     :server-id="store.selectedServerId || ''"
     :x="menuX"
     :y="menuY"

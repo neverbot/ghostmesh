@@ -2,10 +2,32 @@
   import { ref, computed, watch, nextTick } from 'vue';
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
   import { useIrcStore } from '@/stores/irc.ts';
+  import type { UserMode } from '@/types.ts';
+
+  /** Display label per mode. */
+  const MODE_LABEL: Record<UserMode, string> = {
+    owner: 'Owner',
+    admin: 'Admin',
+    op: 'Operator',
+    halfop: 'Half-Op',
+    voice: 'Voice',
+    '': '',
+  };
+
+  /** Badge color per mode. */
+  const MODE_BADGE_COLOR: Record<UserMode, string> = {
+    owner: 'bg-purple-500/20 text-purple-400',
+    admin: 'bg-red-500/20 text-red-400',
+    op: 'bg-green-500/20 text-green-400',
+    halfop: 'bg-yellow-500/20 text-yellow-400',
+    voice: 'bg-blue-500/20 text-blue-400',
+    '': '',
+  };
 
   const props = withDefaults(
     defineProps<{
       nick?: string;
+      mode?: UserMode;
       serverId?: string;
       x?: number;
       y?: number;
@@ -13,6 +35,7 @@
     }>(),
     {
       nick: '',
+      mode: '',
       serverId: '',
       x: 0,
       y: 0,
@@ -98,6 +121,13 @@
         <!-- Header -->
         <div class="border-b border-slate-700 px-3 py-2.5">
           <span class="text-xs font-bold text-white">{{ nick }}</span>
+          <span
+            v-if="mode"
+            class="ml-1.5 inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold"
+            :class="MODE_BADGE_COLOR[mode]"
+          >
+            {{ MODE_LABEL[mode] }}
+          </span>
         </div>
 
         <div class="py-1">

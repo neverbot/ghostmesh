@@ -4,6 +4,17 @@
  * Domain-specific types live in their primary files.
  */
 
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+/** IRC user mode prefix. */
+type UserMode = 'owner' | 'admin' | 'op' | 'halfop' | 'voice' | '';
+
+/** A user in a channel with their mode prefix. */
+interface ChannelUser {
+  nick: string;
+  mode: UserMode;
+}
+
 // ─── Channels ────────────────────────────────────────────────────────────────
 
 /** A channel discovered via the IRC LIST command. */
@@ -81,6 +92,8 @@ interface UserClickPayload {
   x: number;
   /** Mouse Y coordinate for positioning the context menu. */
   y: number;
+  /** User's channel mode, if known. */
+  mode?: UserMode;
 }
 
 // ─── Store API (shared to break circular deps between store and service) ─────
@@ -128,9 +141,9 @@ interface IrcStoreApi {
   /** Set the topic for a channel. */
   setTopic(serverId: string, channel: string, topic: string): void;
   /** Add a single user to a channel's member list. */
-  addUser(serverId: string, channel: string, nick: string): void;
+  addUser(serverId: string, channel: string, nick: string, mode?: UserMode): void;
   /** Add multiple users to a channel's member list (batch from NAMES). */
-  addUsers(serverId: string, channel: string, names: string[]): void;
+  addUsers(serverId: string, channel: string, users: ChannelUser[]): void;
   /** Sort all user lists alphabetically after a NAMES batch completes. */
   finalizeUsers(): void;
   /** Remove a user from a channel's member list. */
@@ -155,9 +168,11 @@ interface IrcStoreApi {
 
 export type {
   AvailableChannel,
+  ChannelUser,
   ChatMessage,
   IrcStoreApi,
   MessageType,
   ServerConfig,
   UserClickPayload,
+  UserMode,
 };

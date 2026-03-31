@@ -48,7 +48,9 @@
   const isWaitingForList = computed(
     () =>
       store.connectingServers.length > 0 ||
-      (store.connectedServers.length > 0 && !store.isListLoading && store.totalAvailableCount === 0),
+      (store.connectedServers.length > 0 &&
+        !store.isListLoading &&
+        store.totalAvailableCount === 0),
   );
   /** Servers sorted with connected ones first. */
   const sortedServers = computed(() =>
@@ -170,8 +172,8 @@
             class="group flex items-center gap-3 rounded-lg transition-all duration-200"
             :class="[
               serversCollapsed &&
-              !store.isConnected(server.id) &&
-              !store.connectingServers.includes(server.id)
+                !store.isConnected(server.id) &&
+                !store.connectingServers.includes(server.id)
                 ? 'max-h-0 overflow-hidden py-0 opacity-0'
                 : 'max-h-12 px-3 py-2 opacity-100',
               store.isConnected(server.id)

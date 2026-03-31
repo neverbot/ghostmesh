@@ -1,7 +1,13 @@
 import EventEmitter from '@/utils/event-emitter.ts';
 import { hasFormatting } from '@/utils/mirc-format.ts';
 import config from '@/config.ts';
-import type { IrcStoreApi, AvailableChannel, ServerConfig } from '@/types.ts';
+import type {
+  IrcStoreApi,
+  AvailableChannel,
+  ServerConfig,
+  ChannelUser,
+  UserMode,
+} from '@/types.ts';
 import type { ServerSettingsEntry } from '@/stores/server-settings.ts';
 
 // ─── IRC protocol types ──────────────────────────────────────────────────────
@@ -818,13 +824,26 @@ class IRCService extends EventEmitter {
       }
 
       case '353': {
-        // RPL_NAMREPLY
+        // RPL_NAMREPLY — parse user mode prefixes
         const channel: string = params[2];
-        const names: string[] = (trailing || '')
+        const users: ChannelUser[] = (trailing || '')
           .split(' ')
-          .map((n: string) => n.replace(/^[@+%~&]/, ''))
-          .filter(Boolean);
-        s.addUsers(serverId, channel, names);
+          .filter(Boolean)
+          .map((n: string): ChannelUser => {
+            const prefixMap: Record<string, UserMode> = {
+              '~': 'owner',
+              '&': 'admin',
+              '@': 'op',
+              '%': 'halfop',
+              '+': 'voice',
+            };
+            const first = n[0];
+            if (prefixMap[first]) {
+              return { nick: n.slice(1), mode: prefixMap[first] };
+            }
+            return { nick: n, mode: '' };
+          });
+        s.addUsers(serverId, channel, users);
         break;
       }
 
@@ -836,9 +855,13 @@ class IRCService extends EventEmitter {
         break;
 
       case '323': // RPL_LISTEND
-      case '263': { // RPL_TRYAGAIN — LIST was rate-limited
+      case '263': {
+        // RPL_TRYAGAIN — LIST was rate-limited
         const lt2 = this.listTimeouts.get(serverId);
-        if (lt2) { clearTimeout(lt2); this.listTimeouts.delete(serverId); }
+        if (lt2) {
+          clearTimeout(lt2);
+          this.listTimeouts.delete(serverId);
+        }
         this.store.flushChannelBuffer(serverId, true);
         this.listLoading.delete(serverId);
         this.store.clearListLoading(serverId);

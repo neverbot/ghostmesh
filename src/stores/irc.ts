@@ -14,10 +14,12 @@ import defaultServers from '@/servers.ts';
 import { uploadImage, hasAvailableProvider } from '@/services/upload-providers.ts';
 import type {
   AvailableChannel,
+  ChannelUser,
   ChatMessage,
   IrcStoreApi,
   MessageType,
   ServerConfig,
+  UserMode,
 } from '@/types.ts';
 
 // ─── IRC store types ──────────────────────────────────────────────────────────
@@ -109,7 +111,7 @@ const useIrcStore = defineStore('irc', () => {
   /**
    * User lists per channel. shallowRef — channels like #linux have 2000+ users.
    */
-  const users: ShallowRef<Record<string, string[]>> = shallowRef({});
+  const users: ShallowRef<Record<string, ChannelUser[]>> = shallowRef({});
   const topics: Ref<Record<string, string>> = ref({});
 
   const listLoadingServers: Ref<string[]> = ref([]);
@@ -157,17 +159,29 @@ const useIrcStore = defineStore('irc', () => {
     return messages.value[`${selectedServerId.value}:${selectedChannel.value}`] || [];
   });
 
-  const currentUsers: ComputedRef<string[]> = computed(() => {
+  /** Mode sort priority — lower number = higher rank. */
+  const MODE_PRIORITY: Record<UserMode, number> = {
+    owner: 0,
+    admin: 1,
+    op: 2,
+    halfop: 3,
+    voice: 4,
+    '': 5,
+  };
+
+  const currentUsers: ComputedRef<ChannelUser[]> = computed(() => {
     if (!selectedServerId.value || !selectedChannel.value) return [];
-    const list: string[] | undefined =
+    const list: ChannelUser[] | undefined =
       users.value[`${selectedServerId.value}:${selectedChannel.value}`];
     if (!list) return [];
     const myNick: string = nicknamePerServer.value[selectedServerId.value] || nickname.value;
-    const sorted: string[] = [...list].sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: 'base' }),
-    );
+    const sorted: ChannelUser[] = [...list].sort((a, b) => {
+      const mp: number = MODE_PRIORITY[a.mode] - MODE_PRIORITY[b.mode];
+      if (mp !== 0) return mp;
+      return a.nick.localeCompare(b.nick, undefined, { sensitivity: 'base' });
+    });
     // Move own nick to the top
-    const myIdx: number = sorted.findIndex((n) => n.toLowerCase() === myNick?.toLowerCase());
+    const myIdx: number = sorted.findIndex((u) => u.nick.toLowerCase() === myNick?.toLowerCase());
     if (myIdx > 0) {
       sorted.unshift(sorted.splice(myIdx, 1)[0]);
     }
@@ -204,7 +218,7 @@ const useIrcStore = defineStore('irc', () => {
       const serverName: string = server?.name || serverId;
       for (const channel of channels.value[serverId] || []) {
         const key: string = `${serverId}:${channel}`;
-        const userList: string[] | undefined = users.value[key];
+        const userList: ChannelUser[] | undefined = users.value[key];
         const userCount: number = userList ? userList.length : 0;
         const dm: boolean = isDM(channel);
         const entry: JoinedChannelEntry = { serverId, serverName, channel, userCount, isDM: dm };
@@ -572,11 +586,11 @@ const useIrcStore = defineStore('irc', () => {
   /**
    * Add a single user to a channel's user list.
    */
-  function addUser(serverId: string, channel: string, nick: string): void {
+  function addUser(serverId: string, channel: string, nick: string, mode: UserMode = ''): void {
     const key: string = `${serverId}:${channel}`;
     if (!users.value[key]) users.value[key] = [];
-    if (!users.value[key].includes(nick)) {
-      users.value[key].push(nick);
+    if (!users.value[key].some((u) => u.nick === nick)) {
+      users.value[key].push({ nick, mode });
       users.value = { ...users.value };
     }
   }
@@ -585,14 +599,14 @@ const useIrcStore = defineStore('irc', () => {
    * Add multiple users to a channel's user list (from NAMREPLY).
    * Does NOT trigger reactivity — call finalizeUsers() after all NAMREPLY are processed.
    */
-  function addUsers(serverId: string, channel: string, names: string[]): void {
+  function addUsers(serverId: string, channel: string, newUsers: ChannelUser[]): void {
     const key: string = `${serverId}:${channel}`;
     if (!users.value[key]) users.value[key] = [];
-    const existing: Set<string> = new Set(users.value[key]);
-    for (const name of names) {
-      if (!existing.has(name)) {
-        existing.add(name);
-        users.value[key].push(name);
+    const existing: Set<string> = new Set(users.value[key].map((u) => u.nick));
+    for (const cu of newUsers) {
+      if (!existing.has(cu.nick)) {
+        existing.add(cu.nick);
+        users.value[key].push(cu);
       }
     }
     // No triggerRef — wait for finalizeUsers (366 ENDOFNAMES)
@@ -612,7 +626,7 @@ const useIrcStore = defineStore('irc', () => {
   function removeUser(serverId: string, channel: string, nick: string): void {
     const key: string = `${serverId}:${channel}`;
     if (users.value[key]) {
-      users.value[key] = users.value[key].filter((u) => u !== nick);
+      users.value[key] = users.value[key].filter((u) => u.nick !== nick);
       users.value = { ...users.value };
     }
   }
@@ -636,11 +650,11 @@ const useIrcStore = defineStore('irc', () => {
     const serverChannels: string[] = channels.value[serverId] || [];
     for (const channel of serverChannels) {
       const key: string = `${serverId}:${channel}`;
-      const userList: string[] | undefined = users.value[key];
+      const userList: ChannelUser[] | undefined = users.value[key];
       if (userList) {
-        const idx: number = userList.indexOf(oldNick);
-        if (idx !== -1) {
-          userList[idx] = newNick;
+        const user: ChannelUser | undefined = userList.find((u) => u.nick === oldNick);
+        if (user) {
+          user.nick = newNick;
           changed = true;
         }
       }
