@@ -115,6 +115,8 @@ const useIrcStore = defineStore('irc', () => {
   const topics: Ref<Record<string, string>> = ref({});
 
   const listLoadingServers: Ref<string[]> = ref([]);
+  /** Servers waiting for their initial LIST delay (between registration and first LIST request). */
+  const listWaitingServers: Ref<string[]> = ref([]);
 
   // Channel list filters
   const filterServer: Ref<string | null> = ref(null);
@@ -253,6 +255,8 @@ const useIrcStore = defineStore('irc', () => {
 
   /** Whether any server is currently loading a channel list. */
   const isListLoading: ComputedRef<boolean> = computed(() => listLoadingServers.value.length > 0);
+  /** Whether any server is waiting for its initial LIST delay. */
+  const isListWaiting: ComputedRef<boolean> = computed(() => listWaitingServers.value.length > 0);
 
   /**
    * All available channels (not joined) across all servers, with filters applied.
@@ -260,18 +264,18 @@ const useIrcStore = defineStore('irc', () => {
    * sort is needed here — only filtering and early exit at the render limit.
    */
   const allAvailableChannels: ComputedRef<DisplayChannel[]> = computed(() => {
-    if (listLoadingServers.value.length > 0) return [];
-
     const result: DisplayChannel[] = [];
     const matcher: (text: string) => boolean = buildMatcher(filterText.value);
     const minUsers: number = filterMinUsers.value || 0;
     const serverFilter: string | null = filterServer.value;
     const byName: boolean = sortBy.value === 'name';
     const joined: Set<string> = joinedSet.value;
+    const loading: string[] = listLoadingServers.value;
 
-    // Collect from all servers (pre-sorted per server)
+    // Collect from all servers (pre-sorted per server), skip servers currently loading LIST
     const sources: { serverId: string; serverName: string; list: AvailableChannel[] }[] = [];
     for (const serverId of activeConnections.value) {
+      if (loading.includes(serverId)) continue;
       if (serverFilter && serverId !== serverFilter) continue;
       const server: ServerConfig | undefined = servers.value.find((s) => s.id === serverId);
       const serverName: string = server?.name || serverId;
@@ -301,12 +305,13 @@ const useIrcStore = defineStore('irc', () => {
     return result;
   });
 
-  /** Total raw channel count across servers (unfiltered, excluding joined). */
+  /** Total raw channel count across servers (unfiltered, excluding joined, skipping loading). */
   const totalAvailableCount: ComputedRef<number> = computed(() => {
-    if (listLoadingServers.value.length > 0) return 0;
     const joined: Set<string> = joinedSet.value;
+    const loading: string[] = listLoadingServers.value;
     let count: number = 0;
     for (const serverId of activeConnections.value) {
+      if (loading.includes(serverId)) continue;
       const list: AvailableChannel[] = availableChannels.value[serverId] || [];
       for (const ch of list) {
         if (!joined.has(`${serverId}:${ch.name}`)) count++;
@@ -991,6 +996,8 @@ const useIrcStore = defineStore('irc', () => {
     if (!listLoadingServers.value.includes(serverId)) {
       listLoadingServers.value.push(serverId);
     }
+    // No longer waiting — now actively loading
+    listWaitingServers.value = listWaitingServers.value.filter((id) => id !== serverId);
   }
 
   /**
@@ -998,6 +1005,18 @@ const useIrcStore = defineStore('irc', () => {
    */
   function clearListLoading(serverId: string): void {
     listLoadingServers.value = listLoadingServers.value.filter((id) => id !== serverId);
+  }
+
+  /** Mark a server as waiting for its initial LIST delay. */
+  function setListWaiting(serverId: string): void {
+    if (!listWaitingServers.value.includes(serverId)) {
+      listWaitingServers.value.push(serverId);
+    }
+  }
+
+  /** Clear the waiting state for a server. */
+  function clearListWaiting(serverId: string): void {
+    listWaitingServers.value = listWaitingServers.value.filter((id) => id !== serverId);
   }
 
   /** Request a fresh LIST from all connected servers. */
@@ -1126,6 +1145,8 @@ const useIrcStore = defineStore('irc', () => {
     removeConnection,
     setListLoading,
     clearListLoading,
+    setListWaiting,
+    clearListWaiting,
     addJoinedChannel,
     removeJoinedChannel,
     addMessage,
@@ -1181,6 +1202,7 @@ const useIrcStore = defineStore('irc', () => {
     allJoinedChannels,
     allAvailableChannels,
     isListLoading,
+    isListWaiting,
     totalAvailableCount,
 
     // Mutations

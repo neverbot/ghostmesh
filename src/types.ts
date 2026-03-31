@@ -121,6 +121,10 @@ interface IrcStoreApi {
   setListLoading(serverId: string): void;
   /** Mark a server as done loading a channel LIST. */
   clearListLoading(serverId: string): void;
+  /** Mark a server as waiting for its initial LIST delay. */
+  setListWaiting(serverId: string): void;
+  /** Clear the waiting state for a server. */
+  clearListWaiting(serverId: string): void;
   /** Add a channel to the joined list for a server. */
   addJoinedChannel(serverId: string, channel: string): void;
   /** Remove a channel from the joined list for a server. */

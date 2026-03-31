@@ -530,6 +530,7 @@ class IRCService extends EventEmitter {
     this.registered.delete(serverId);
     this.listLoading.delete(serverId);
     this.store.clearListLoading(serverId);
+    this.store.clearListWaiting(serverId);
     delete this.listWaitOverrides[serverId];
     delete this.connectedAt[serverId];
     const initTimer: ReturnType<typeof setTimeout> | undefined =
@@ -617,7 +618,9 @@ class IRCService extends EventEmitter {
 
       case 'JOIN': {
         const channel: string = trailing || params[0];
-        if (nick === s.nickname) {
+        const conn: IRCConnection | undefined = this.connections.get(serverId);
+        const ourNick: string = conn?.config?.nickname || s.nickname;
+        if (nick === ourNick) {
           s.addJoinedChannel(serverId, channel);
           s.selectChannel(serverId, channel);
         } else {
@@ -667,7 +670,9 @@ class IRCService extends EventEmitter {
 
       case 'PART': {
         const channel: string = params[0];
-        if (nick === s.nickname) {
+        const connPart: IRCConnection | undefined = this.connections.get(serverId);
+        const ourNickPart: string = connPart?.config?.nickname || s.nickname;
+        if (nick === ourNickPart) {
           s.removeJoinedChannel(serverId, channel);
         } else {
           s.removeUser(serverId, channel, nick);
@@ -1007,6 +1012,7 @@ class IRCService extends EventEmitter {
         const detected: number | null = this.listWaitOverrides[serverId] || null;
         const waitSec: number = this.serverSettings.getListDelay(serverId, detected);
         const delay: number = waitSec * 1000;
+        s.setListWaiting(serverId);
         const timer: ReturnType<typeof setTimeout> = setTimeout(() => {
           this.initialListTimers.delete(serverId);
           if (this.connections.has(serverId)) {
