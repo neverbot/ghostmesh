@@ -190,7 +190,8 @@
         />
         <button
           :disabled="isDisabled"
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600 active:scale-95 disabled:opacity-40"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-400 transition-all hover:border-slate-300 hover:bg-slate-100 hover:text-slate-600 active:scale-95 disabled:opacity-40"
+          data-emoji-trigger
           :data-tooltip="$t('tooltips.emoji')"
           @click="emojiPickerOpen = !emojiPickerOpen"
         >

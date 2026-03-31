@@ -1,7 +1,7 @@
 <script setup lang="ts">
-  import { ref, onMounted, onUnmounted } from 'vue';
+  import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
 
-  defineProps<{
+  const props = defineProps<{
     open: boolean;
   }>();
 
@@ -12,6 +12,28 @@
 
   const pickerEl = ref<HTMLElement | null>(null);
   const activeCategory = ref(0);
+  const posX = ref(0);
+  const posY = ref(0);
+
+  /** Position the picker above the trigger button using its DOM rect. */
+  function updatePosition() {
+    if (!pickerEl.value) return;
+    // The Teleport moves us to body, so walk up from the ref's original mount parent
+    // Instead, find the trigger button via the wrapper's data attribute
+    const trigger = document.querySelector('[data-emoji-trigger]');
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    posX.value = Math.max(8, rect.right - 320);
+    posY.value = rect.top - 328;
+    if (posY.value < 8) posY.value = 8;
+  }
+
+  watch(
+    () => props.open,
+    (val) => {
+      if (val) nextTick(updatePosition);
+    },
+  );
 
   interface EmojiCategory {
     icon: string;
@@ -1058,11 +1080,13 @@
 </script>
 
 <template>
-  <div
-    v-if="open"
-    ref="pickerEl"
-    class="absolute bottom-full left-0 z-50 mb-2 flex h-80 w-80 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
-  >
+  <Teleport to="body">
+    <div
+      v-if="open"
+      ref="pickerEl"
+      class="fixed z-[100] flex h-80 w-80 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
+      :style="{ left: posX + 'px', top: posY + 'px' }"
+    >
     <!-- Category tabs -->
     <div class="flex shrink-0 border-b border-slate-100">
       <button
@@ -1090,4 +1114,5 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
