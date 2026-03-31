@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, ref, onMounted, onUnmounted } from 'vue';
+  import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
   import { useServerSettingsStore } from '@/stores/server-settings.ts';
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
@@ -11,6 +11,8 @@
 
   const props = defineProps<{
     message: ChatMessage;
+    /** Whether this message's channel is currently visible. Observer only runs when true. */
+    active?: boolean;
   }>();
 
   const emit = defineEmits<{
@@ -26,8 +28,9 @@
 
   let observer: IntersectionObserver | null = null;
 
-  onMounted(() => {
-    if (!messageEl.value) return;
+  /** Start observing this message for viewport intersection (lazy image loading + mark-read). */
+  function startObserver() {
+    if (observer || previewReady.value || !messageEl.value) return;
     observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !previewReady.value) {
@@ -57,14 +60,29 @@
       { rootMargin: '200px' },
     );
     observer.observe(messageEl.value);
-  });
+  }
 
-  onUnmounted(() => {
+  function stopObserver() {
     if (observer) {
       observer.disconnect();
       observer = null;
     }
+  }
+
+  onMounted(() => {
+    if (props.active !== false) startObserver();
   });
+
+  // Start/stop observer when channel becomes active/inactive
+  watch(
+    () => props.active,
+    (val) => {
+      if (val !== false) startObserver();
+      else stopObserver();
+    },
+  );
+
+  onUnmounted(stopObserver);
 
   const isOwn = computed(() => !!props.message.own);
   const isSystem = computed(() =>

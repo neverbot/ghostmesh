@@ -126,6 +126,20 @@
    */
   const groupCache: Record<string, { length: number; groups: MessageGroup[] }> = {};
 
+  // Clean up stale entries when channels are removed
+  watch(messageKeys, (keys) => {
+    const keySet = new Set(keys);
+    for (const k of Object.keys(groupCache)) {
+      if (!keySet.has(k)) delete groupCache[k];
+    }
+    for (const k of Object.keys(scrollPositions)) {
+      if (!keySet.has(k)) delete scrollPositions[k];
+    }
+    for (const k of Object.keys(channelDivs)) {
+      if (!keySet.has(k)) delete channelDivs[k];
+    }
+  });
+
   function getGroups(key: string): MessageGroup[] {
     const msgs = store.messages[key];
     if (!msgs) return [];
@@ -406,6 +420,7 @@
             v-for="msg in group.messages"
             :key="msg.id"
             :message="msg"
+            :active="key === selectedKey"
             @message-seen="onMessageSeen"
           />
         </template>
@@ -476,6 +491,7 @@
               >
                 <MessageItem
                   :message="msg"
+                  :active="key === selectedKey"
                   @message-seen="onMessageSeen"
                 />
                 <!-- Timestamp + Forward button (appear on hover) -->
