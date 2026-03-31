@@ -148,6 +148,7 @@
     "unblockAll": "Desbloquear todos los usuarios",
     "forwardMessage": "Reenviar mensaje",
     "filterMembers": "Filtrar miembros",
+    "emoji": "Emoji",
     "attachImage": "Adjuntar imagen",
     "uploading": "Subiendo...",
     "uploadUnavailable": "Subida de imágenes no disponible — este servidor trata los enlaces de imágenes como publicidad y los bloquea"

@@ -148,6 +148,7 @@
     "unblockAll": "Unblock all users",
     "forwardMessage": "Forward message",
     "filterMembers": "Filter members",
+    "emoji": "Emoji",
     "attachImage": "Attach image",
     "uploading": "Uploading...",
     "uploadUnavailable": "Image upload unavailable — this server treats image links as advertising and blocks them"

@@ -2,6 +2,7 @@
   import { ref, computed, watch, nextTick } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
   import CommandAutocomplete from './CommandAutocomplete.vue';
+  import EmojiPicker from './EmojiPicker.vue';
   import { i18n } from '@/i18n/index.ts';
 
   const t = i18n.global.t;
@@ -12,6 +13,7 @@
   const fileInputEl = ref<HTMLInputElement | null>(null);
   const autocompleteRef = ref<InstanceType<typeof CommandAutocomplete> | null>(null);
   const inputFocused = ref(false);
+  const emojiPickerOpen = ref(false);
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -125,6 +127,24 @@
     nextTick(() => inputEl.value?.focus());
   }
 
+  /** Insert an emoji at the current cursor position. */
+  function onEmojiSelect(emoji: string) {
+    const input = inputEl.value;
+    if (input) {
+      const start = input.selectionStart ?? text.value.length;
+      const end = input.selectionEnd ?? start;
+      text.value = text.value.slice(0, start) + emoji + text.value.slice(end);
+      nextTick(() => {
+        const pos = start + emoji.length;
+        input.setSelectionRange(pos, pos);
+        input.focus();
+      });
+    } else {
+      text.value += emoji;
+    }
+    emojiPickerOpen.value = false;
+  }
+
   const isDisabled = computed(() => !store.selectedChannel);
   const isStatusChannel = computed(() => store.selectedChannel === '*status');
 
@@ -158,6 +178,36 @@
         @focus="inputFocused = true"
         @blur="inputFocused = false"
       />
+      <!-- Emoji picker -->
+      <div
+        v-if="!isStatusChannel"
+        class="relative"
+      >
+        <EmojiPicker
+          :open="emojiPickerOpen"
+          @select="onEmojiSelect"
+          @close="emojiPickerOpen = false"
+        />
+        <button
+          :disabled="isDisabled"
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600 active:scale-95 disabled:opacity-40"
+          :data-tooltip="$t('tooltips.emoji')"
+          @click="emojiPickerOpen = !emojiPickerOpen"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            class="h-5 w-5"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.536-4.464a.75.75 0 1 0-1.06-1.06 3.5 3.5 0 0 1-4.95 0 .75.75 0 0 0-1.06 1.06 5 5 0 0 0 7.07 0ZM9 8.5c0 .828-.448 1.5-1 1.5s-1-.672-1-1.5S7.448 7 8 7s1 .672 1 1.5Zm3 1.5c.552 0 1-.672 1-1.5S12.552 7 12 7s-1 .672-1 1.5.448 1.5 1 1.5Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
+      </div>
       <!-- Attach image button -->
       <input
         ref="fileInputEl"
