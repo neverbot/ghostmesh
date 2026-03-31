@@ -51,6 +51,8 @@
   const store = useIrcStore();
   const userPrefs = useUserPrefsStore();
   const scrollContainer = ref<HTMLElement | null>(null);
+  /** Refs for each channel's content div, keyed by channel key. */
+  const channelDivs: Record<string, HTMLElement> = {};
 
   // Context menu state
   const menuOpen = ref(false);
@@ -215,6 +217,17 @@
   let mutationObserver: MutationObserver | null = null;
   let lastScrollHeight = 0;
 
+  /** Reconnect the MutationObserver to the active channel's div only. */
+  function reconnectObserver() {
+    if (mutationObserver) mutationObserver.disconnect();
+    const key = selectedKey.value;
+    const target = key ? channelDivs[key] : null;
+    if (target && mutationObserver) {
+      lastScrollHeight = scrollContainer.value?.scrollHeight || 0;
+      mutationObserver.observe(target, { childList: true, subtree: true, characterData: true });
+    }
+  }
+
   /** Check if scrollHeight changed and re-scroll if in auto mode. Debounced to avoid layout thrashing. */
   let scrollCheckTimer: ReturnType<typeof setTimeout> | null = null;
   function checkScrollHeightChange() {
@@ -261,7 +274,8 @@
       el.addEventListener('click', onActionClick);
       lastScrollHeight = el.scrollHeight;
       mutationObserver = new MutationObserver(() => checkScrollHeightChange());
-      mutationObserver.observe(el, { childList: true, subtree: true, characterData: true });
+      // Observer is connected per-channel via reconnectObserver(), not on the entire container
+      reconnectObserver();
     }
   });
 
@@ -291,7 +305,7 @@
     },
   );
 
-  // When switching channels: save scroll, restore new channel's scroll
+  // When switching channels: save scroll, restore new channel's scroll, reconnect observer
   watch(selectedKey, (newKey, oldKey) => {
     const el = scrollContainer.value;
 
@@ -301,6 +315,9 @@
     }
 
     if (!newKey) return;
+
+    // Reconnect MutationObserver to the new active channel's div
+    reconnectObserver();
 
     nextTick(() => {
       if (!el) return;
@@ -372,6 +389,11 @@
       v-for="key in messageKeys"
       v-show="key === selectedKey"
       :key="key"
+      :ref="
+        (el: any) => {
+          if (el) channelDivs[key] = el;
+        }
+      "
       class="flex flex-col"
     >
       <template
@@ -403,12 +425,12 @@
             ]"
             @click="
               !group.own &&
-                onUserClick({
-                  nick: group.nick,
-                  serverId: group.messages[0].serverId,
-                  x: $event.clientX,
-                  y: $event.clientY,
-                })
+              onUserClick({
+                nick: group.nick,
+                serverId: group.messages[0].serverId,
+                x: $event.clientX,
+                y: $event.clientY,
+              })
             "
           >
             {{ (group.nick || '?')[0].toUpperCase() }}
@@ -515,7 +537,8 @@
                 v-if="group.messages[group.messages.length - 1].warning"
                 class="cursor-help text-amber-500"
                 :title="group.messages[group.messages.length - 1].warning"
-              >⚠</span>
+                >⚠</span
+              >
             </div>
           </div>
         </div>
