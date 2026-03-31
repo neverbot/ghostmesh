@@ -5,7 +5,6 @@
   import MessageItem from './MessageItem.vue';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
   import ForwardMenu from './ForwardMenu.vue';
-  import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import config from '@/config.ts';
   import type { ChatMessage, UserClickPayload, UserMode } from '@/types.ts';
 
@@ -404,12 +403,12 @@
             ]"
             @click="
               !group.own &&
-              onUserClick({
-                nick: group.nick,
-                serverId: group.messages[0].serverId,
-                x: $event.clientX,
-                y: $event.clientY,
-              })
+                onUserClick({
+                  nick: group.nick,
+                  serverId: group.messages[0].serverId,
+                  x: $event.clientX,
+                  y: $event.clientY,
+                })
             "
           >
             {{ (group.nick || '?')[0].toUpperCase() }}
@@ -472,35 +471,32 @@
                       })
                     }}
                   </span>
-                  <InfoTooltip
-                    :text="$t('tooltips.forwardMessage')"
-                    :delay="300"
+                  <button
+                    class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-slate-400 shadow transition-colors hover:text-emerald-500"
+                    :data-tooltip="$t('tooltips.forwardMessage')"
+                    data-tooltip-delay="300"
+                    @click.stop="
+                      onForward({ content: msg.content, x: $event.clientX, y: $event.clientY })
+                    "
                   >
-                    <button
-                      class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-slate-400 shadow transition-colors hover:text-emerald-500"
-                      @click.stop="
-                        onForward({ content: msg.content, x: $event.clientX, y: $event.clientY })
-                      "
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      class="h-3 w-3"
                     >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        class="h-3 w-3"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          d="M10.21 14.77a.75.75 0 0 1 .02-1.06L14.168 10 10.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z"
-                          clip-rule="evenodd"
-                        />
-                        <path
-                          fill-rule="evenodd"
-                          d="M4.21 14.77a.75.75 0 0 1 .02-1.06L8.168 10 4.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z"
-                          clip-rule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </InfoTooltip>
+                      <path
+                        fill-rule="evenodd"
+                        d="M10.21 14.77a.75.75 0 0 1 .02-1.06L14.168 10 10.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z"
+                        clip-rule="evenodd"
+                      />
+                      <path
+                        fill-rule="evenodd"
+                        d="M4.21 14.77a.75.75 0 0 1 .02-1.06L8.168 10 4.23 6.29a.75.75 0 1 1 1.04-1.08l4.5 4.25a.75.75 0 0 1 0 1.08l-4.5 4.25a.75.75 0 0 1-1.06-.02Z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
@@ -519,8 +515,7 @@
                 v-if="group.messages[group.messages.length - 1].warning"
                 class="cursor-help text-amber-500"
                 :title="group.messages[group.messages.length - 1].warning"
-                >⚠</span
-              >
+              >⚠</span>
             </div>
           </div>
         </div>

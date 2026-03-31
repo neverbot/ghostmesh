@@ -3,7 +3,6 @@
   import { useServerSettingsStore } from '@/stores/server-settings.ts';
   import { useIrcStore } from '@/stores/irc.ts';
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
-  import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import type { ServerSettingsEntry } from '@/stores/server-settings.ts';
   import { i18n } from '@/i18n/index.ts';
 
@@ -387,18 +386,15 @@
                 <label class="text-xs font-medium text-slate-300">{{
                   $t('settings.server.hiddenPreviews')
                 }}</label>
-                <InfoTooltip
+                <button
                   v-if="userPrefs.hiddenPreviewsForServer(serverId).length > 0"
-                  :text="$t('tooltips.restorePreviews')"
-                  :delay="300"
+                  class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
+                  :data-tooltip="$t('tooltips.restorePreviews')"
+                  data-tooltip-delay="300"
+                  @click="userPrefs.clearHiddenPreviews(serverId)"
                 >
-                  <button
-                    class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
-                    @click="userPrefs.clearHiddenPreviews(serverId)"
-                  >
-                    {{ $t('common.removeAll') }}
-                  </button>
-                </InfoTooltip>
+                  {{ $t('common.removeAll') }}
+                </button>
               </div>
               <p class="text-[10px] text-slate-500">
                 {{ $t('settings.server.hiddenPreviewsDescription') }}
@@ -432,18 +428,15 @@
                 <label class="text-xs font-medium text-slate-300">{{
                   $t('settings.server.blockedUsers')
                 }}</label>
-                <InfoTooltip
+                <button
                   v-if="userPrefs.blockedUsersForServer(serverId).length > 0"
-                  :text="$t('tooltips.unblockAll')"
-                  :delay="300"
+                  class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
+                  :data-tooltip="$t('tooltips.unblockAll')"
+                  data-tooltip-delay="300"
+                  @click="userPrefs.clearBlockedUsers(serverId)"
                 >
-                  <button
-                    class="text-[10px] text-slate-400 transition-colors hover:text-slate-300"
-                    @click="userPrefs.clearBlockedUsers(serverId)"
-                  >
-                    {{ $t('common.removeAll') }}
-                  </button>
-                </InfoTooltip>
+                  {{ $t('common.removeAll') }}
+                </button>
               </div>
               <p class="text-[10px] text-slate-500">
                 {{ $t('settings.server.blockedUsersDescription') }}

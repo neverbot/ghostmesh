@@ -2,7 +2,6 @@
   import { ref, computed, watch, nextTick } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
   import CommandAutocomplete from './CommandAutocomplete.vue';
-  import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import { i18n } from '@/i18n/index.ts';
 
   const t = i18n.global.t;
@@ -167,58 +166,55 @@
         class="hidden"
         @change="onFileSelected"
       />
-      <InfoTooltip
+      <button
         v-if="!isStatusChannel"
-        :text="
+        :disabled="isDisabled || store.isUploading || !store.canUpload"
+        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition-all active:scale-95 disabled:opacity-40"
+        :class="store.canUpload ? 'bg-slate-400 hover:bg-slate-500' : 'bg-slate-300'"
+        :data-tooltip="
           store.isUploading
             ? $t('tooltips.uploading')
             : store.canUpload
               ? $t('tooltips.attachImage')
               : $t('tooltips.uploadUnavailable')
         "
+        @click="openFilePicker"
       >
-        <button
-          :disabled="isDisabled || store.isUploading || !store.canUpload"
-          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white transition-all active:scale-95 disabled:opacity-40"
-          :class="store.canUpload ? 'bg-slate-400 hover:bg-slate-500' : 'bg-slate-300'"
-          @click="openFilePicker"
+        <svg
+          v-if="!store.isUploading"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          class="h-5 w-5"
         >
-          <svg
-            v-if="!store.isUploading"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
+          <path
+            fill-rule="evenodd"
+            d="M15.621 4.379a3 3 0 0 0-4.242 0l-7 7a3 3 0 0 0 4.241 4.243l.828-.829a.75.75 0 0 1 1.06 1.06l-.828.829a4.5 4.5 0 0 1-6.364-6.364l7-7a4.5 4.5 0 0 1 6.368 6.36l-3.455 3.553A2.625 2.625 0 1 1 9.52 9.52l3.45-3.451a.75.75 0 1 1 1.061 1.06l-3.45 3.451a1.125 1.125 0 0 0 1.587 1.595l3.454-3.553a3 3 0 0 0 0-4.242Z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        <!-- Spinner during upload -->
+        <svg
+          v-else
+          class="h-5 w-5 animate-spin"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+          <circle
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="3"
+            class="opacity-25"
+          />
+          <path
             fill="currentColor"
-            class="h-5 w-5"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M15.621 4.379a3 3 0 0 0-4.242 0l-7 7a3 3 0 0 0 4.241 4.243l.828-.829a.75.75 0 0 1 1.06 1.06l-.828.829a4.5 4.5 0 0 1-6.364-6.364l7-7a4.5 4.5 0 0 1 6.368 6.36l-3.455 3.553A2.625 2.625 0 1 1 9.52 9.52l3.45-3.451a.75.75 0 1 1 1.061 1.06l-3.45 3.451a1.125 1.125 0 0 0 1.587 1.595l3.454-3.553a3 3 0 0 0 0-4.242Z"
-              clip-rule="evenodd"
-            />
-          </svg>
-          <!-- Spinner during upload -->
-          <svg
-            v-else
-            class="h-5 w-5 animate-spin"
-            viewBox="0 0 24 24"
-            fill="none"
-          >
-            <circle
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              stroke-width="3"
-              class="opacity-25"
-            />
-            <path
-              fill="currentColor"
-              class="opacity-75"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-          </svg>
-        </button>
-      </InfoTooltip>
+            class="opacity-75"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+          />
+        </svg>
+      </button>
       <!-- Send button -->
       <button
         :disabled="isDisabled || !text.trim()"

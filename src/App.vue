@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { onMounted, onUnmounted } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
+  import GlobalTooltip from '@/components/ui/GlobalTooltip.vue';
 
   const store = useIrcStore();
 
@@ -25,4 +26,5 @@
 
 <template>
   <router-view />
+  <GlobalTooltip />
 </template>

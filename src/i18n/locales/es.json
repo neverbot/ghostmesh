@@ -134,6 +134,7 @@
     }
   },
   "tooltips": {
+    "globalSettings": "Ajustes globales",
     "serverSettings": "Ajustes del servidor",
     "disconnect": "Desconectar del servidor",
     "clearStatusLog": "Borrar registro de estado",

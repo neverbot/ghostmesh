@@ -16,6 +16,8 @@
     </div>
     <!-- Settings gear icon -->
     <svg
+      :data-tooltip="$t('tooltips.globalSettings')"
+      data-tooltip-delay="500"
       class="h-4 w-4 shrink-0 text-slate-500 transition-colors hover:text-slate-300"
       fill="none"
       viewBox="0 0 24 24"

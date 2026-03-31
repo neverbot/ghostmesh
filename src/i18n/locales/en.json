@@ -134,6 +134,7 @@
     }
   },
   "tooltips": {
+    "globalSettings": "Global settings",
     "serverSettings": "Server settings",
     "disconnect": "Disconnect from server",
     "clearStatusLog": "Clear status log",

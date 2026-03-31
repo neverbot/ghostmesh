@@ -2,7 +2,6 @@
   import { ref, computed, nextTick } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
-  import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import type { ChannelUser, UserMode } from '@/types.ts';
 
   /** IRC prefix symbol per mode. */
@@ -84,32 +83,29 @@
           {{ store.currentUsers.length }}
         </span>
       </h3>
-      <InfoTooltip
-        :text="$t('tooltips.filterMembers')"
-        :delay="500"
+      <button
+        class="rounded p-1 transition-colors"
+        :class="
+          showFilter
+            ? 'bg-emerald-500/20 text-emerald-400'
+            : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+        "
+        :data-tooltip="$t('tooltips.filterMembers')"
+        data-tooltip-delay="500"
+        @click="
+          showFilter = !showFilter;
+          if (showFilter) nextTick(() => userFilterInput?.focus());
+        "
       >
-        <button
-          class="rounded p-1 transition-colors"
-          :class="
-            showFilter
-              ? 'bg-emerald-500/20 text-emerald-400'
-              : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
-          "
-          @click="
-            showFilter = !showFilter;
-            if (showFilter) nextTick(() => userFilterInput?.focus());
-          "
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 16 12"
+          fill="currentColor"
+          class="h-3 w-3"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 16 12"
-            fill="currentColor"
-            class="h-3 w-3"
-          >
-            <path d="M14 2H2l5 5.6V12l2 1V7.6L14 2Z" />
-          </svg>
-        </button>
-      </InfoTooltip>
+          <path d="M14 2H2l5 5.6V12l2 1V7.6L14 2Z" />
+        </svg>
+      </button>
     </div>
 
     <!-- Filter input -->

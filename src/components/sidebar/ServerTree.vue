@@ -2,7 +2,6 @@
   import { ref, computed, watch, nextTick, onUnmounted } from 'vue';
   import config from '@/config.ts';
   import { useIrcStore } from '@/stores/irc.ts';
-  import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import ServerSettingsModal from '@/components/ui/ServerSettingsModal.vue';
   import type { ServerConfig } from '@/types.ts';
 
@@ -231,58 +230,52 @@
               <span class="truncate text-[10px] text-slate-600">{{ server.host }}</span>
             </div>
             <!-- Settings gear -->
-            <InfoTooltip
-              :text="$t('tooltips.serverSettings')"
-              :delay="500"
+            <button
+              class="rounded p-1 text-transparent transition-colors hover:bg-slate-600 hover:text-slate-300 group-hover:text-slate-500"
+              :data-tooltip="$t('tooltips.serverSettings')"
+              data-tooltip-delay="500"
+              @click.stop="openSettings(server)"
             >
-              <button
-                class="rounded p-1 text-transparent transition-colors hover:bg-slate-600 hover:text-slate-300 group-hover:text-slate-500"
-                @click.stop="openSettings(server)"
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+                class="h-3 w-3"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  class="h-3 w-3"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M6.955 1.45A.5.5 0 0 1 7.452 1h1.096a.5.5 0 0 1 .497.45l.17 1.699c.484.12.94.312 1.356.562l1.321-.916a.5.5 0 0 1 .67.033l.774.775a.5.5 0 0 1 .034.67l-.916 1.32c.25.417.443.873.563 1.357l1.699.17a.5.5 0 0 1 .45.497v1.096a.5.5 0 0 1-.45.497l-1.699.17c-.12.484-.312.94-.562 1.356l.916 1.321a.5.5 0 0 1-.034.67l-.774.774a.5.5 0 0 1-.67.033l-1.32-.916c-.417.25-.874.443-1.357.563l-.17 1.699a.5.5 0 0 1-.497.45H7.452a.5.5 0 0 1-.497-.45l-.17-1.699a4.973 4.973 0 0 1-1.356-.562l-1.321.916a.5.5 0 0 1-.67-.034l-.774-.774a.5.5 0 0 1-.034-.67l.916-1.32a4.971 4.971 0 0 1-.562-1.357l-1.699-.17A.5.5 0 0 1 1 8.548V7.452a.5.5 0 0 1 .45-.497l1.699-.17c.12-.484.312-.94.562-1.356l-.916-1.321a.5.5 0 0 1 .034-.67l.774-.774a.5.5 0 0 1 .67-.033l1.32.916c.417-.25.874-.443 1.357-.563l.17-1.699ZM8 10.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </button>
-            </InfoTooltip>
+                <path
+                  fill-rule="evenodd"
+                  d="M6.955 1.45A.5.5 0 0 1 7.452 1h1.096a.5.5 0 0 1 .497.45l.17 1.699c.484.12.94.312 1.356.562l1.321-.916a.5.5 0 0 1 .67.033l.774.775a.5.5 0 0 1 .034.67l-.916 1.32c.25.417.443.873.563 1.357l1.699.17a.5.5 0 0 1 .45.497v1.096a.5.5 0 0 1-.45.497l-1.699.17c-.12.484-.312.94-.562 1.356l.916 1.321a.5.5 0 0 1-.034.67l-.774.774a.5.5 0 0 1-.67.033l-1.32-.916c-.417.25-.874.443-1.357.563l-.17 1.699a.5.5 0 0 1-.497.45H7.452a.5.5 0 0 1-.497-.45l-.17-1.699a4.973 4.973 0 0 1-1.356-.562l-1.321.916a.5.5 0 0 1-.67-.034l-.774-.774a.5.5 0 0 1-.034-.67l.916-1.32a4.971 4.971 0 0 1-.562-1.357l-1.699-.17A.5.5 0 0 1 1 8.548V7.452a.5.5 0 0 1 .45-.497l1.699-.17c.12-.484.312-.94.562-1.356l-.916-1.321a.5.5 0 0 1 .034-.67l.774-.774a.5.5 0 0 1 .67-.033l1.32.916c.417-.25.874-.443 1.357-.563l.17-1.699ZM8 10.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </button>
             <!-- Disconnect / Clear status -->
-            <InfoTooltip
+            <button
               v-if="store.isConnected(server.id) || store.statusRetainedServers.includes(server.id)"
-              :text="
+              class="rounded p-1 text-transparent transition-colors hover:bg-slate-600 hover:text-red-400 group-hover:text-slate-500"
+              :data-tooltip="
                 store.isConnected(server.id)
                   ? $t('tooltips.disconnect')
                   : $t('tooltips.clearStatusLog')
               "
-              :delay="500"
+              data-tooltip-delay="500"
+              @click.stop="
+                store.isConnected(server.id)
+                  ? store.disconnectFromServer(server.id)
+                  : store.clearDisconnectedServer(server.id)
+              "
             >
-              <button
-                class="rounded p-1 text-transparent transition-colors hover:bg-slate-600 hover:text-red-400 group-hover:text-slate-500"
-                @click.stop="
-                  store.isConnected(server.id)
-                    ? store.disconnectFromServer(server.id)
-                    : store.clearDisconnectedServer(server.id)
-                "
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+                class="h-3 w-3"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  class="h-3 w-3"
-                >
-                  <path
-                    d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"
-                  />
-                </svg>
-              </button>
-            </InfoTooltip>
+                <path
+                  d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"
+                />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -315,70 +308,64 @@
         </button>
 
         <!-- Refresh channels -->
-        <InfoTooltip
+        <button
           v-if="store.connectedServers.length > 0"
-          :text="
+          class="rounded p-1 transition-colors"
+          :class="
+            store.isListLoading
+              ? 'animate-spin text-emerald-500'
+              : isWaitingForList
+                ? 'animate-spin text-amber-400'
+                : 'text-slate-600 hover:text-slate-400'
+          "
+          :data-tooltip="
             store.isListLoading
               ? $t('tooltips.loadingChannels')
               : isWaitingForList
                 ? $t('tooltips.waitingForChannels')
                 : $t('tooltips.refreshChannels')
           "
-          :delay="500"
+          data-tooltip-delay="500"
+          :disabled="store.isListLoading || isWaitingForList"
+          @click="store.refreshChannelList()"
         >
-          <button
-            class="rounded p-1 transition-colors"
-            :class="
-              store.isListLoading
-                ? 'animate-spin text-emerald-500'
-                : isWaitingForList
-                  ? 'animate-spin text-amber-400'
-                  : 'text-slate-600 hover:text-slate-400'
-            "
-            :disabled="store.isListLoading || isWaitingForList"
-            @click="store.refreshChannelList()"
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+            class="h-3 w-3"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 16 16"
-              fill="currentColor"
-              class="h-3 w-3"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M13.836 2.477a.75.75 0 0 1 .75.75v3.182a.75.75 0 0 1-.75.75h-3.182a.75.75 0 0 1 0-1.5h1.37l-.84-.841a4.5 4.5 0 0 0-7.08.681.75.75 0 0 1-1.3-.75 6 6 0 0 1 9.44-.908l.84.84V3.227a.75.75 0 0 1 .75-.75Zm-.911 7.5A.75.75 0 0 1 13.199 11a6 6 0 0 1-9.44.908l-.84-.84v1.456a.75.75 0 0 1-1.5 0V9.341a.75.75 0 0 1 .75-.75h3.182a.75.75 0 0 1 0 1.5h-1.37l.84.841a4.5 4.5 0 0 0 7.08-.681.75.75 0 0 1 1.024-.274Z"
-                clip-rule="evenodd"
-              />
-            </svg>
-          </button>
-        </InfoTooltip>
+            <path
+              fill-rule="evenodd"
+              d="M13.836 2.477a.75.75 0 0 1 .75.75v3.182a.75.75 0 0 1-.75.75h-3.182a.75.75 0 0 1 0-1.5h1.37l-.84-.841a4.5 4.5 0 0 0-7.08.681.75.75 0 0 1-1.3-.75 6 6 0 0 1 9.44-.908l.84.84V3.227a.75.75 0 0 1 .75-.75Zm-.911 7.5A.75.75 0 0 1 13.199 11a6 6 0 0 1-9.44.908l-.84-.84v1.456a.75.75 0 0 1-1.5 0V9.341a.75.75 0 0 1 .75-.75h3.182a.75.75 0 0 1 0 1.5h-1.37l.84.841a4.5 4.5 0 0 0 7.08-.681.75.75 0 0 1 1.024-.274Z"
+              clip-rule="evenodd"
+            />
+          </svg>
+        </button>
 
         <!-- Filter toggle -->
-        <InfoTooltip
+        <button
           v-if="store.connectedServers.length > 0"
-          :text="$t('tooltips.filterChannels')"
-          :delay="500"
+          class="rounded p-1 transition-colors"
+          :class="
+            showFilters ? 'bg-slate-700 text-slate-300' : 'text-slate-600 hover:text-slate-400'
+          "
+          :data-tooltip="$t('tooltips.filterChannels')"
+          data-tooltip-delay="500"
+          @click="
+            showFilters = !showFilters;
+            if (showFilters) nextTick(() => channelFilterInput?.focus());
+          "
         >
-          <button
-            class="rounded p-1 transition-colors"
-            :class="
-              showFilters ? 'bg-slate-700 text-slate-300' : 'text-slate-600 hover:text-slate-400'
-            "
-            @click="
-              showFilters = !showFilters;
-              if (showFilters) nextTick(() => channelFilterInput?.focus());
-            "
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+            class="h-3 w-3"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 16 16"
-              fill="currentColor"
-              class="h-3 w-3"
-            >
-              <path d="M14 2H2l5 5.6V12l2 1V7.6L14 2Z" />
-            </svg>
-          </button>
-        </InfoTooltip>
+            <path d="M14 2H2l5 5.6V12l2 1V7.6L14 2Z" />
+          </svg>
+        </button>
       </div>
 
       <div
@@ -506,40 +493,34 @@
                 >
                   {{ getBadge(entry.serverId, entry.channel).users || '' }}
                 </span>
-                <InfoTooltip
+                <span
                   v-if="store.connectedServers.length > 1"
-                  :text="entry.serverName"
+                  class="w-6 rounded bg-slate-700/60 py-0.5 text-center text-[9px] text-slate-500"
+                  :data-tooltip="entry.serverName"
                 >
-                  <span
-                    class="w-6 rounded bg-slate-700/60 py-0.5 text-center text-[9px] text-slate-500"
-                  >
-                    {{ serverAbbr(entry.serverName) }}
-                  </span>
-                </InfoTooltip>
+                  {{ serverAbbr(entry.serverName) }}
+                </span>
                 <!-- Leave button — always rendered for consistent width, invisible for status -->
-                <InfoTooltip
+                <button
                   v-if="entry.channel !== '*status'"
-                  :text="
+                  class="rounded p-0.5 text-transparent transition-colors hover:bg-slate-600 hover:text-red-400 group-hover/ch:text-slate-500"
+                  :data-tooltip="
                     entry.isDM ? $t('tooltips.closeConversation') : $t('tooltips.leaveChannel')
                   "
-                  :delay="500"
+                  data-tooltip-delay="500"
+                  @click.stop="store.partChannel(entry.serverId, entry.channel)"
                 >
-                  <button
-                    class="rounded p-0.5 text-transparent transition-colors hover:bg-slate-600 hover:text-red-400 group-hover/ch:text-slate-500"
-                    @click.stop="store.partChannel(entry.serverId, entry.channel)"
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 16 16"
+                    fill="currentColor"
+                    class="h-3 w-3"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 16 16"
-                      fill="currentColor"
-                      class="h-3 w-3"
-                    >
-                      <path
-                        d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"
-                      />
-                    </svg>
-                  </button>
-                </InfoTooltip>
+                    <path
+                      d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z"
+                    />
+                  </svg>
+                </button>
                 <div
                   v-else
                   class="w-4"
@@ -579,16 +560,13 @@
                 <span class="text-[10px] text-slate-600">
                   {{ ch.users }}
                 </span>
-                <InfoTooltip
+                <span
                   v-if="store.connectedServers.length > 1"
-                  :text="ch._sname"
+                  class="w-6 rounded bg-slate-700/30 py-0.5 text-center text-[8px] text-slate-600"
+                  :data-tooltip="ch._sname"
                 >
-                  <span
-                    class="w-6 rounded bg-slate-700/30 py-0.5 text-center text-[8px] text-slate-600"
-                  >
-                    {{ serverAbbr(ch._sname) }}
-                  </span>
-                </InfoTooltip>
+                  {{ serverAbbr(ch._sname) }}
+                </span>
               </div>
             </div>
 

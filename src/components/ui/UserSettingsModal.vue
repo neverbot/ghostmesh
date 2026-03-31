@@ -4,7 +4,6 @@
   import { useServerSettingsStore } from '@/stores/server-settings.ts';
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
   import { useIrcStore } from '@/stores/irc.ts';
-  import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import type { UserProfile } from '@/stores/user-settings.ts';
   import { privateProviders as privateUploadProviders } from '@/services/upload-providers.ts';
   import { i18n, setLocale } from '@/i18n/index.ts';
@@ -284,18 +283,14 @@
                   :style="{ backgroundColor: color }"
                   @click="form.avatarColor = color"
                 />
-                <InfoTooltip
-                  :text="$t('settings.global.avatarColorAuto')"
-                  :delay="0"
+                <button
+                  class="flex h-6 w-6 items-center justify-center rounded-full border-2 text-[8px] text-slate-400 transition-transform hover:scale-110"
+                  :class="!form.avatarColor ? 'border-white scale-110' : 'border-transparent'"
+                  :data-tooltip="$t('settings.global.avatarColorAuto')"
+                  @click="form.avatarColor = ''"
                 >
-                  <button
-                    class="flex h-6 w-6 items-center justify-center rounded-full border-2 text-[8px] text-slate-400 transition-transform hover:scale-110"
-                    :class="!form.avatarColor ? 'border-white scale-110' : 'border-transparent'"
-                    @click="form.avatarColor = ''"
-                  >
-                    A
-                  </button>
-                </InfoTooltip>
+                  A
+                </button>
               </div>
             </div>
           </div>

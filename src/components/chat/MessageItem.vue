@@ -7,7 +7,6 @@
   import { formatPlainContent, formatHtmlContent } from '@/services/message.service.ts';
   import { resolveImageProvider } from '@/services/image-providers.ts';
   import * as imageCache from '@/services/image-cache.ts';
-  import InfoTooltip from '@/components/ui/InfoTooltip.vue';
   import type { ChatMessage } from '@/types.ts';
 
   const props = defineProps<{
@@ -117,9 +116,10 @@
     ref="messageEl"
     class="flex items-stretch"
   >
-    <InfoTooltip :text="timeString">
-      <div class="w-6 shrink-0 cursor-default self-stretch" />
-    </InfoTooltip>
+    <div
+      class="w-6 shrink-0 cursor-default self-stretch"
+      :data-tooltip="timeString"
+    />
     <div
       class="min-w-0 whitespace-pre-wrap font-mono text-xs leading-tight text-slate-400"
       v-html="renderedHtml || plainHtml"
