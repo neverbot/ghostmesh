@@ -395,6 +395,7 @@ App.vue
 | `messages`              | `Ref<Record<string, ChatMessage[]>>`                     | Per-channel history               |
 | `topics`                | `Ref<Record<string, string>>`                            | Per-channel topics                |
 | `listLoadingServers`    | `Ref<string[]>`                                          | Servers loading LIST              |
+| `listWaitingServers`    | `Ref<string[]>`                                          | Servers waiting for initial LIST delay |
 | `availableChannels`     | **`ShallowRef`**`<Record<string, AvailableChannel[]>>`   | LIST results (perf)               |
 | `users`                 | **`ShallowRef`**`<Record<string, ChannelUser[]>>`        | Per-channel users (perf)          |
 | `prefillMessage`        | `Ref<string>`                                            | Forward prefill                   |
@@ -414,10 +415,11 @@ App.vue
 | `currentTopic`         | Topic for selected channel                               |
 | `allJoinedChannels`    | Across all servers (channels first, DMs second)          |
 | `joinedSet`            | `Set<string>` for O(1) lookup                            |
-| `allAvailableChannels` | **Expensive**: filtered, sorted, capped at `browseLimit` |
-| `totalAvailableCount`  | Unfiltered count                                         |
+| `isListWaiting`        | True when any server is waiting for initial LIST delay   |
+| `allAvailableChannels` | **Expensive**: filtered, sorted, capped at `browseLimit`. Skips only the specific loading server's channels, keeping other servers' channels visible |
+| `totalAvailableCount`  | Unfiltered count. Skips only the loading server, not all servers |
 
-**Key methods:** `connectToServer()`, `disconnectFromServer()`, `joinChannel()`, `partChannel()`, `selectChannel()`, `openDM()`, `sendMessage()`, `uploadAndSend()`, `changeNick()`, `changeNickGlobal()`, `refreshChannelList()`, `cleanup()`, `restoreSession()`, `markUnloading()`
+**Key methods:** `connectToServer()`, `disconnectFromServer()`, `joinChannel()`, `partChannel()`, `selectChannel()`, `openDM()`, `sendMessage()`, `uploadAndSend()`, `changeNick()`, `changeNickGlobal()`, `refreshChannelList()`, `setListWaiting()`, `clearListWaiting()`, `cleanup()`, `restoreSession()`, `markUnloading()`
 
 **Service interaction:** Lazy-initializes `IRCService` with store API subset. Service calls back for state mutations.
 
@@ -513,6 +515,8 @@ App.vue
 
 All timers tracked in Maps, cleaned on `cleanupConnection()`.
 
+**Multi-server nickname handling:** JOIN and PART handlers use the per-server nickname (`connection.config.nickname`) instead of the global `s.nickname` to identify own messages. This is required because different servers may assign different nicknames.
+
 **Message queue:** LIST (322) replies queued and drained via `requestAnimationFrame` to avoid UI blocking.
 
 ---
@@ -577,7 +581,7 @@ All timers tracked in Maps, cleaned on `cleanupConnection()`.
 
 | File                       | Purpose                                                                                                                                                                                 |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/types.ts`             | Shared types: `UserMode`, `ChannelUser`, `AvailableChannel`, `ServerConfig`, `MessageType`, `ChatMessage`, `UserClickPayload`, `IrcStoreApi`                                            |
+| `src/types.ts`             | Shared types: `UserMode`, `ChannelUser`, `AvailableChannel`, `ServerConfig`, `MessageType`, `ChatMessage`, `UserClickPayload`, `IrcStoreApi` (includes `setListWaiting()`, `clearListWaiting()`) |
 | `src/config.ts`            | Global defaults: storage keys, IRC defaults, chat limits (1000 msgs, 10min grouping), LIST limits (200, 30s timeout), image cache (10min TTL, 5min cleanup), proxy URL, server defaults |
 | `src/servers.ts`           | Default server list with per-server config: `urlTransform`, `blockedUploadProviders`, `defaultFilteredMessages`, `tcpHost/tcpPort/tcpTls`                                               |
 | `src/i18n/index.ts`        | vue-i18n setup: `detectLocale()` (localStorage → navigator → 'en'), `setLocale()`, `AVAILABLE_LOCALES`                                                                                  |
