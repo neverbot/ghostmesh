@@ -49,6 +49,9 @@
     const tipText = el.getAttribute('data-tooltip');
     if (!tipText) return;
 
+    // If switching to a different tooltip element, clear the previous one first
+    if (currentTarget && currentTarget !== el) hide();
+
     currentTarget = el;
     const mouseEvent = e as MouseEvent;
     x.value = mouseEvent.clientX;
@@ -67,7 +70,9 @@
 
   function onLeave(e: Event) {
     const el = findTooltipEl(e);
-    if (el && el === currentTarget) {
+    if (!el) return;
+    // Hide if leaving the current target or any tooltip element (safety net for fast mouse)
+    if (el === currentTarget || !currentTarget?.contains(e.target as Node)) {
       hide();
     }
   }
