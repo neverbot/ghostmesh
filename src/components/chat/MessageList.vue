@@ -1,7 +1,9 @@
 <script setup lang="ts">
   import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
+  import { useServerSettingsStore } from '@/stores/server-settings.ts';
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
+  import { hasFormatting } from '@/utils/mirc-format.ts';
   import MessageItem from './MessageItem.vue';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
   import ForwardMenu from './ForwardMenu.vue';
@@ -49,10 +51,24 @@
   }
 
   const store = useIrcStore();
+  const settingsStore = useServerSettingsStore();
   const userPrefs = useUserPrefsStore();
   const scrollContainer = ref<HTMLElement | null>(null);
   /** Refs for each channel's content div, keyed by channel key. */
   const channelDivs: Record<string, HTMLElement> = {};
+
+  /** Whether mIRC formatting is enabled for a channel's server. Checks if any message has formatting. */
+  function isMircEnabled(key: string): boolean {
+    const serverId = key.split(':')[0];
+    const msgs = store.messages[key] || [];
+    const detected = msgs.some((m) => hasFormatting(m.content));
+    return settingsStore.isMircEnabled(serverId, detected);
+  }
+
+  /** Whether image previews are hidden for a given nick on a server. */
+  function isPreviewHidden(serverId: string, nick: string): boolean {
+    return userPrefs.isPreviewHidden(serverId, nick);
+  }
 
   // Context menu state
   const menuOpen = ref(false);
@@ -421,6 +437,8 @@
             :key="msg.id"
             :message="msg"
             :active="key === selectedKey"
+            :mirc-enabled="isMircEnabled(key)"
+            :preview-hidden="isPreviewHidden(msg.serverId, msg.nick)"
             @message-seen="onMessageSeen"
           />
         </template>
@@ -492,6 +510,8 @@
                 <MessageItem
                   :message="msg"
                   :active="key === selectedKey"
+                  :mirc-enabled="isMircEnabled(key)"
+                  :preview-hidden="isPreviewHidden(msg.serverId, msg.nick)"
                   @message-seen="onMessageSeen"
                 />
                 <!-- Timestamp + Forward button (appear on hover) -->

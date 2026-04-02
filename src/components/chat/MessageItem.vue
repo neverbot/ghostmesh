@@ -1,8 +1,5 @@
 <script setup lang="ts">
   import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
-  import { useIrcStore } from '@/stores/irc.ts';
-  import { useServerSettingsStore } from '@/stores/server-settings.ts';
-  import { useUserPrefsStore } from '@/stores/user-prefs.ts';
   import { parseFormatting, stripFormatting, hasFormatting } from '@/utils/mirc-format.ts';
   import { formatPlainContent, formatHtmlContent } from '@/services/message.service.ts';
   import { resolveImageProvider } from '@/services/image-providers.ts';
@@ -13,15 +10,15 @@
     message: ChatMessage;
     /** Whether this message's channel is currently visible. Observer only runs when true. */
     active?: boolean;
+    /** Whether mIRC formatting is enabled for this channel. */
+    mircEnabled: boolean;
+    /** Whether image previews are hidden for this message's sender. */
+    previewHidden: boolean;
   }>();
 
   const emit = defineEmits<{
     'message-seen': [payload: { serverId: string; channel: string; timestamp: Date }];
   }>();
-
-  const store = useIrcStore();
-  const settingsStore = useServerSettingsStore();
-  const userPrefs = useUserPrefsStore();
 
   const messageEl = ref<HTMLElement | null>(null);
   const previewReady = ref(false);
@@ -100,19 +97,13 @@
     return time;
   });
 
-  const mircEnabled = computed(() => {
-    const serverId = props.message.serverId;
-    const detected = hasFormatting(props.message.content);
-    return settingsStore.isMircEnabled(serverId, detected);
-  });
+  /** Whether mIRC formatting applies to this specific message. */
+  const useMirc = computed(() => props.mircEnabled && hasFormatting(props.message.content));
 
-  const canResolveImages = computed(
-    () =>
-      previewReady.value && !userPrefs.isPreviewHidden(props.message.serverId, props.message.nick),
-  );
+  const canResolveImages = computed(() => previewReady.value && !props.previewHidden);
 
   const renderedHtml = computed(() => {
-    if (mircEnabled.value) {
+    if (useMirc.value) {
       return formatHtmlContent(parseFormatting(props.message.content), {
         resolveImages: canResolveImages.value,
       });
