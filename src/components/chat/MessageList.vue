@@ -699,12 +699,29 @@
 </template>
 
 <style scoped>
-  /* Channel mentions: emerald in other bubbles, amber in own (green) bubbles */
+  /* Other people's bubbles: no underline, underline on hover */
   :deep(.bg-slate-100 .mention-channel) {
     color: var(--color-emerald-600);
   }
+  :deep(.bg-slate-100 .mention-nick),
+  :deep(.bg-slate-100 .mention-channel) {
+    text-decoration: none;
+  }
+  :deep(.bg-slate-100 .mention-nick:hover),
+  :deep(.bg-slate-100 .mention-channel:hover) {
+    text-decoration: underline;
+  }
+
+  /* Own bubbles: underline by default, remove on hover */
   :deep(.bg-emerald-500 .mention-channel) {
     color: white;
-    font-weight: 600;
+  }
+  :deep(.bg-emerald-500 .mention-nick),
+  :deep(.bg-emerald-500 .mention-channel) {
+    text-decoration: underline;
+  }
+  :deep(.bg-emerald-500 .mention-nick:hover),
+  :deep(.bg-emerald-500 .mention-channel:hover) {
+    text-decoration: none;
   }
 </style>
