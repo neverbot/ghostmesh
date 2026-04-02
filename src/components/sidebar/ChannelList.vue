@@ -2,8 +2,15 @@
   import { ref, computed, nextTick, onUnmounted } from 'vue';
   import config from '@/config.ts';
   import { useIrcStore } from '@/stores/irc.ts';
+  import { i18n } from '@/i18n/index.ts';
 
   const store = useIrcStore();
+  const t = i18n.global.t;
+
+  /** Pre-computed i18n strings for use inside v-for loops. */
+  const I18N_STATUS = t('common.status');
+  const I18N_CLOSE = t('tooltips.closeConversation');
+  const I18N_LEAVE = t('tooltips.leaveChannel');
 
   const collapsed = ref(false);
   const showFilters = ref(false);
@@ -254,7 +261,7 @@
             >
               {{
                 entry.channel === '*status'
-                  ? $t('common.status')
+                  ? I18N_STATUS
                   : entry.isDM
                     ? entry.channel
                     : entry.channel.replace(/^#/, '')
@@ -295,7 +302,7 @@
                 v-if="entry.channel !== '*status'"
                 class="rounded p-0.5 text-transparent transition-colors hover:bg-slate-600 hover:text-red-400 group-hover/ch:text-slate-500"
                 :data-tooltip="
-                  entry.isDM ? $t('tooltips.closeConversation') : $t('tooltips.leaveChannel')
+                  entry.isDM ? I18N_CLOSE : I18N_LEAVE
                 "
                 data-tooltip-delay="500"
                 @click.stop="store.partChannel(entry.serverId, entry.channel)"

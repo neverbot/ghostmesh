@@ -8,7 +8,19 @@
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
   import ForwardMenu from './ForwardMenu.vue';
   import config from '@/config.ts';
+  import { i18n } from '@/i18n/index.ts';
   import type { ChatMessage, UserClickPayload, UserMode } from '@/types.ts';
+
+  const t = i18n.global.t;
+
+  /** Pre-computed i18n strings — avoids reactive $t() calls inside v-for loops. */
+  const I18N = {
+    noMessages: t('chat.noMessages'),
+    messagesWillAppear: t('chat.messagesWillAppear'),
+    selectChannelToStart: t('chat.selectChannelToStart'),
+    forwardMessage: t('tooltips.forwardMessage'),
+    scrollToBottom: t('chat.scrollToBottom'),
+  };
 
   /** A group of consecutive messages from the same user, or a single system message. */
   interface MessageGroup {
@@ -408,10 +420,10 @@
           d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z"
         />
       </svg>
-      <p class="text-sm">{{ $t('chat.noMessages') }}</p>
+      <p class="text-sm">{{ I18N.noMessages }}</p>
       <p class="mt-1 text-xs text-slate-400">
         {{
-          store.selectedChannel ? $t('chat.messagesWillAppear') : $t('chat.selectChannelToStart')
+          store.selectedChannel ? I18N.messagesWillAppear : I18N.selectChannelToStart
         }}
       </p>
     </div>
@@ -536,7 +548,7 @@
                   </span>
                   <button
                     class="flex h-5 w-5 items-center justify-center rounded-full bg-white text-slate-400 shadow transition-colors hover:text-emerald-500"
-                    :data-tooltip="$t('tooltips.forwardMessage')"
+                    :data-tooltip="I18N.forwardMessage"
                     data-tooltip-delay="300"
                     @click.stop="
                       onForward({ content: msg.content, x: $event.clientX, y: $event.clientY })
@@ -599,7 +611,7 @@
     <button
       v-if="showScrollBtn"
       class="absolute bottom-24 right-5 flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white shadow-lg transition-colors hover:bg-slate-50"
-      :title="$t('chat.scrollToBottom')"
+      :title="I18N.scrollToBottom"
       @click="scrollToBottom"
     >
       <svg
