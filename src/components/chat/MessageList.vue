@@ -650,14 +650,13 @@
 </template>
 
 <style scoped>
-  /* Extend hover zone of each message row to full chat width */
-  .fwd-row::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: -9999px;
-    right: -9999px;
-    z-index: -1;
+  /* Extend hover zone of each message row to full chat width.
+     Uses padding + negative margin so the element's hit area expands
+     without affecting layout, even inside overflow-hidden containers. */
+  .fwd-row {
+    margin-left: -9999px;
+    margin-right: -9999px;
+    padding-left: 9999px;
+    padding-right: 9999px;
   }
 </style>
