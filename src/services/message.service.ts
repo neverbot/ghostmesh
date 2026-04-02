@@ -22,6 +22,21 @@ const IMAGE_EXTENSIONS: string[] = [
   'avif',
 ];
 
+// ─── Mention context ─────────────────────────────────────────────────────────
+
+/** Callback that returns the set of nicks in the current channel. */
+let getChannelNicks: (() => Set<string>) | null = null;
+/** Callback that returns the set of joined channel names (with # prefix). */
+let getJoinedChannels: (() => Set<string>) | null = null;
+
+/** Register context callbacks for nick/channel detection. Called once by MessageList on mount. */
+function setMentionContext(nicks: () => Set<string>, channels: () => Set<string>): void {
+  getChannelNicks = nicks;
+  getJoinedChannels = channels;
+}
+
+// ─── Failed previews ─────────────────────────────────────────────────────────
+
 /** URLs that have already failed preview resolution — not retried during this session. */
 const failedPreviews: Set<string> = new Set();
 const MAX_FAILED_PREVIEWS = 500;
@@ -277,6 +292,49 @@ function escapeHtml(str: string): string {
     .replace(/"/g, '&quot;');
 }
 
+/**
+ * Highlight nick mentions and #channel references in an already-escaped HTML text segment.
+ * Nicks are matched as whole words (case-insensitive) against the current channel's user list.
+ * Channels are matched by the #name pattern against joined channels.
+ */
+function highlightMentions(escaped: string): string {
+  const nicks = getChannelNicks?.();
+  const channels = getJoinedChannels?.();
+  if (!nicks?.size && !channels?.size) return escaped;
+
+  // Build a single regex that matches #channel or nicks as whole words.
+  // Process #channels first (they have a clear prefix), then nicks.
+  // We work on escaped HTML, so & < > " are entity-encoded and won't interfere.
+  const parts: string[] = [];
+
+  if (channels?.size) {
+    // Match #word patterns (escaped text won't have bare < > so # is safe)
+    for (const ch of channels) {
+      parts.push(escapeHtml(ch).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    }
+  }
+
+  if (nicks?.size) {
+    for (const nick of nicks) {
+      parts.push(escapeHtml(nick).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    }
+  }
+
+  if (parts.length === 0) return escaped;
+
+  // Sort by length descending so longer matches win (e.g. "bob_" before "bob")
+  parts.sort((a, b) => b.length - a.length);
+  const regex = new RegExp(`(?<=^|[\\s,.:;!?@])(?:${parts.join('|')})(?=[\\s,.:;!?]|$)`, 'gi');
+
+  return escaped.replace(regex, (match) => {
+    // Determine if it's a channel or nick
+    if (match.startsWith('#')) {
+      return `<span class="cursor-pointer text-emerald-600 hover:underline" data-channel="${escapeHtml(match)}">${match}</span>`;
+    }
+    return `<span class="cursor-pointer font-semibold hover:underline" data-mention="${escapeHtml(match)}">${match}</span>`;
+  });
+}
+
 interface LinkifyOptions {
   resolveImages?: boolean;
 }
@@ -294,7 +352,7 @@ function linkifyText(text: string, { resolveImages = true }: LinkifyOptions = {}
   URL_REGEX.lastIndex = 0;
   let match: RegExpExecArray | null;
   while ((match = URL_REGEX.exec(text)) !== null) {
-    result += escapeHtml(text.slice(lastIndex, match.index));
+    result += highlightMentions(escapeHtml(text.slice(lastIndex, match.index)));
 
     const rawUrl: string = match[0];
     const href: string = normalizeUrl(rawUrl);
@@ -344,7 +402,7 @@ function linkifyText(text: string, { resolveImages = true }: LinkifyOptions = {}
     lastIndex = match.index + rawUrl.length;
   }
 
-  result += escapeHtml(text.slice(lastIndex));
+  result += highlightMentions(escapeHtml(text.slice(lastIndex)));
   return result;
 }
 
@@ -392,4 +450,4 @@ function hasUrls(text: string): boolean {
   return URL_REGEX.test(text);
 }
 
-export { formatPlainContent, formatHtmlContent, hasUrls, isImageUrl };
+export { formatPlainContent, formatHtmlContent, hasUrls, isImageUrl, setMentionContext };

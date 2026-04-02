@@ -4,6 +4,7 @@
   import { useServerSettingsStore } from '@/stores/server-settings.ts';
   import { useUserPrefsStore } from '@/stores/user-prefs.ts';
   import { hasFormatting } from '@/utils/mirc-format.ts';
+  import { setMentionContext } from '@/services/message.service.ts';
   import MessageItem from './MessageItem.vue';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
   import ForwardMenu from './ForwardMenu.vue';
@@ -300,17 +301,68 @@
     }
   }
 
-  /** Handle delegated clicks on data-action links inside v-html content. */
+  /** Handle delegated clicks on data-action, data-mention, data-channel inside v-html. */
   function onActionClick(e: Event) {
-    const link = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
-    if (!link) return;
-    e.preventDefault();
-    if (link.dataset.action === 'open-blocked-settings' && store.selectedServerId) {
-      store.requestOpenSettings(store.selectedServerId, 'blocked');
+    const target = e.target as HTMLElement;
+
+    // data-action links (e.g. "open-blocked-settings")
+    const link = target.closest<HTMLElement>('[data-action]');
+    if (link) {
+      e.preventDefault();
+      if (link.dataset.action === 'open-blocked-settings' && store.selectedServerId) {
+        store.requestOpenSettings(store.selectedServerId, 'blocked');
+      }
+      return;
+    }
+
+    // Nick mentions — open context menu
+    const mention = target.closest<HTMLElement>('[data-mention]');
+    if (mention && store.selectedServerId) {
+      e.preventDefault();
+      onUserClick({
+        nick: mention.dataset.mention!,
+        serverId: store.selectedServerId,
+        x: (e as MouseEvent).clientX,
+        y: (e as MouseEvent).clientY,
+      });
+      return;
+    }
+
+    // Channel references — join or switch to channel
+    const channel = target.closest<HTMLElement>('[data-channel]');
+    if (channel && store.selectedServerId) {
+      e.preventDefault();
+      const name = channel.dataset.channel!;
+      const serverId = store.selectedServerId;
+      const joined = store.channels[serverId] || [];
+      if (joined.includes(name)) {
+        store.selectChannel(serverId, name);
+      } else {
+        store.joinChannel(serverId, name);
+      }
     }
   }
 
   onMounted(() => {
+    // Provide nick/channel context to the message formatting service (non-reactive, read on demand)
+    setMentionContext(
+      () => {
+        const key = selectedKey.value;
+        if (!key) return new Set<string>();
+        const users = store.users[key] || [];
+        return new Set(users.map((u) => u.nick));
+      },
+      () => {
+        const allChannels = new Set<string>();
+        for (const serverId of Object.keys(store.channels)) {
+          for (const ch of store.channels[serverId]) {
+            if (ch !== '*status') allChannels.add(ch);
+          }
+        }
+        return allChannels;
+      },
+    );
+
     const el = scrollContainer.value;
     if (el) {
       el.addEventListener('load', onImageLoad, true);
@@ -422,9 +474,7 @@
       </svg>
       <p class="text-sm">{{ I18N.noMessages }}</p>
       <p class="mt-1 text-xs text-slate-400">
-        {{
-          store.selectedChannel ? I18N.messagesWillAppear : I18N.selectChannelToStart
-        }}
+        {{ store.selectedChannel ? I18N.messagesWillAppear : I18N.selectChannelToStart }}
       </p>
     </div>
 
@@ -475,12 +525,12 @@
             ]"
             @click="
               !group.own &&
-              onUserClick({
-                nick: group.nick,
-                serverId: group.messages[0].serverId,
-                x: $event.clientX,
-                y: $event.clientY,
-              })
+                onUserClick({
+                  nick: group.nick,
+                  serverId: group.messages[0].serverId,
+                  x: $event.clientX,
+                  y: $event.clientY,
+                })
             "
           >
             {{ (group.nick || '?')[0].toUpperCase() }}
@@ -590,8 +640,7 @@
                 v-if="group.messages[group.messages.length - 1].warning"
                 class="cursor-help text-amber-500"
                 :title="group.messages[group.messages.length - 1].warning"
-                >⚠</span
-              >
+              >⚠</span>
             </div>
           </div>
         </div>
@@ -648,4 +697,3 @@
     @close="forwardOpen = false"
   />
 </template>
-
