@@ -24,6 +24,16 @@ const IMAGE_EXTENSIONS: string[] = [
 
 /** URLs that have already failed preview resolution — not retried during this session. */
 const failedPreviews: Set<string> = new Set();
+const MAX_FAILED_PREVIEWS = 500;
+
+/** Track a failed preview URL, evicting the oldest entry if the set is full. */
+function trackFailedPreview(src: string): void {
+  if (failedPreviews.size >= MAX_FAILED_PREVIEWS) {
+    const oldest = failedPreviews.values().next().value;
+    if (oldest) failedPreviews.delete(oldest);
+  }
+  failedPreviews.add(src);
+}
 
 /** Regex to match URLs in text. */
 const URL_REGEX: RegExp = /(?:https?:\/\/|www\.)[^\s<>"'()]+/gi;
@@ -79,6 +89,8 @@ function handleImageError(img: HTMLImageElement): void {
     // First failure: try via image-proxy.invalid proxy
     img.dataset.attempt = '1';
     const proxyUrl: string = imageProxyUrl(img.dataset.originalSrc!);
+    img.onerror = null; // Clear previous error handler to prevent re-entry
+    img.onload = null; // Clear any previous load handler
     img.src = proxyUrl;
     img.onload = (): void => {
       // Cache the proxy URL (resolved differs from original)
@@ -96,7 +108,7 @@ function handleImageError(img: HTMLImageElement): void {
     // Proxy also failed — show retry button
     const src: string = img.dataset.originalSrc!;
     console.warn(`[GhostMesh] Image failed to load: ${src} (proxy also failed)`);
-    failedPreviews.add(src);
+    trackFailedPreview(src);
     const wrapper: HTMLDivElement = document.createElement('div');
     wrapper.className =
       'my-1 flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-[10px] text-slate-400';
@@ -205,12 +217,12 @@ async function resolveAsyncImage(asyncMarker: string, placeholderId: string): Pr
       el.replaceWith(img);
     } else {
       console.warn(`[GhostMesh] Async image not available: ${asyncMarker}`);
-      failedPreviews.add(asyncMarker);
+      trackFailedPreview(asyncMarker);
       replaceWithRetry(el, asyncMarker, placeholderId, 'Image expired or unavailable');
     }
   } catch (err: unknown) {
     console.warn(`[GhostMesh] Async image failed: ${asyncMarker}`, err);
-    failedPreviews.add(asyncMarker);
+    trackFailedPreview(asyncMarker);
     const el: HTMLElement | null = document.getElementById(placeholderId);
     if (el) replaceWithRetry(el, asyncMarker, placeholderId, 'Preview failed');
   }
@@ -314,13 +326,16 @@ function linkifyText(text: string, { resolveImages = true }: LinkifyOptions = {}
       // Async provider — render placeholder, resolve in background
       const placeholderId: string = `img-async-${Math.random().toString(36).slice(2, 8)}`;
       result += `<div id="${placeholderId}" class="my-1 text-[10px] italic opacity-60">Loading preview...</div>`;
-      // Defer until Vue renders the HTML into the DOM
-      requestAnimationFrame((): void => {
-        resolveAsyncImage(imageSrc!, placeholderId).catch((): void => {
+      // Defer until Vue renders the HTML into the DOM (short timeout, not rAF)
+      const src = imageSrc;
+      setTimeout((): void => {
+        // Skip if placeholder was removed (channel switch, message trimmed)
+        if (!document.getElementById(placeholderId)) return;
+        resolveAsyncImage(src, placeholderId).catch((): void => {
           const el: HTMLElement | null = document.getElementById(placeholderId);
           if (el) el.textContent = 'Preview failed';
         });
-      });
+      }, 0);
     } else if (imageSrc) {
       const escapedSrc: string = escapeHtml(imageSrc);
       result += `<img src="${escapedSrc}" data-original-src="${escapedSrc}" data-attempt="0" alt="" referrerpolicy="no-referrer" class="mt-1 block max-w-full rounded-lg animate-preview" style="max-height:70vh;width:auto" loading="lazy" onerror="window.__ghostmeshImageError?.(this)" />`;
