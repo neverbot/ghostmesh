@@ -8,7 +8,7 @@ Vue 3 + Pinia IRC client with full TypeScript, Tailwind CSS v4, vue-i18n, and We
 - **Stores** (Pinia): Pure state, getters, mutations — no business logic
 - **Components**: Vue SFCs with `<script setup lang="ts">`, read from stores, call store actions
 
-**21 Vue components, 4 Pinia stores, 6+ services.**
+**22 Vue components, 4 Pinia stores, 6+ services.**
 
 ---
 
@@ -32,7 +32,8 @@ App.vue
     │   │   ├── UserContextMenu.vue
     │   │   └── ForwardMenu.vue
     │   └── MessageInput.vue
-    │       └── CommandAutocomplete.vue
+    │       ├── CommandAutocomplete.vue
+    │       └── EmojiPicker.vue
     └── SidebarRight.vue
         ├── ChannelInfo.vue
         │   └── UserContextMenu.vue
@@ -149,6 +150,7 @@ App.vue
 | **Refs** | `collapsed`, `showFilters`, `channelFilterInput`, `joinInput`, `badgeCache` |
 | **Computed** | `isWaitingForList` |
 | **Timers** | `setInterval(updateBadgeCache, 3000)` — throttled badge snapshot, cleared `onUnmounted` |
+| **i18n**          | Pre-computed i18n strings (`I18N_STATUS`, `I18N_CLOSE`, `I18N_LEAVE`) for v-for usage |
 | **Key functions** | `updateBadgeCache()`, `getBadge()`, `handleJoin()`, `serverAbbr()`, `resetFilters()`, `limitedAvailable()` |
 | **Template** | Collapsible with spinner/filter buttons. Filter panel (text, server, min users, sort). Joined channels (badges, user count, server badge, leave). Separator. Available channels (capped at `browseLimit`). Join input at bottom |
 
@@ -192,10 +194,12 @@ App.vue
 | **Non-reactive state** | `autoScroll`, `suppressMarkRead`, `lastScrollHeight`, `scrollCheckTimer`, `groupCache` (manual)                                                                                                                                                                                                                                                                                                                  |
 | **Watchers**           | `currentMessages.length` (auto-scroll), `selectedKey` (save/restore scroll position)                                                                                                                                                                                                                                                                                                                             |
 | **Timers**             | `setTimeout` 50ms (debounced scroll height check), `setTimeout` 200ms (suppress mark-read on channel switch)                                                                                                                                                                                                                                                                                                     |
-| **Observers**          | **MutationObserver** on scrollContainer `{ childList: true, subtree: true, characterData: true }` — cleaned `onUnmounted`                                                                                                                                                                                                                                                                                        |
+| **i18n**               | All `$t()` calls pre-computed as constants (`I18N` object) to avoid reactive calls inside v-for                                                                                                                                                                                                                                                                                                                  |
+| **Observers**          | **MutationObserver** scoped to active channel div only `{ childList: true }` (no subtree, no characterData) — cleaned `onUnmounted`                                                                                                                                                                                                                                                                              |
 | **Event listeners**    | `load` (capture, images), `scroll` (passive), `wheel` (passive), `touchstart` (passive), `animationend` (capture, preview-appear), `click` (delegated `[data-action]`) — all cleaned `onUnmounted`                                                                                                                                                                                                               |
-| **Key functions**      | `buildGroups()` groups consecutive same-user messages within `groupingInterval`. `getGroups(key)` uses manual cache (invalidates on length change). `isNearBottom()`, `doScroll()`, `onUserScroll()` (rAF), `checkScrollHeightChange()` (debounced), `onAnimationEnd()`                                                                                                                                          |
-| **Template**           | Empty state `v-if`. `v-for key in messageKeys` with **`v-show="key === selectedKey"`** (keeps all channels in DOM). Nested `v-for group in getGroups(key)` → `v-for msg in group.messages`. System messages standalone, user messages in grouped bubble. Avatar + nick (clickable). Timestamp + forward button on hover (`data-tooltip`). Scroll-to-bottom button. UserContextMenu + ForwardMenu |
+| **Key functions**      | `buildGroups()` groups consecutive same-user messages within `groupingInterval`. `getGroups(key)` uses manual cache (invalidates on length change). `isNearBottom()`, `doScroll()`, `onUserScroll()` (rAF), `checkScrollHeightChange()` (debounced), `onAnimationEnd()` (debounced with 100ms timer to avoid repeated smooth scrolls)                                                                             |
+| **Cleanup**            | Watch on `messageKeys` cleans up `groupCache`, `scrollPositions`, `channelDivs` when channels are removed                                                                                                                                                                                                                                                                                                        |
+| **Template**           | Empty state `v-if`. `v-for key in messageKeys` with **`v-show="key === selectedKey"`** (keeps all channels in DOM). Forward hover group on full-width row div. Nested `v-for group in getGroups(key)` → `v-for msg in group.messages`. System messages standalone, user messages in grouped bubble. Avatar + nick (clickable). Timestamp + forward button on hover (`data-tooltip`). Scroll-to-bottom button. UserContextMenu + ForwardMenu |
 
 ---
 
@@ -205,12 +209,12 @@ App.vue
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Path**      | `src/components/chat/MessageItem.vue` (141 lines)                                                                                                                                            |
 | **Purpose**   | Single message rendering with mIRC formatting and lazy image preview                                                                                                                         |
-| **Stores**    | `useIrcStore()`, `useServerSettingsStore()`, `useUserPrefsStore()`                                                                                                                           |
-| **Props**     | `message: ChatMessage`                                                                                                                                                                       |
+| **Stores**    | None (ZERO store subscriptions — removed useIrcStore, useServerSettingsStore, useUserPrefsStore)                                                                                              |
+| **Props**     | `message: ChatMessage`, `active: boolean`, `mircEnabled: boolean`, `previewHidden: boolean`                                                                                                  |
 | **Emits**     | `message-seen`                                                                                                                                                                               |
 | **Refs**      | `messageEl`, `previewReady`                                                                                                                                                                  |
-| **Computed**  | `isOwn`, `isSystem`, `timeString`, `mircEnabled`, `canResolveImages`, `renderedHtml`, `plainHtml`                                                                                            |
-| **Observers** | **IntersectionObserver** (rootMargin 200px) — on enter: extracts URLs, resolves image providers, checks cache, sets `previewReady`, emits `message-seen`, disconnects. Cleaned `onUnmounted` |
+| **Computed**  | `isOwn`, `isSystem`, `timeString`, `useMirc` (uses `mircEnabled` prop), `canResolveImages` (uses `previewHidden` prop), `renderedHtml`, `plainHtml`                                          |
+| **Observers** | **IntersectionObserver** (rootMargin 200px) — only created when `active` prop is true; stopped when channel becomes inactive. On enter: extracts URLs, resolves image providers, checks cache, sets `previewReady`, emits `message-seen`, disconnects. Cleaned `onUnmounted` |
 | **Template**  | System: monospace with time tooltip, `v-html`. User: content spans with `v-html` for formatted/plain                                                                                         |
 
 ---
@@ -222,13 +226,14 @@ App.vue
 | **Path**          | `src/components/chat/MessageInput.vue` (242 lines)                                                                |
 | **Purpose**       | Text input, file upload, command autocomplete                                                                     |
 | **Stores**        | `useIrcStore()`                                                                                                   |
-| **Refs**          | `text`, `inputEl`, `fileInputEl`, `autocompleteRef`, `inputFocused`                                               |
+| **Children**      | CommandAutocomplete, EmojiPicker                                                                                  |
+| **Refs**          | `text`, `inputEl`, `fileInputEl`, `autocompleteRef`, `inputFocused`, `emojiPickerOpen`                            |
 | **Computed**      | `isDisabled`, `isStatusChannel`                                                                                   |
 | **Watchers**      | `selectedChannel` (auto-focus), `prefillMessage` (prefill from forward)                                           |
 | **Emits**         | `send`, `upload`                                                                                                  |
-| **Key functions** | `handleSend()`, `openFilePicker()`, `validateAndUpload()` (MIME + size check), keyboard handlers                  |
+| **Key functions** | `handleSend()`, `openFilePicker()`, `validateAndUpload()` (MIME + size check), `onEmojiSelect()`, keyboard handlers |
 | **Exposed**       | `validateAndUpload` (for parent drag-drop)                                                                        |
-| **Template**      | CommandAutocomplete, input with dynamic placeholder, hidden file input, attach button (`data-tooltip`), send button |
+| **Template**      | CommandAutocomplete, EmojiPicker, input with dynamic placeholder, hidden file input, emoji button (`data-emoji-trigger`, `data-tooltip`), attach button (`data-tooltip`), send button |
 
 ---
 
@@ -245,6 +250,22 @@ App.vue
 | **Watchers** | `matches` (reset selection)                                        |
 | **Exposed**  | `moveUp`, `moveDown`, `confirmSelection`, `visible`                |
 | **Template** | `v-if visible`: dropdown with `v-for` commands, selected highlight |
+
+---
+
+### EmojiPicker.vue
+
+|                     |                                                                                                    |
+| ------------------- | -------------------------------------------------------------------------------------------------- |
+| **Path**            | `src/components/chat/EmojiPicker.vue`                                                              |
+| **Purpose**         | Categorized native system emoji picker                                                             |
+| **Props**           | `open` (boolean)                                                                                   |
+| **Emits**           | `select`, `close`                                                                                  |
+| **Refs**            | `pickerEl`, `activeCategory`, `posX`, `posY`                                                       |
+| **Categories**      | 9: Smileys, People, Animals, Food, Activities, Travel, Objects, Symbols, Flags                     |
+| **Event listeners** | `document.mousedown` for click-outside close — cleaned `onUnmounted`                               |
+| **Position**        | Calculated from trigger button via `data-emoji-trigger` attribute                                  |
+| **Template**        | Teleport to body, fixed position `z-[100]`, category tabs, scrollable 8-column grid of native emoji |
 
 ---
 
@@ -310,8 +331,8 @@ App.vue
 | **Purpose**         | Singleton tooltip — one instance for the entire app, uses event delegation on `document`         |
 | **Refs**            | `visible`, `text`, `x`, `y`                                                                     |
 | **Non-reactive**    | `timer` (setTimeout handle), `currentTarget` (HTMLElement)                                       |
-| **Timers**          | `setTimeout(delay)` on mouseenter — cleared on mouseleave                                        |
-| **Event listeners** | 3 on `document` (capture): `mouseenter`, `mouseleave`, `mousemove` — cleaned `onUnmounted`      |
+| **Timers**          | `setTimeout(delay)` on pointer enter — cleared on pointer leave                                  |
+| **Event listeners** | Single `pointermove` on `document` (throttled to 30ms), uses `closest('[data-tooltip]')` on pointer target — cleaned `onUnmounted` |
 | **Template**        | Teleport to body → Transition → fixed tooltip div                                                |
 | **Mounted in**      | `App.vue` — single instance                                                                     |
 
@@ -392,7 +413,8 @@ App.vue
 | `dmOnline`              | `Ref<Record<string, boolean>>`                           | DM user online status             |
 | `lastReadTimestamp`     | `Ref<Record<string, number>>`                            | Per-channel read watermark        |
 | `channels`              | `Ref<Record<string, string[]>>`                          | Joined channels per server        |
-| `messages`              | `Ref<Record<string, ChatMessage[]>>`                     | Per-channel history               |
+| `messages`              | **`ShallowRef`**`<Record<string, ChatMessage[]>>`        | Per-channel history (perf, requires `triggerRef`) |
+| `unreadCounts`          | `Ref<Record<string, number>>`                            | Incremental counter, updated in addMessage, reset in markReadUpTo |
 | `topics`                | `Ref<Record<string, string>>`                            | Per-channel topics                |
 | `listLoadingServers`    | `Ref<string[]>`                                          | Servers loading LIST              |
 | `listWaitingServers`    | `Ref<string[]>`                                          | Servers waiting for initial LIST delay |
@@ -419,7 +441,7 @@ App.vue
 | `allAvailableChannels` | **Expensive**: filtered, sorted, capped at `browseLimit`. Skips only the specific loading server's channels, keeping other servers' channels visible |
 | `totalAvailableCount`  | Unfiltered count. Skips only the loading server, not all servers |
 
-**Key methods:** `connectToServer()`, `disconnectFromServer()`, `joinChannel()`, `partChannel()`, `selectChannel()`, `openDM()`, `sendMessage()`, `uploadAndSend()`, `changeNick()`, `changeNickGlobal()`, `refreshChannelList()`, `setListWaiting()`, `clearListWaiting()`, `cleanup()`, `restoreSession()`, `markUnloading()`
+**Key methods:** `connectToServer()`, `disconnectFromServer()`, `joinChannel()`, `partChannel()`, `selectChannel()`, `openDM()`, `sendMessage()`, `uploadAndSend()`, `changeNick()`, `changeNickGlobal()`, `refreshChannelList()`, `setListWaiting()`, `clearListWaiting()`, `unreadCount()` (O(1) lookup via `unreadCounts`), `addSystemMessage()` (skips mirroring to active channel during reconnection via `connectingServers` check), `cleanup()`, `restoreSession()`, `markUnloading()`
 
 **Service interaction:** Lazy-initializes `IRCService` with store API subset. Service calls back for state mutations.
 
@@ -528,7 +550,9 @@ All timers tracked in Maps, cleaned on `cleanupConnection()`.
 | **Path**    | `src/services/message.service.ts` (~250 lines)                  |
 | **Purpose** | Message formatting, URL detection, linkification, image preview |
 
-**Key functions:** `formatPlainContent()`, `formatHtmlContent()`, `handleImageError()` (fallback chain: original → image-proxy.invalid → hide), `resolveAsyncImage()`, `isImageUrl()`, `normalizeUrl()`
+**Key functions:** `formatPlainContent()`, `formatHtmlContent()`, `handleImageError()` (fallback chain: original → image-proxy.invalid → hide; clears `img.onload`/`img.onerror` before reassigning to prevent closure accumulation), `resolveAsyncImage()` (uses `setTimeout(0)` instead of `requestAnimationFrame`, with DOM existence check before resolving), `isImageUrl()`, `normalizeUrl()`, `trackFailedPreview()`
+
+**State:** `failedPreviews: Set<string>` — capped at 500 entries with FIFO eviction via `trackFailedPreview()`
 
 **Global:** `window.__ghostmeshImageError` — exposed for inline `onerror` handlers in `v-html`
 
@@ -597,7 +621,7 @@ All timers tracked in Maps, cleaned on `cleanupConnection()`.
 | Pattern         | Where                                        | Count   |
 | --------------- | -------------------------------------------- | ------- |
 | `ref<T>`        | All components and stores                    | ~50     |
-| `shallowRef<T>` | `irc.ts` (`availableChannels`, `users`)      | 2       |
+| `shallowRef<T>` | `irc.ts` (`messages`, `availableChannels`, `users`) | 3       |
 | `computed`      | Most components                              | ~30     |
 | `watch`         | Components + all stores (deep, localStorage) | ~15     |
 | `triggerRef()`  | `irc.ts` (manual shallowRef updates)         | Several |
@@ -613,8 +637,8 @@ All timers tracked in Maps, cleaned on `cleanupConnection()`.
 | `setInterval` per server | irc.service.ts (keepalive, LIST refresh)             | Cleanup on disconnect |
 | `setTimeout` 50ms        | MessageList (scroll debounce)                        | Self-clearing         |
 | `setTimeout` per server  | irc.service.ts (LIST delay, LIST timeout, reconnect) | Cleanup on disconnect |
-| MutationObserver         | MessageList (scroll container, subtree)              | `onUnmounted` cleanup |
-| IntersectionObserver     | MessageItem (lazy image preview)                     | `onUnmounted` cleanup |
+| MutationObserver         | MessageList (active channel div, childList only)     | `onUnmounted` cleanup |
+| IntersectionObserver     | MessageItem (lazy image preview, active channel only) | `onUnmounted` cleanup |
 
 ---
 
@@ -624,14 +648,36 @@ All timers tracked in Maps, cleaned on `cleanupConnection()`.
 
 Previously used per-instance `InfoTooltip.vue` wrappers — 17 declared, up to 1000+ at runtime inside `v-for` loops. Each created 3 event listeners, a computed, and a Teleport. In a channel with 500 messages = 1500 event listeners just for forward tooltips.
 
-**Resolved:** Replaced with singleton `GlobalTooltip.vue` using event delegation on `document`. Elements use `data-tooltip` HTML attributes. Total listeners: 3 (for the entire app, regardless of tooltip count).
+**Resolved:** Replaced with singleton `GlobalTooltip.vue` using a single `pointermove` listener on `document` (throttled to 30ms). Uses `closest('[data-tooltip]')` on the pointer target instead of event delegation via capture phase. Elements use `data-tooltip` HTML attributes. Total listeners: 1 (for the entire app, regardless of tooltip count).
 
 ### MessageList v-show keeps all channels in DOM
 
-All channel message containers are rendered with `v-show`, not `v-if`. This preserves scroll position and message state but means:
-- MutationObserver with `subtree: true` observes DOM changes in **all** channels
-- All MessageItem components remain mounted with their IntersectionObservers
+All channel message containers are rendered with `v-show`, not `v-if`. This preserves scroll position and message state. Mitigated by:
+- MutationObserver scoped to active channel div only (`{ childList: true }`, no subtree)
+- IntersectionObserver in MessageItem only created when `active` prop is true; stopped when channel becomes inactive
 - Memory grows with number of joined channels
+
+### messages ShallowRef
+
+`messages` in irc.ts is now a `ShallowRef` instead of a deep `Ref`. Mutations require explicit `triggerRef(messages)` calls, avoiding deep reactivity overhead on large message arrays.
+
+### unreadCount O(1) lookup
+
+`unreadCount()` uses an incremental `unreadCounts` counter (updated in `addMessage`, reset in `markReadUpTo`) instead of the previous O(n) backward scan through messages.
+
+### i18n pre-computed strings
+
+Components that use `$t()` inside `v-for` loops (MessageList, ChannelList) pre-compute i18n strings as constants (`I18N` object / `I18N_STATUS`, `I18N_CLOSE`, `I18N_LEAVE`) to avoid reactive translation calls on every render iteration.
+
+### Forward hover on full-width row
+
+Forward hover group is on the full-width row div instead of individual elements inside the bubble. No `fwd-row::before` pseudo-element needed.
+
+### Image preview pipeline fixes
+
+- `handleImageError()` clears `img.onload`/`img.onerror` before reassigning to prevent closure accumulation
+- Async image resolution uses `setTimeout(0)` instead of `requestAnimationFrame`, with DOM existence check before resolving
+- `failedPreviews` Set capped at 500 entries with FIFO eviction via `trackFailedPreview()`
 
 ### Expensive computed getters
 
