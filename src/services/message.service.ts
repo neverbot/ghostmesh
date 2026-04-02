@@ -329,9 +329,9 @@ function highlightMentions(escaped: string): string {
   return escaped.replace(regex, (match) => {
     // Determine if it's a channel or nick
     if (match.startsWith('#')) {
-      return `<span class="cursor-pointer text-emerald-600 hover:underline" data-channel="${escapeHtml(match)}">${match}</span>`;
+      return `<span class="mention-channel cursor-pointer underline decoration-1 underline-offset-2 opacity-80 hover:opacity-100" data-channel="${escapeHtml(match)}">${match}</span>`;
     }
-    return `<span class="cursor-pointer font-semibold hover:underline" data-mention="${escapeHtml(match)}">${match}</span>`;
+    return `<span class="cursor-pointer font-semibold underline decoration-1 underline-offset-2 hover:no-underline" data-mention="${escapeHtml(match)}">${match}</span>`;
   });
 }
 

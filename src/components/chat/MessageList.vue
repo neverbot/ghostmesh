@@ -697,3 +697,13 @@
     @close="forwardOpen = false"
   />
 </template>
+
+<style scoped>
+  /* Channel mentions: emerald in other bubbles, amber in own (green) bubbles */
+  :deep(.bg-slate-100 .mention-channel) {
+    color: var(--color-emerald-600);
+  }
+  :deep(.bg-emerald-500 .mention-channel) {
+    color: var(--color-amber-200);
+  }
+</style>
