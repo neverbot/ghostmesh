@@ -1087,32 +1087,32 @@
       class="fixed z-[100] flex h-80 w-80 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
       :style="{ left: posX + 'px', top: posY + 'px' }"
     >
-    <!-- Category tabs -->
-    <div class="flex shrink-0 border-b border-slate-100">
-      <button
-        v-for="(cat, i) in categories"
-        :key="cat.label"
-        class="flex-1 py-2 text-center text-base transition-colors"
-        :class="activeCategory === i ? 'bg-slate-50 shadow-inner' : 'hover:bg-slate-50'"
-        :data-tooltip="cat.label"
-        @click="activeCategory = i"
-      >
-        {{ cat.icon }}
-      </button>
-    </div>
-    <!-- Emoji grid -->
-    <div class="flex-1 overflow-y-auto p-2">
-      <div class="grid grid-cols-8 gap-0.5">
+      <!-- Category tabs -->
+      <div class="flex shrink-0 border-b border-slate-100">
         <button
-          v-for="emoji in categories[activeCategory].emojis"
-          :key="emoji"
-          class="flex h-8 w-8 items-center justify-center rounded text-lg transition-colors hover:bg-slate-100"
-          @click="emit('select', emoji)"
+          v-for="(cat, i) in categories"
+          :key="cat.label"
+          class="flex-1 py-2 text-center text-base transition-colors"
+          :class="activeCategory === i ? 'bg-slate-50 shadow-inner' : 'hover:bg-slate-50'"
+          :data-tooltip="cat.label"
+          @click="activeCategory = i"
         >
-          {{ emoji }}
+          {{ cat.icon }}
         </button>
       </div>
+      <!-- Emoji grid -->
+      <div class="flex-1 overflow-y-auto p-2">
+        <div class="grid grid-cols-8 gap-0.5">
+          <button
+            v-for="emoji in categories[activeCategory].emojis"
+            :key="emoji"
+            class="flex h-8 w-8 items-center justify-center rounded text-lg transition-colors hover:bg-slate-100"
+            @click="emit('select', emoji)"
+          >
+            {{ emoji }}
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
   </Teleport>
 </template>
