@@ -579,11 +579,14 @@ const useIrcStore = defineStore('irc', () => {
    */
   function addSystemMessage(serverId: string, content: string, numericCode?: string): void {
     addMessage(serverId, '*status', '', content, 'system', numericCode);
+    // Mirror to the active channel if it's on the same server (but not during reconnection,
+    // and not to *status or DMs)
     if (
       selectedServerId.value === serverId &&
       selectedChannel.value &&
       selectedChannel.value !== '*status' &&
-      !isDM(selectedChannel.value)
+      !isDM(selectedChannel.value) &&
+      !connectingServers.value.includes(serverId)
     ) {
       addMessage(serverId, selectedChannel.value, '', content, 'system');
     }
