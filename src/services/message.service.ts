@@ -330,7 +330,7 @@ function highlightMentions(escaped: string): string {
     // Determine if it's a channel or nick. Underline behavior is controlled by
     // scoped CSS in MessageList based on own/other bubble context.
     if (match.startsWith('#')) {
-      return `<span class="mention-channel cursor-pointer font-semibold decoration-1 underline-offset-2 opacity-80 hover:opacity-100" data-channel="${escapeHtml(match)}">${match}</span>`;
+      return `<span class="mention-channel cursor-pointer font-semibold decoration-1 underline-offset-2" data-channel="${escapeHtml(match)}">${match}</span>`;
     }
     return `<span class="mention-nick cursor-pointer font-semibold decoration-1 underline-offset-2" data-mention="${escapeHtml(match)}">${match}</span>`;
   });
