@@ -36,47 +36,6 @@
     };
   }
 
-  /** Find the closest element with data-tooltip from the event target. */
-  function findTooltipEl(e: Event): HTMLElement | null {
-    const target = e.target as HTMLElement;
-    return target?.closest?.('[data-tooltip]') as HTMLElement | null;
-  }
-
-  function onEnter(e: Event) {
-    const el = findTooltipEl(e);
-    if (!el) return;
-
-    const tipText = el.getAttribute('data-tooltip');
-    if (!tipText) return;
-
-    // If switching to a different tooltip element, clear the previous one first
-    if (currentTarget && currentTarget !== el) hide();
-
-    currentTarget = el;
-    const mouseEvent = e as MouseEvent;
-    x.value = mouseEvent.clientX;
-    y.value = mouseEvent.clientY;
-    text.value = tipText;
-
-    const delay = parseInt(el.getAttribute('data-tooltip-delay') || '0', 10);
-    if (delay > 0) {
-      timer = setTimeout(() => {
-        visible.value = true;
-      }, delay);
-    } else {
-      visible.value = true;
-    }
-  }
-
-  function onLeave(e: Event) {
-    const el = findTooltipEl(e);
-    if (!el) return;
-    // Hide if leaving the current target or any tooltip element (safety net for fast mouse)
-    if (el === currentTarget || !currentTarget?.contains(e.target as Node)) {
-      hide();
-    }
-  }
-
   function hide() {
     if (timer) {
       clearTimeout(timer);
@@ -86,14 +45,59 @@
     currentTarget = null;
   }
 
+  /**
+   * Handle pointer movement over the document.
+   * Uses a single `pointermove` listener instead of mouseenter/mouseleave pairs,
+   * which avoids missed events on fast mouse movement.
+   */
+  function onPointerMove(e: PointerEvent) {
+    const target = (e.target as HTMLElement)?.closest?.('[data-tooltip]') as HTMLElement | null;
+
+    if (target) {
+      // Over a tooltip element
+      if (target !== currentTarget) {
+        // Entered a new tooltip element
+        hide();
+        currentTarget = target;
+        const tipText = target.getAttribute('data-tooltip');
+        if (!tipText) return;
+
+        x.value = e.clientX;
+        y.value = e.clientY;
+        text.value = tipText;
+
+        const delay = parseInt(target.getAttribute('data-tooltip-delay') || '0', 10);
+        if (delay > 0) {
+          timer = setTimeout(() => {
+            visible.value = true;
+          }, delay);
+        } else {
+          visible.value = true;
+        }
+      }
+      // Still over the same target — do nothing (position stays at entry point)
+    } else if (currentTarget) {
+      // Moved away from a tooltip element
+      hide();
+    }
+  }
+
+  let lastCheck = 0;
+
+  /** Throttled wrapper — checks at most every 30ms. */
+  function onPointerMoveThrottled(e: PointerEvent) {
+    const now = e.timeStamp;
+    if (now - lastCheck < 30) return;
+    lastCheck = now;
+    onPointerMove(e);
+  }
+
   onMounted(() => {
-    document.addEventListener('mouseenter', onEnter, true);
-    document.addEventListener('mouseleave', onLeave, true);
+    document.addEventListener('pointermove', onPointerMoveThrottled, { passive: true });
   });
 
   onUnmounted(() => {
-    document.removeEventListener('mouseenter', onEnter, true);
-    document.removeEventListener('mouseleave', onLeave, true);
+    document.removeEventListener('pointermove', onPointerMoveThrottled);
     hide();
   });
 </script>
