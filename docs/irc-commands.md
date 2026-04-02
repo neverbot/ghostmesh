@@ -135,7 +135,7 @@ CAP (Capability) negotiation is the IRCv3 mechanism for clients and servers to a
 | `323` | RPL_LISTEND          | Done                                 | Flushes buffer, clears loading state              |
 | `332` | RPL_TOPIC            | Done                                 | Sets channel topic in store                       |
 | `333` | RPL_TOPICWHOTIME     | Done                                 | Shows who set the topic and when                  |
-| `353` | RPL_NAMREPLY         | Done                                 | Populates channel user list                       |
+| `353` | RPL_NAMREPLY         | Done                                 | Populates channel user list; parses mode prefixes (~&@%+) |
 | `366` | RPL_ENDOFNAMES       | Done                                 | No-op (users already accumulated)                 |
 | `372` | RPL_MOTD             | Done                                 | Stripped `- ` prefix, preserves ASCII art         |
 | `375` | RPL_MOTDSTART        | Done                                 | Stripped `- ` prefix                              |
@@ -157,7 +157,7 @@ Large servers like Example Network return 6000+ channels. To prevent UI blocking
 - **Message queuing**: Only RPL_LIST (322) messages are queued; all other commands are processed immediately.
 - **Time-boxed drain**: Queued messages are processed in batches of ~8ms per animation frame.
 - **Store batching**: Channels are buffered (500 per batch or 500ms timer) before flushing to reactive state.
-- **Deferred computed**: The `allAvailableChannels` computed returns `[]` during loading and only recomputes once loading finishes.
+- **Per-server loading**: The `allAvailableChannels` computed skips only the specific server currently loading LIST, keeping other servers' channels visible.
 - **Render limit**: Only 200 channels are rendered in the sidebar (configurable in `config.ts`).
 
 ### LIST Timing

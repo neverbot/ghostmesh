@@ -301,9 +301,7 @@
               <button
                 v-if="entry.channel !== '*status'"
                 class="rounded p-0.5 text-transparent transition-colors hover:bg-slate-600 hover:text-red-400 group-hover/ch:text-slate-500"
-                :data-tooltip="
-                  entry.isDM ? I18N_CLOSE : I18N_LEAVE
-                "
+                :data-tooltip="entry.isDM ? I18N_CLOSE : I18N_LEAVE"
                 data-tooltip-delay="500"
                 @click.stop="store.partChannel(entry.serverId, entry.channel)"
               >
