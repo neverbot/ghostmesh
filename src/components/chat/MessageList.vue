@@ -398,7 +398,7 @@
 <template>
   <div
     ref="scrollContainer"
-    class="flex-1 overflow-y-auto bg-white py-4 pr-6 [overflow-x:clip]"
+    class="flex-1 overflow-x-hidden overflow-y-auto bg-white py-4 pr-6"
   >
     <!-- Empty state -->
     <div
@@ -463,7 +463,7 @@
         <!-- User message group: shared bubble wrapper -->
         <div
           v-else
-          class="flex gap-3 py-1.5 pl-6"
+          class="group/fwd flex gap-3 py-1.5 pl-6"
           :class="group.own ? 'flex-row-reverse pr-6' : 'flex-row'"
         >
           <!-- Avatar -->
@@ -522,7 +522,7 @@
                 v-for="msg in group.messages"
                 v-show="!userPrefs.isUserBlocked(msg.serverId, msg.nick)"
                 :key="msg.id"
-                class="group/fwd fwd-row relative"
+                class="relative"
               >
                 <MessageItem
                   :message="msg"
@@ -649,17 +649,3 @@
   />
 </template>
 
-<style scoped>
-  /* Extend hover zone of each message row to full chat width.
-     The ::before pseudo-element stretches horizontally to catch hover events
-     across the entire chat area. pointer-events: auto ensures it receives hover. */
-  .fwd-row::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: -100vw;
-    right: -100vw;
-    z-index: -1;
-  }
-</style>
