@@ -254,7 +254,7 @@
     const target = key ? channelDivs[key] : null;
     if (target && mutationObserver) {
       lastScrollHeight = scrollContainer.value?.scrollHeight || 0;
-      mutationObserver.observe(target, { childList: true, subtree: true, characterData: true });
+      mutationObserver.observe(target, { childList: true });
     }
   }
 
@@ -274,11 +274,16 @@
   }
 
   /** Re-scroll after CSS animation completes + remove animation class to prevent replay. */
+  let animationScrollTimer: ReturnType<typeof setTimeout> | null = null;
   function onAnimationEnd(e: AnimationEvent) {
     if (e.animationName === 'preview-appear') {
       (e.target as HTMLElement).classList.remove('animate-preview');
-      if (autoScroll && !suppressMarkRead) {
-        doScroll('smooth');
+      // Debounce: multiple images may animate simultaneously, scroll once at the end
+      if (autoScroll && !suppressMarkRead && !animationScrollTimer) {
+        animationScrollTimer = setTimeout(() => {
+          animationScrollTimer = null;
+          doScroll('smooth');
+        }, 100);
       }
     }
   }
