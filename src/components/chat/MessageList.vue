@@ -398,7 +398,7 @@
 <template>
   <div
     ref="scrollContainer"
-    class="flex-1 overflow-x-hidden overflow-y-auto bg-white py-4 pr-6"
+    class="flex-1 overflow-y-auto bg-white py-4 pr-6 [overflow-x:clip]"
   >
     <!-- Empty state -->
     <div
@@ -651,12 +651,15 @@
 
 <style scoped>
   /* Extend hover zone of each message row to full chat width.
-     Uses padding + negative margin so the element's hit area expands
-     without affecting layout, even inside overflow-hidden containers. */
-  .fwd-row {
-    margin-left: -9999px;
-    margin-right: -9999px;
-    padding-left: 9999px;
-    padding-right: 9999px;
+     The ::before pseudo-element stretches horizontally to catch hover events
+     across the entire chat area. pointer-events: auto ensures it receives hover. */
+  .fwd-row::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -100vw;
+    right: -100vw;
+    z-index: -1;
   }
 </style>
