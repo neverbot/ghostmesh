@@ -704,6 +704,7 @@
     color: var(--color-emerald-600);
   }
   :deep(.bg-emerald-500 .mention-channel) {
-    color: var(--color-amber-200);
+    color: white;
+    font-weight: 600;
   }
 </style>
