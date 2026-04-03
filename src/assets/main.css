@@ -163,3 +163,16 @@ input[type='number'] {
   animation: preview-appear 0.3s ease-out both;
   overflow: hidden;
 }
+
+/* ─── Auto-scroll: overflow-anchor sentinel ─── */
+
+/* Prevent all message children from anchoring scroll */
+.scroll-anchor-none > * {
+  overflow-anchor: none;
+}
+
+/* The sentinel div at the bottom anchors scroll position */
+.scroll-anchor-sentinel {
+  overflow-anchor: auto;
+  height: 1px;
+}

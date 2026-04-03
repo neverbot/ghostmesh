@@ -107,17 +107,17 @@
   /** Whether to show the "scroll to bottom" button. */
   const showScrollBtn = ref(false);
 
-  /**
-   * Auto-scroll mode: when true, any new content (message, image load) scrolls to bottom.
-   * Activates when user is near bottom. Deactivates when user scrolls up.
-   */
-  let autoScroll = true;
+  /** Whether the user is "pinned" to the bottom (auto-scroll active). */
+  let pinnedToBottom = true;
 
   /** Saved scroll positions per channel key. */
   const scrollPositions: Record<string, number> = {};
 
-  /** Suppress onScroll mark-as-read during channel switch. */
-  let suppressMarkRead = false;
+  /** Whether overflow-anchor is supported (false on Safari). */
+  const hasOverflowAnchor = CSS.supports('overflow-anchor', 'auto');
+
+  /** Safari fallback: ResizeObserver for content size changes. */
+  let resizeObserver: ResizeObserver | null = null;
 
   /**
    * Handle user-click from a MessageItem.
@@ -202,10 +202,8 @@
   /**
    * Called when a MessageItem's IntersectionObserver fires (message becomes visible).
    * Updates the last-read timestamp for the channel.
-   * @param {{ serverId: string, channel: string, timestamp: Date }} payload
    */
   function onMessageSeen(payload: { serverId: string; channel: string; timestamp: Date }) {
-    if (suppressMarkRead) return;
     const ts =
       payload.timestamp instanceof Date
         ? payload.timestamp.getTime()
@@ -213,91 +211,56 @@
     store.markReadUpTo(payload.serverId, payload.channel, ts);
   }
 
-  /** Mark all messages in current channel as read (used when scrolling to bottom). */
+  /** Mark all messages in current channel as read. */
   function markAllCurrentAsRead() {
     if (!store.selectedServerId || !store.selectedChannel) return;
     store.markReadUpTo(store.selectedServerId, store.selectedChannel, Date.now());
   }
 
-  /** Re-scroll when images load (if auto-scroll is active). */
-  function onImageLoad() {
-    if (autoScroll && !suppressMarkRead) {
-      doScroll('smooth');
-    }
-  }
-
-  /** On scroll (any source), update button visibility. */
+  /** Single scroll handler: update pinned state, button visibility, and mark-as-read. */
   function onScroll() {
     const near = isNearBottom();
+    pinnedToBottom = near;
     showScrollBtn.value = !near;
-    // When at bottom, mark everything as read
-    if (near && !suppressMarkRead) {
-      markAllCurrentAsRead();
-    }
+    if (near) markAllCurrentAsRead();
   }
 
-  /**
-   * User actively scrolled (wheel/touch). If they scroll away from bottom,
-   * disable auto-scroll. If they scroll back to bottom, re-enable it.
-   */
-  function onUserScroll() {
-    requestAnimationFrame(() => {
-      autoScroll = isNearBottom();
-    });
-  }
-
-  /** Scroll to bottom, re-enable auto-scroll, and mark as read. */
+  /** Scroll to bottom, re-enable pinned mode, and mark as read. */
   function scrollToBottom() {
-    autoScroll = true;
+    pinnedToBottom = true;
     doScroll('smooth');
     markAllCurrentAsRead();
     showScrollBtn.value = false;
   }
 
-  /**
-   * MutationObserver to detect DOM changes that affect scrollHeight.
-   */
-  let mutationObserver: MutationObserver | null = null;
-  let lastScrollHeight = 0;
-
-  /** Reconnect the MutationObserver to the active channel's div only. */
-  function reconnectObserver() {
-    if (mutationObserver) mutationObserver.disconnect();
-    const key = selectedKey.value;
-    const target = key ? channelDivs[key] : null;
-    if (target && mutationObserver) {
-      lastScrollHeight = scrollContainer.value?.scrollHeight || 0;
-      mutationObserver.observe(target, { childList: true });
-    }
-  }
-
-  /** Check if scrollHeight changed and re-scroll if in auto mode. Debounced to avoid layout thrashing. */
-  let scrollCheckTimer: ReturnType<typeof setTimeout> | null = null;
-  function checkScrollHeightChange() {
-    if (scrollCheckTimer) return;
-    scrollCheckTimer = setTimeout(() => {
-      scrollCheckTimer = null;
-      const el = scrollContainer.value;
-      if (!el || !autoScroll || suppressMarkRead) return;
-      if (el.scrollHeight !== lastScrollHeight) {
-        lastScrollHeight = el.scrollHeight;
-        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-      }
-    }, 50);
-  }
-
-  /** Re-scroll after CSS animation completes + remove animation class to prevent replay. */
-  let animationScrollTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Remove animate-preview class to prevent replay on v-show toggle. */
   function onAnimationEnd(e: AnimationEvent) {
     if (e.animationName === 'preview-appear') {
       (e.target as HTMLElement).classList.remove('animate-preview');
-      // Debounce: multiple images may animate simultaneously, scroll once at the end
-      if (autoScroll && !suppressMarkRead && !animationScrollTimer) {
-        animationScrollTimer = setTimeout(() => {
-          animationScrollTimer = null;
-          doScroll('smooth');
-        }, 100);
+    }
+  }
+
+  // ─── Safari fallback: ResizeObserver ────────────────────────────────────────
+
+  function connectResizeObserver() {
+    if (hasOverflowAnchor) return;
+    disconnectResizeObserver();
+    const key = selectedKey.value;
+    const target = key ? channelDivs[key] : null;
+    const el = scrollContainer.value;
+    if (!target || !el) return;
+    resizeObserver = new ResizeObserver(() => {
+      if (pinnedToBottom) {
+        el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
       }
+    });
+    resizeObserver.observe(target);
+  }
+
+  function disconnectResizeObserver() {
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
     }
   }
 
@@ -343,68 +306,78 @@
     }
   }
 
-  onMounted(() => {
-    // Provide nick/channel context to the message formatting service (non-reactive, read on demand)
-    setMentionContext(
-      () => {
-        const key = selectedKey.value;
-        if (!key) return new Set<string>();
-        const users = store.users[key] || [];
-        return new Set(users.map((u) => u.nick));
-      },
-      () => {
-        const allChannels = new Set<string>();
-        for (const serverId of Object.keys(store.channels)) {
-          for (const ch of store.channels[serverId]) {
-            if (ch !== '*status') allChannels.add(ch);
-          }
-        }
-        return allChannels;
-      },
-    );
+  // ─── Non-reactive mention context ──────────────────────────────────────────
+  // Plain variables updated by watchers. The callbacks passed to setMentionContext
+  // only read these plain vars, so they never create reactive dependencies inside
+  // MessageItem computed properties. This prevents mass re-evaluation of every
+  // message when users join/part or channels change.
+  let _mentionNicks: Set<string> = new Set();
+  let _mentionChannels: Set<string> = new Set();
 
+  watch(
+    [selectedKey, () => store.users],
+    () => {
+      const key = selectedKey.value;
+      if (key) {
+        const list = store.users[key] || [];
+        _mentionNicks = new Set(list.map((u) => u.nick));
+      } else {
+        _mentionNicks = new Set();
+      }
+    },
+    { immediate: true },
+  );
+
+  watch(
+    () => store.channels,
+    () => {
+      const all = new Set<string>();
+      for (const serverId of Object.keys(store.channels)) {
+        for (const ch of store.channels[serverId]) {
+          if (ch !== '*status') all.add(ch);
+        }
+      }
+      _mentionChannels = all;
+    },
+    { immediate: true, deep: true },
+  );
+
+  setMentionContext(
+    () => _mentionNicks,
+    () => _mentionChannels,
+  );
+
+  onMounted(() => {
     const el = scrollContainer.value;
     if (el) {
-      el.addEventListener('load', onImageLoad, true);
       el.addEventListener('scroll', onScroll, { passive: true });
-      el.addEventListener('wheel', onUserScroll, { passive: true });
-      el.addEventListener('touchstart', onUserScroll, { passive: true });
       el.addEventListener('animationend', onAnimationEnd, true);
       el.addEventListener('click', onActionClick);
-      lastScrollHeight = el.scrollHeight;
-      mutationObserver = new MutationObserver(() => checkScrollHeightChange());
-      // Observer is connected per-channel via reconnectObserver(), not on the entire container
-      reconnectObserver();
     }
+    connectResizeObserver();
   });
 
   onUnmounted(() => {
     const el = scrollContainer.value;
     if (el) {
-      el.removeEventListener('load', onImageLoad, true);
       el.removeEventListener('scroll', onScroll);
-      el.removeEventListener('wheel', onUserScroll);
-      el.removeEventListener('touchstart', onUserScroll);
       el.removeEventListener('animationend', onAnimationEnd, true);
       el.removeEventListener('click', onActionClick);
     }
-    if (mutationObserver) {
-      mutationObserver.disconnect();
-      mutationObserver = null;
-    }
+    disconnectResizeObserver();
   });
 
   // When new messages arrive in the current channel
   watch(
     () => store.currentMessages.length,
     () => {
-      if (autoScroll) {
+      if (pinnedToBottom) {
         doScroll('smooth');
       }
     },
   );
 
-  // When switching channels: save scroll, restore new channel's scroll, reconnect observer
+  // When switching channels: save scroll, restore new channel's scroll
   watch(selectedKey, (newKey, oldKey) => {
     const el = scrollContainer.value;
 
@@ -415,32 +388,24 @@
 
     if (!newKey) return;
 
-    // Reconnect MutationObserver to the new active channel's div
-    reconnectObserver();
+    // Safari fallback: reconnect ResizeObserver to new channel div
+    if (!hasOverflowAnchor) {
+      nextTick(() => connectResizeObserver());
+    }
 
     nextTick(() => {
       if (!el) return;
-      suppressMarkRead = true;
-      // Allow marking as read again after DOM settles
-      setTimeout(() => {
-        suppressMarkRead = false;
-      }, 200);
       const saved = scrollPositions[newKey];
       if (saved !== undefined) {
-        // Restore saved position and auto-scroll state
         el.scrollTo({ top: saved, behavior: 'instant' });
-        autoScroll = isNearBottom();
-        showScrollBtn.value = !autoScroll;
+        pinnedToBottom = isNearBottom();
+        showScrollBtn.value = !pinnedToBottom;
       } else {
-        // New channel — scroll to bottom, enable auto-scroll
-        autoScroll = true;
+        pinnedToBottom = true;
         showScrollBtn.value = false;
         el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
       }
-      // If content doesn't overflow (few messages), mark all as read
-      if (el.scrollHeight <= el.clientHeight) {
-        markAllCurrentAsRead();
-      } else if (!saved) {
+      if (el.scrollHeight <= el.clientHeight || !saved) {
         markAllCurrentAsRead();
       }
     });
@@ -491,7 +456,7 @@
           if (el) channelDivs[key] = el;
         }
       "
-      class="flex flex-col"
+      class="flex flex-col scroll-anchor-none"
     >
       <template
         v-for="group in getGroups(key)"
@@ -525,12 +490,12 @@
             ]"
             @click="
               !group.own &&
-                onUserClick({
-                  nick: group.nick,
-                  serverId: group.messages[0].serverId,
-                  x: $event.clientX,
-                  y: $event.clientY,
-                })
+              onUserClick({
+                nick: group.nick,
+                serverId: group.messages[0].serverId,
+                x: $event.clientX,
+                y: $event.clientY,
+              })
             "
           >
             {{ (group.nick || '?')[0].toUpperCase() }}
@@ -640,11 +605,15 @@
                 v-if="group.messages[group.messages.length - 1].warning"
                 class="cursor-help text-amber-500"
                 :title="group.messages[group.messages.length - 1].warning"
-              >⚠</span>
+                >⚠</span
+              >
             </div>
           </div>
         </div>
       </template>
+
+      <!-- Scroll anchor sentinel — overflow-anchor keeps this visible, pinning scroll to bottom -->
+      <div class="scroll-anchor-sentinel" />
     </div>
   </div>
 
