@@ -106,6 +106,7 @@
     if (useMirc.value) {
       return formatHtmlContent(parseFormatting(props.message.content), {
         resolveImages: canResolveImages.value,
+        messageId: props.message.id,
       });
     }
     return null;
@@ -114,6 +115,7 @@
   const plainHtml = computed(() => {
     return formatPlainContent(stripFormatting(props.message.content), {
       resolveImages: canResolveImages.value,
+      messageId: props.message.id,
     });
   });
 </script>

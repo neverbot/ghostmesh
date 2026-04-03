@@ -338,6 +338,7 @@ function highlightMentions(escaped: string): string {
 
 interface LinkifyOptions {
   resolveImages?: boolean;
+  messageId?: string;
 }
 
 /**
@@ -346,9 +347,13 @@ interface LinkifyOptions {
  * @param {{ resolveImages?: boolean }} [options]
  * @returns {string}
  */
-function linkifyText(text: string, { resolveImages = true }: LinkifyOptions = {}): string {
+function linkifyText(
+  text: string,
+  { resolveImages = true, messageId }: LinkifyOptions = {},
+): string {
   let lastIndex: number = 0;
   let result: string = '';
+  let urlIndex: number = 0;
 
   URL_REGEX.lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -382,24 +387,42 @@ function linkifyText(text: string, { resolveImages = true }: LinkifyOptions = {}
     }
 
     if (imageSrc && imageSrc.startsWith('async:')) {
-      // Async provider — render placeholder, resolve in background
-      const placeholderId: string = `img-async-${Math.random().toString(36).slice(2, 8)}`;
-      result += `<div id="${placeholderId}" class="my-1 text-[10px] italic opacity-60">Loading preview...</div>`;
-      // Defer until Vue renders the HTML into the DOM (short timeout, not rAF)
-      const src = imageSrc;
-      setTimeout((): void => {
-        // Skip if placeholder was removed (channel switch, message trimmed)
-        if (!document.getElementById(placeholderId)) return;
-        resolveAsyncImage(src, placeholderId).catch((): void => {
-          const el: HTMLElement | null = document.getElementById(placeholderId);
-          if (el) el.textContent = 'Preview failed';
-        });
-      }, 0);
+      // Check cache first — if already resolved, render the image directly
+      // to avoid flickering when Vue re-evaluates the computed HTML.
+      const cachedUrl: string | null = imageCache.get(imageSrc);
+      if (cachedUrl) {
+        const escapedCached: string = escapeHtml(cachedUrl);
+        if (cachedUrl.startsWith('data:')) {
+          result += `<img src="${escapedCached}" alt="" class="mt-1 block max-w-full rounded-lg" style="max-height:70vh;width:auto" />`;
+        } else {
+          result += `<img src="${escapedCached}" data-original-src="${escapedCached}" data-attempt="0" alt="" referrerpolicy="no-referrer" class="mt-1 block max-w-full rounded-lg" style="max-height:70vh;width:auto" loading="lazy" onerror="window.__ghostmeshImageError?.(this)" />`;
+        }
+      } else {
+        // Async provider — render placeholder, resolve in background.
+        // Use deterministic ID (messageId + url index) so re-evaluations produce
+        // identical HTML and Vue skips the DOM update.
+        const idSuffix: string = messageId
+          ? `${messageId}-${urlIndex}`
+          : Math.random().toString(36).slice(2, 8);
+        const placeholderId: string = `img-async-${idSuffix}`;
+        result += `<div id="${placeholderId}" class="my-1 text-[10px] italic opacity-60">Loading preview...</div>`;
+        // Defer until Vue renders the HTML into the DOM (short timeout, not rAF)
+        const src = imageSrc;
+        setTimeout((): void => {
+          // Skip if placeholder was removed (channel switch, message trimmed)
+          if (!document.getElementById(placeholderId)) return;
+          resolveAsyncImage(src, placeholderId).catch((): void => {
+            const el: HTMLElement | null = document.getElementById(placeholderId);
+            if (el) el.textContent = 'Preview failed';
+          });
+        }, 0);
+      }
     } else if (imageSrc) {
       const escapedSrc: string = escapeHtml(imageSrc);
       result += `<img src="${escapedSrc}" data-original-src="${escapedSrc}" data-attempt="0" alt="" referrerpolicy="no-referrer" class="mt-1 block max-w-full rounded-lg animate-preview" style="max-height:70vh;width:auto" loading="lazy" onerror="window.__ghostmeshImageError?.(this)" />`;
     }
 
+    urlIndex++;
     lastIndex = match.index + rawUrl.length;
   }
 
@@ -413,9 +436,12 @@ function linkifyText(text: string, { resolveImages = true }: LinkifyOptions = {}
  * @param {{ resolveImages?: boolean }} [options]
  * @returns {string} — safe HTML
  */
-function formatPlainContent(text: string, { resolveImages = true }: LinkifyOptions = {}): string {
+function formatPlainContent(
+  text: string,
+  { resolveImages = true, messageId }: LinkifyOptions = {},
+): string {
   if (!text) return '';
-  return linkifyText(text, { resolveImages });
+  return linkifyText(text, { resolveImages, messageId });
 }
 
 /**
@@ -424,7 +450,10 @@ function formatPlainContent(text: string, { resolveImages = true }: LinkifyOptio
  * @param {{ resolveImages?: boolean }} [options]
  * @returns {string} — HTML with URLs linkified
  */
-function formatHtmlContent(html: string, { resolveImages = true }: LinkifyOptions = {}): string {
+function formatHtmlContent(
+  html: string,
+  { resolveImages = true, messageId }: LinkifyOptions = {},
+): string {
   if (!html) return '';
   const parts: string[] = html.split(/(<[^>]+>)/);
   return parts
@@ -435,7 +464,7 @@ function formatHtmlContent(html: string, { resolveImages = true }: LinkifyOption
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
         .replace(/&quot;/g, '"');
-      return linkifyText(unescaped, { resolveImages });
+      return linkifyText(unescaped, { resolveImages, messageId });
     })
     .join('');
 }
