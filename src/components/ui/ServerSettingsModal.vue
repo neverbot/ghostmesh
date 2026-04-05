@@ -171,11 +171,11 @@
         </div>
 
         <!-- Tabs -->
-        <div class="flex border-b border-slate-700 px-5">
+        <div class="flex overflow-x-auto border-b border-slate-700 px-5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             v-for="tab in serverTabs"
             :key="tab.key"
-            class="border-b-2 px-3 py-2.5 text-xs font-medium transition-colors"
+            class="shrink-0 border-b-2 px-3 py-2.5 text-xs font-medium transition-colors"
             :class="
               activeTab === tab.key
                 ? 'border-emerald-500 text-emerald-400'
