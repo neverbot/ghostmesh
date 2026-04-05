@@ -53,6 +53,8 @@ interface ServerConfig {
   locale?: string;
   /** Optional notice shown as tooltip on the server name. */
   notice?: string;
+  /** Upload providers routed through the upload-proxy backend. If empty/absent, proxy uploads are disabled. */
+  proxyUploadProviders?: string[];
 }
 
 // ─── Chat messages ───────────────────────────────────────────────────────────

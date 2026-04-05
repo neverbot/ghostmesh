@@ -807,8 +807,9 @@ const useIrcStore = defineStore('irc', () => {
     if (!selectedServerId.value) return false;
     const server = servers.value.find((s) => s.id === selectedServerId.value);
     const blocked = server?.blockedUploadProviders || [];
+    const proxyAllowed = server?.proxyUploadProviders || [];
     const userKeys = useUserSettingsStore().getProfile().uploadProviderKeys || {};
-    return hasAvailableProvider(blocked, userKeys);
+    return hasAvailableProvider(blocked, userKeys, proxyAllowed);
   });
 
   /**
@@ -949,7 +950,8 @@ const useIrcStore = defineStore('irc', () => {
     try {
       const server = servers.value.find((s) => s.id === serverId);
       const userKeys = useUserSettingsStore().getProfile().uploadProviderKeys || {};
-      const url = await uploadImage(file, server?.blockedUploadProviders, userKeys);
+      const proxyAllowed = server?.proxyUploadProviders || [];
+      const url = await uploadImage(file, server?.blockedUploadProviders, userKeys, proxyAllowed);
       // Send the URL directly — bypass URL transforms (upload URLs must not be modified)
       getService().send(serverId, `PRIVMSG ${channel} :${url}`);
       addMessage(serverId, channel, nickname.value, url, 'message');

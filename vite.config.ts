@@ -28,4 +28,12 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    proxy: {
+      '/api/upload': {
+        target: 'http://localhost:8081',
+        rewrite: (path) => path.replace(/^\/api\/upload/, '/upload'),
+      },
+    },
+  },
 });
