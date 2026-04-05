@@ -27,7 +27,7 @@
     "ircClient": "IRC Client",
     "servers": "Servers",
     "showAllServers": "Show all servers",
-    "showLocalServers": "Show servers in my language",
+    "showLocalServers": "Show only servers in my language",
     "channels": "Channels",
     "noChannelsYet": "No channels yet",
     "joinChannel": "Join #channel",

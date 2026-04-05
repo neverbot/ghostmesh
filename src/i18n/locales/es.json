@@ -27,7 +27,7 @@
     "ircClient": "Cliente IRC",
     "servers": "Servidores",
     "showAllServers": "Mostrar todos los servidores",
-    "showLocalServers": "Mostrar servidores en mi idioma",
+    "showLocalServers": "Mostrar solo servidores en mi idioma",
     "channels": "Canales",
     "noChannelsYet": "Sin canales aún",
     "joinChannel": "Unirse a #canal",
