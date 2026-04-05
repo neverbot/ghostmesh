@@ -26,6 +26,8 @@
   "sidebar": {
     "ircClient": "Cliente IRC",
     "servers": "Servidores",
+    "showAllServers": "Mostrar todos los servidores",
+    "showLocalServers": "Mostrar servidores locales",
     "channels": "Canales",
     "noChannelsYet": "Sin canales aún",
     "joinChannel": "Unirse a #canal",

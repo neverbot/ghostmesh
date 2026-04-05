@@ -49,6 +49,8 @@ interface ServerConfig {
   urlTransform?: (url: string) => string;
   /** Upload provider names blocked on this server. Uploads will skip these providers. */
   blockedUploadProviders?: string[];
+  /** Primary language of the server (ISO 639-1 code). Used to filter server list by user locale. */
+  locale?: string;
 }
 
 // ─── Chat messages ───────────────────────────────────────────────────────────

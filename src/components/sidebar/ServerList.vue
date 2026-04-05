@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { ref, computed, watch } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
+  import { i18n } from '@/i18n/index.ts';
   import type { ServerConfig } from '@/types.ts';
 
   const store = useIrcStore();
@@ -10,15 +11,34 @@
   }>();
 
   const collapsed = ref(false);
+  const showAll = ref(false);
 
-  /** Servers sorted with connected ones first. */
-  const sortedServers = computed(() =>
-    [...store.servers].sort((a, b) => {
+  /** Current user locale. */
+  const userLocale = computed(() => i18n.global.locale.value);
+
+  /** Whether there are servers in other locales (to show the toggle). */
+  const hasOtherLocales = computed(() =>
+    store.servers.some((s) => s.locale && s.locale !== userLocale.value),
+  );
+
+  /** Servers filtered by locale (unless showAll), sorted with connected first. */
+  const visibleServers = computed(() => {
+    const list = showAll.value
+      ? store.servers
+      : store.servers.filter(
+          (s) =>
+            !s.locale ||
+            s.locale === userLocale.value ||
+            store.isConnected(s.id) ||
+            store.connectingServers.includes(s.id) ||
+            store.statusRetainedServers.includes(s.id),
+        );
+    return [...list].sort((a, b) => {
       const aConn = store.isConnected(a.id) ? 0 : 1;
       const bConn = store.isConnected(b.id) ? 0 : 1;
       return aConn - bConn;
-    }),
-  );
+    });
+  });
 
   // Auto-collapse on connect, auto-expand when all disconnected
   watch(
@@ -58,7 +78,7 @@
     <div>
       <div class="flex flex-col gap-0.5">
         <div
-          v-for="server in sortedServers"
+          v-for="server in visibleServers"
           :key="server.id"
           class="group flex items-center gap-3 rounded-lg transition-all duration-200"
           :class="[
@@ -170,6 +190,14 @@
           </button>
         </div>
       </div>
+      <!-- Toggle to show servers in other languages -->
+      <button
+        v-if="hasOtherLocales && !collapsed"
+        class="mt-1 w-full px-3 text-left text-[10px] text-slate-600 transition-colors hover:text-slate-400"
+        @click="showAll = !showAll"
+      >
+        {{ showAll ? $t('sidebar.showLocalServers') : $t('sidebar.showAllServers') }}
+      </button>
     </div>
   </div>
 </template>
