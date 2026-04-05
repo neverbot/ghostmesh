@@ -229,6 +229,9 @@
     "raw": { "description": "Enviar un comando IRC sin procesar" },
     "me": { "description": "Enviar un mensaje de acción" },
     "clear": { "description": "Limpiar mensajes del canal actual" },
-    "close": { "description": "Cerrar canal o conversación actual" }
+    "close": { "description": "Cerrar canal o conversación actual" },
+    "identify": { "description": "Identificarse con NickServ" },
+    "register": { "description": "Registrar nick en NickServ" },
+    "verify": { "description": "Verificar código de registro de NickServ" }
   }
 }

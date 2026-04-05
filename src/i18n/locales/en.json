@@ -229,6 +229,9 @@
     "raw": { "description": "Send a raw IRC command" },
     "me": { "description": "Send an action message" },
     "clear": { "description": "Clear current channel messages" },
-    "close": { "description": "Close current channel or conversation" }
+    "close": { "description": "Close current channel or conversation" },
+    "identify": { "description": "Identify with NickServ" },
+    "register": { "description": "Register nickname with NickServ" },
+    "verify": { "description": "Verify NickServ registration code" }
   }
 }

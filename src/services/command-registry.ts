@@ -227,6 +227,42 @@ const commandEntries: CommandEntry[] = [
       return true;
     },
   },
+
+  // --- NickServ commands ---
+  {
+    name: 'identify',
+    aliases: ['id'],
+    usage: '/identify <password>',
+    execute: (args, ctx) => {
+      const password = args.join(' ');
+      if (!password) return false;
+      ctx.service.send(ctx.serverId, `PRIVMSG NickServ :IDENTIFY ${password}`);
+      return true;
+    },
+  },
+  {
+    name: 'register',
+    aliases: [],
+    usage: '/register <password> <email>',
+    execute: (args, ctx) => {
+      if (args.length < 2) return false;
+      ctx.service.send(ctx.serverId, `PRIVMSG NickServ :REGISTER ${args.join(' ')}`);
+      return true;
+    },
+  },
+  {
+    name: 'verify',
+    aliases: [],
+    usage: '/verify <code>',
+    execute: (args, ctx) => {
+      if (args.length < 1) return false;
+      ctx.service.send(
+        ctx.serverId,
+        `PRIVMSG NickServ :VERIFY REGISTER ${ctx.store.nickname} ${args[0]}`,
+      );
+      return true;
+    },
+  },
 ];
 
 /** Lazily resolved command definitions with translated descriptions. */
