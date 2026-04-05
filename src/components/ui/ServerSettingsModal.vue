@@ -54,7 +54,7 @@
         const s = settingsStore.getSettings(props.serverId);
         form.value = { ...s };
         if (props.initialTab) activeTab.value = props.initialTab;
-        else activeTab.value = 'user';
+        else activeTab.value = 'info';
         confirmServerForget.value = false;
         nextTick(() => backdrop.value?.focus());
       }
