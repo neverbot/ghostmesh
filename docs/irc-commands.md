@@ -145,8 +145,11 @@ CAP (Capability) negotiation is the IRCv3 mechanism for clients and servers to a
 | `432` | ERR_ERRONEUSNICKNAME | Done                                 | During registration: fallback nick; post: revert  |
 | `433` | ERR_NICKNAMEINUSE    | Done                                 | During registration: fallback nick; post: revert  |
 | `436` | ERR_NICKCOLLISION    | Done                                 | During registration: fallback nick; post: revert  |
+| `421` | ERR_UNKNOWNCOMMAND   | Done                                 | Shown in status (e.g. rate-limited commands)      |
+| `439` | ERR_TARGETTOOFAST    | Done                                 | Shown in status (message rate limit)              |
 | `442` | ERR_NOTONCHANNEL     | Done                                 | Silently closes the channel in the UI             |
 | `463` | ERR_NOPERMFORHOST    | Done                                 | Shown in status (e.g. TLS required)               |
+| `477` | ERR_NEEDREGGEDNICK   | Done                                 | Shown in status (channel requires NickServ login) |
 | `484` | ERR_RESTRICTED       | Done                                 | Shown in status (e.g. account required to create channels) |
 | `900` | RPL_LOGGEDIN         | Done                                 | Shown in status — confirms account login          |
 | `903` | RPL_SASLSUCCESS      | Done                                 | SASL auth successful, sends CAP END               |

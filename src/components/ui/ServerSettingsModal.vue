@@ -209,8 +209,8 @@
               :key="item.label"
               class="flex items-center justify-between border-b border-slate-700/30 pb-2"
             >
-              <span class="text-slate-400">{{ item.label }}</span>
-              <span class="text-slate-200">{{ item.value }}</span>
+              <span class="shrink-0 text-slate-400">{{ item.label }}</span>
+              <span class="text-right text-slate-200">{{ item.value }}</span>
             </div>
             <div
               v-if="(ircStore.getServerInfo(serverId)?.capabilities?.length || 0) > 0"

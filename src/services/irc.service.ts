@@ -1132,11 +1132,29 @@ class IRCService extends EventEmitter {
         break;
       }
 
+      case '421': {
+        // ERR_UNKNOWNCOMMAND — command not recognized or rate-limited
+        if (trailing) s.addSystemMessage(serverId, trailing, command);
+        break;
+      }
+
+      case '439': {
+        // ERR_TARGETTOOFAST — message target change rate limit
+        if (trailing) s.addSystemMessage(serverId, trailing, command);
+        break;
+      }
+
       case '463': {
         // ERR_NOPERMFORHOST — connection not allowed (e.g. TLS required)
         if (trailing) {
           s.addSystemMessage(serverId, trailing, command);
         }
+        break;
+      }
+
+      case '477': {
+        // ERR_NEEDREGGEDNICK — channel requires NickServ login (+r mode)
+        if (trailing) s.addSystemMessage(serverId, trailing, command);
         break;
       }
 
