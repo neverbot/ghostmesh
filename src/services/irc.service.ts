@@ -1036,6 +1036,14 @@ class IRCService extends EventEmitter {
         break;
       }
 
+      case '463': {
+        // ERR_NOPERMFORHOST — connection not allowed (e.g. TLS required)
+        if (trailing) {
+          s.addSystemMessage(serverId, trailing, command);
+        }
+        break;
+      }
+
       case '465': {
         // ERR_YOUREBANNEDCREEP — banned from server
         if (trailing) {
