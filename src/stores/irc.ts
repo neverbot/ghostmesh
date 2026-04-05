@@ -8,6 +8,7 @@ import type { ServerSettingsApi } from '@/services/irc.service.ts';
 import { parseCommand, executeCommand, findCommand } from '@/services/command-registry.ts';
 import type { CommandContext, CommandStore } from '@/services/command-registry.ts';
 import { useServerSettingsStore } from '@/stores/server-settings.ts';
+import type { ServerRuntimeInfo } from '@/stores/server-settings.ts';
 import { useUserSettingsStore } from '@/stores/user-settings.ts';
 import { useUserPrefsStore } from '@/stores/user-prefs.ts';
 import defaultServers from '@/servers.ts';
@@ -116,6 +117,9 @@ const useIrcStore = defineStore('irc', () => {
    */
   const users: ShallowRef<Record<string, ChannelUser[]>> = shallowRef({});
   const topics: Ref<Record<string, string>> = ref({});
+
+  /** Runtime info about connected servers (not persisted). */
+  const serverInfo: Ref<Record<string, ServerRuntimeInfo>> = ref({});
 
   const listLoadingServers: Ref<string[]> = ref([]);
   /** Servers waiting for their initial LIST delay (between registration and first LIST request). */
@@ -969,6 +973,25 @@ const useIrcStore = defineStore('irc', () => {
     }
   }
 
+  /** Initialize or update runtime info for a server. */
+  function setServerInfo(serverId: string, info: Partial<ServerRuntimeInfo>): void {
+    const current = serverInfo.value[serverId] || {
+      capabilities: [],
+      saslAvailable: false,
+      saslAuthenticated: false,
+      mircDetected: false,
+      tls: false,
+      host: '',
+      port: 0,
+    };
+    serverInfo.value[serverId] = { ...current, ...info };
+  }
+
+  /** Get runtime info for a server. */
+  function getServerInfo(serverId: string): ServerRuntimeInfo | undefined {
+    return serverInfo.value[serverId];
+  }
+
   /** Clear all messages in a channel. */
   function clearMessages(serverId: string, channel: string): void {
     const key: string = `${serverId}:${channel}`;
@@ -1179,6 +1202,7 @@ const useIrcStore = defineStore('irc', () => {
     setDMOnline,
     isDM,
     renameUser,
+    setServerInfo,
   };
 
   return {
@@ -1249,6 +1273,9 @@ const useIrcStore = defineStore('irc', () => {
     markUnloading,
     restoreSession,
     cleanup,
+    serverInfo,
+    getServerInfo,
+    setServerInfo,
   };
 });
 

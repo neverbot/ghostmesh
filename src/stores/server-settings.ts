@@ -11,6 +11,34 @@ interface ServerSettingsEntry extends ServerDefaults {
   mircDetected?: boolean;
   /** Text patterns to filter out from public channel messages. */
   filteredMessages?: string[];
+  /** SASL account name for IRCv3 authentication. */
+  saslAccount?: string;
+  /** SASL password for IRCv3 authentication. */
+  saslPassword?: string;
+}
+
+/** Runtime info discovered about a connected server. Not persisted. */
+interface ServerRuntimeInfo {
+  /** Server software and version (from 002 RPL_YOURHOST). */
+  version?: string;
+  /** Server creation date (from 003 RPL_CREATED). */
+  created?: string;
+  /** Network name (from 005 ISUPPORT NETWORK=). */
+  network?: string;
+  /** IRCv3 capabilities advertised by the server. */
+  capabilities: string[];
+  /** Whether SASL is available. */
+  saslAvailable: boolean;
+  /** Whether SASL authentication completed successfully. */
+  saslAuthenticated: boolean;
+  /** Whether mIRC formatting was detected. */
+  mircDetected: boolean;
+  /** Whether the connection uses TLS. */
+  tls: boolean;
+  /** Server address. */
+  host: string;
+  /** Server port. */
+  port: number;
 }
 
 const STORAGE_KEY: string = config.storageKeys.serverSettings;
@@ -122,5 +150,5 @@ const useServerSettingsStore = defineStore('server-settings', () => {
   };
 });
 
-export type { ServerSettingsEntry };
+export type { ServerSettingsEntry, ServerRuntimeInfo };
 export { useServerSettingsStore };

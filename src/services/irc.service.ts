@@ -93,6 +93,10 @@ class IRCService extends EventEmitter {
   messageQueue: ParsedMessage[];
   /** rAF id for queue drain. */
   drainFrame: number | null;
+  /** Servers currently in CAP negotiation. */
+  capNegotiating: Set<string>;
+  /** Servers where SASL completed successfully. */
+  saslCompleted: Set<string>;
 
   /**
    * @param store — store API with mutation methods
@@ -127,6 +131,8 @@ class IRCService extends EventEmitter {
     this.reconnectTimers = new Map();
     this.messageQueue = [];
     this.drainFrame = null;
+    this.capNegotiating = new Set();
+    this.saslCompleted = new Set();
   }
 
   /**
@@ -167,6 +173,19 @@ class IRCService extends EventEmitter {
       this.connectedAt[serverId] = Date.now();
       this.reconnectAttempts.delete(serverId);
       this.store.addConnection(serverId);
+      // Initialize server runtime info
+      this.store.setServerInfo(serverId, {
+        host: server.tcpHost || server.host.replace(/^wss?:\/\//, '').replace(/\/.*$/, ''),
+        port: server.tcpPort || (server.host.includes(':') ? parseInt(server.host.split(':').pop() || '0', 10) : 0),
+        tls: server.tcpTls || server.host.startsWith('wss://'),
+        capabilities: [],
+        saslAvailable: false,
+        saslAuthenticated: false,
+        mircDetected: false,
+      });
+      // Start CAP negotiation before NICK/USER (IRCv3 detection)
+      this.capNegotiating.add(serverId);
+      this.send(serverId, 'CAP LS 302');
       this.send(serverId, `NICK ${ircConfig.nickname}`);
       this.send(serverId, `USER ${ircConfig.username} 0 * :${ircConfig.realname}`);
       this.startKeepalive(serverId);
@@ -528,6 +547,8 @@ class IRCService extends EventEmitter {
     this.lastActivity.delete(serverId);
     this.mircDetected.delete(serverId);
     this.registered.delete(serverId);
+    this.capNegotiating.delete(serverId);
+    this.saslCompleted.delete(serverId);
     this.listLoading.delete(serverId);
     this.store.clearListLoading(serverId);
     this.store.clearListWaiting(serverId);
@@ -582,6 +603,52 @@ class IRCService extends EventEmitter {
     }
 
     switch (command) {
+      // ─── IRCv3 CAP negotiation ──────────────────────────────────────────────
+      case 'CAP': {
+        const subcommand = params[1]?.toUpperCase();
+        const capList = (trailing || params[2] || '').trim();
+
+        if (subcommand === 'LS') {
+          // Server advertised capabilities
+          const caps = capList.split(/\s+/).filter(Boolean);
+          this.store.setServerInfo(serverId, { capabilities: caps });
+
+          const hasSasl = caps.some((c) => c === 'sasl' || c.startsWith('sasl='));
+          this.store.setServerInfo(serverId, { saslAvailable: hasSasl });
+
+          // If SASL is available and credentials are configured, request it
+          const settings = this.serverSettings.getSettings(serverId);
+          if (hasSasl && settings.saslAccount && settings.saslPassword) {
+            this.send(serverId, 'CAP REQ :sasl');
+          } else {
+            // No SASL needed — end CAP negotiation
+            this.send(serverId, 'CAP END');
+            this.capNegotiating.delete(serverId);
+          }
+        } else if (subcommand === 'ACK') {
+          if (capList.includes('sasl')) {
+            this.send(serverId, 'AUTHENTICATE PLAIN');
+          }
+        } else if (subcommand === 'NAK') {
+          // Server rejected our CAP request
+          this.send(serverId, 'CAP END');
+          this.capNegotiating.delete(serverId);
+        }
+        break;
+      }
+
+      case 'AUTHENTICATE': {
+        if (trailing === '+' || params[0] === '+') {
+          // Server is ready for SASL credentials
+          const settings = this.serverSettings.getSettings(serverId);
+          const account = settings.saslAccount || '';
+          const password = settings.saslPassword || '';
+          const payload = btoa(`${account}\0${account}\0${password}`);
+          this.send(serverId, `AUTHENTICATE ${payload}`);
+        }
+        break;
+      }
+
       case 'PRIVMSG': {
         const target: string = params[0];
         const msgText: string = trailing || '';
@@ -958,17 +1025,38 @@ class IRCService extends EventEmitter {
 
       // ─── Registration & server info (shown without numeric code) ─────────
       case '001': // RPL_WELCOME
-      case '002': // RPL_YOURHOST
-      case '003': // RPL_CREATED
       case '004': {
         // RPL_MYINFO
         if (trailing) s.addSystemMessage(serverId, trailing, command);
         break;
       }
 
+      case '002': {
+        // RPL_YOURHOST — contains server version
+        if (trailing) {
+          s.addSystemMessage(serverId, trailing, command);
+          this.store.setServerInfo(serverId, { version: trailing });
+        }
+        break;
+      }
+      case '003': {
+        // RPL_CREATED — server creation date
+        if (trailing) {
+          s.addSystemMessage(serverId, trailing, command);
+          this.store.setServerInfo(serverId, { created: trailing });
+        }
+        break;
+      }
+
       case '005': {
-        // RPL_ISUPPORT
-        // "are supported by this server" — not useful to display
+        // RPL_ISUPPORT — extract NETWORK= and other tokens
+        const tokens = params.slice(1);
+        for (const token of tokens) {
+          const [key, value] = token.split('=');
+          if (key === 'NETWORK' && value) {
+            this.store.setServerInfo(serverId, { network: value });
+          }
+        }
         break;
       }
 
@@ -1033,6 +1121,14 @@ class IRCService extends EventEmitter {
           }
         }
         if (trailing) s.addSystemMessage(serverId, trailing, command);
+
+        // NickServ IDENTIFY fallback: if credentials configured but SASL was not used
+        if (!this.saslCompleted.has(serverId)) {
+          const settings = this.serverSettings.getSettings(serverId);
+          if (settings.saslAccount && settings.saslPassword) {
+            this.send(serverId, `PRIVMSG NickServ :IDENTIFY ${settings.saslAccount} ${settings.saslPassword}`);
+          }
+        }
         break;
       }
 
@@ -1056,6 +1152,40 @@ class IRCService extends EventEmitter {
         // ERR_YOUREBANNEDCREEP — banned from server
         if (trailing) {
           s.addSystemMessage(serverId, trailing, command);
+        }
+        break;
+      }
+
+      // ─── SASL authentication numerics ───────────────────────────────────────
+      case '900': {
+        // RPL_LOGGEDIN — successfully logged in
+        if (trailing) s.addSystemMessage(serverId, trailing, command);
+        break;
+      }
+      case '903': {
+        // RPL_SASLSUCCESS — SASL authentication successful
+        if (trailing) s.addSystemMessage(serverId, trailing, command);
+        this.saslCompleted.add(serverId);
+        this.store.setServerInfo(serverId, { saslAuthenticated: true });
+        this.send(serverId, 'CAP END');
+        this.capNegotiating.delete(serverId);
+        break;
+      }
+      case '904': {
+        // ERR_SASLFAIL — SASL authentication failed
+        if (trailing) s.addSystemMessage(serverId, `SASL authentication failed: ${trailing}`, command);
+        this.send(serverId, 'CAP END');
+        this.capNegotiating.delete(serverId);
+        break;
+      }
+      case '905':
+      case '906':
+      case '907': {
+        // ERR_SASLTOOLONG / ERR_SASLABORTED / ERR_SASLALREADY
+        if (trailing) s.addSystemMessage(serverId, trailing, command);
+        if (this.capNegotiating.has(serverId)) {
+          this.send(serverId, 'CAP END');
+          this.capNegotiating.delete(serverId);
         }
         break;
       }

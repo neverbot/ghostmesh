@@ -174,6 +174,8 @@ interface IrcStoreApi {
   isDM(name: string): boolean;
   /** Rename a user across all channels (triggered by NICK messages). */
   renameUser(serverId: string, oldNick: string, newNick: string): void;
+  /** Update runtime info about a connected server. */
+  setServerInfo(serverId: string, info: Record<string, unknown>): void;
 }
 
 export type {
