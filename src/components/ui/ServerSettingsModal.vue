@@ -30,9 +30,11 @@
   const settingsStore = useServerSettingsStore();
   const ircStore = useIrcStore();
   const userPrefs = useUserPrefsStore();
-  const activeTab = ref('general');
+  const activeTab = ref('info');
 
   const serverTabs = computed(() => [
+    { key: 'info', label: t('tabs.info') },
+    { key: 'account', label: t('tabs.account') },
     { key: 'user', label: t('tabs.user') },
     { key: 'general', label: t('tabs.general') },
     { key: 'formatting', label: t('tabs.formatting') },
@@ -187,6 +189,77 @@
 
         <!-- Tab content -->
         <div class="px-5 py-4">
+          <!-- Info tab (read-only server information) -->
+          <div
+            v-if="activeTab === 'info'"
+            class="flex flex-col gap-3 text-sm"
+          >
+            <div
+              v-for="item in [
+                { label: $t('settings.server.address'), value: ircStore.getServerInfo(serverId)?.host || props.serverName },
+                { label: $t('settings.server.port'), value: ircStore.getServerInfo(serverId)?.port || '—' },
+                { label: 'TLS', value: ircStore.getServerInfo(serverId)?.tls ? '✓' : '✗' },
+                { label: $t('settings.server.serverVersion'), value: ircStore.getServerInfo(serverId)?.version || '—' },
+                { label: $t('settings.server.network'), value: ircStore.getServerInfo(serverId)?.network || '—' },
+                { label: $t('settings.server.protocol'), value: (ircStore.getServerInfo(serverId)?.capabilities?.length || 0) > 0 ? 'IRCv3' : $t('settings.server.classicIrc') },
+                { label: 'SASL', value: ircStore.getServerInfo(serverId)?.saslAvailable ? (ircStore.getServerInfo(serverId)?.saslAuthenticated ? '✓ ' + $t('settings.server.authenticated') : $t('settings.server.available')) : '✗' },
+                { label: 'mIRC', value: ircStore.getServerInfo(serverId)?.mircDetected ? $t('settings.server.detected') : '—' },
+                { label: $t('settings.server.currentNick'), value: ircStore.nicknamePerServer[serverId] || ircStore.nickname || '—' },
+              ]"
+              :key="item.label"
+              class="flex items-center justify-between border-b border-slate-700/30 pb-2"
+            >
+              <span class="text-slate-400">{{ item.label }}</span>
+              <span class="text-slate-200">{{ item.value }}</span>
+            </div>
+            <div
+              v-if="(ircStore.getServerInfo(serverId)?.capabilities?.length || 0) > 0"
+              class="mt-1"
+            >
+              <span class="text-xs text-slate-400">{{ $t('settings.server.capabilities') }}</span>
+              <div class="mt-1 flex flex-wrap gap-1">
+                <span
+                  v-for="cap in ircStore.getServerInfo(serverId)?.capabilities || []"
+                  :key="cap"
+                  class="rounded bg-slate-700/50 px-1.5 py-0.5 text-[10px] text-slate-400"
+                >
+                  {{ cap }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Account tab (SASL credentials) -->
+          <div
+            v-if="activeTab === 'account'"
+            class="flex flex-col gap-4"
+          >
+            <p class="text-[10px] text-slate-500">
+              {{ $t('settings.server.accountDescription') }}
+            </p>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-slate-300">{{ $t('settings.server.saslAccount') }}</label>
+              <input
+                v-model="form.saslAccount"
+                type="text"
+                :placeholder="$t('settings.server.saslAccountPlaceholder')"
+                class="rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-emerald-500"
+              />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs font-medium text-slate-300">{{ $t('settings.server.saslPassword') }}</label>
+              <input
+                v-model="form.saslPassword"
+                type="password"
+                :placeholder="$t('settings.server.saslPasswordPlaceholder')"
+                class="rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1.5 text-sm text-slate-300 outline-none focus:border-emerald-500"
+              />
+            </div>
+            <p class="text-[10px] text-slate-500">
+              {{ $t('settings.server.credentialsNotice') }}
+            </p>
+          </div>
+
           <!-- General tab -->
           <div
             v-if="activeTab === 'general'"
