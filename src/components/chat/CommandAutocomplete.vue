@@ -114,8 +114,8 @@
         "
         @mousedown.prevent="selectItem(i)"
       >
-        <span class="w-16 shrink-0 font-mono font-bold">/{{ cmd.name }}</span>
-        <span class="w-28 shrink-0 font-mono text-slate-400">{{
+        <span class="w-20 shrink-0 font-mono font-bold">/{{ cmd.name }}</span>
+        <span class="w-36 shrink-0 font-mono text-slate-400">{{
           cmd.usage.split(' ').slice(1).join(' ')
         }}</span>
         <span class="truncate text-slate-400">{{ cmd.description }}</span>
