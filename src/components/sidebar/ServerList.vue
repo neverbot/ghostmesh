@@ -137,7 +137,10 @@
                   : 'bg-slate-600'
             "
           />
-          <div class="flex min-w-0 flex-1 flex-col">
+          <div
+            class="flex min-w-0 flex-1 flex-col"
+            :data-tooltip="server.notice || undefined"
+          >
             <span class="truncate text-sm">{{ server.name }}</span>
             <span class="truncate text-[10px] text-slate-600">{{ server.host }}</span>
           </div>

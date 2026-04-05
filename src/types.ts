@@ -51,6 +51,8 @@ interface ServerConfig {
   blockedUploadProviders?: string[];
   /** Primary language of the server (ISO 639-1 code). Used to filter server list by user locale. */
   locale?: string;
+  /** Optional notice shown as tooltip on the server name. */
+  notice?: string;
 }
 
 // ─── Chat messages ───────────────────────────────────────────────────────────
