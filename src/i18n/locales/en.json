@@ -120,7 +120,7 @@
       "saslAccountPlaceholder": "Your registered nickname",
       "saslPassword": "Password",
       "saslPasswordPlaceholder": "NickServ password",
-      "credentialsNotice": "Credentials are stored locally in your browser and never sent to our servers."
+      "credentialsNotice": "Credentials are stored locally in your browser."
     },
     "global": {
       "title": "Global Settings",

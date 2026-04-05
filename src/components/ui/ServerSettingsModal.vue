@@ -146,7 +146,7 @@
       @keydown.escape="close"
       @click.self="close"
     >
-      <div class="w-full max-w-md rounded-xl bg-slate-800 shadow-2xl">
+      <div class="w-full max-w-lg rounded-xl bg-slate-800 shadow-2xl">
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-slate-700 px-5 py-4">
           <div>
@@ -171,11 +171,11 @@
         </div>
 
         <!-- Tabs -->
-        <div class="flex overflow-x-auto border-b border-slate-700 px-5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div class="flex border-b border-slate-700 px-5">
           <button
             v-for="tab in serverTabs"
             :key="tab.key"
-            class="shrink-0 border-b-2 px-3 py-2.5 text-xs font-medium transition-colors"
+            class="border-b-2 px-3 py-2.5 text-xs font-medium transition-colors"
             :class="
               activeTab === tab.key
                 ? 'border-emerald-500 text-emerald-400'
@@ -192,7 +192,7 @@
           <!-- Info tab (read-only server information) -->
           <div
             v-if="activeTab === 'info'"
-            class="flex flex-col gap-3 text-sm"
+            class="flex flex-col gap-3 text-xs"
           >
             <div
               v-for="item in [
