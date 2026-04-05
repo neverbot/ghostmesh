@@ -93,11 +93,11 @@ CAP (Capability) negotiation is the IRCv3 mechanism for clients and servers to a
 2. `CAP REQ <capability ...>` — Client requests one or more capabilities.
 3. `CAP END` — Client signals that capability negotiation is complete and registration should continue.
 
-| Command   | Description                | Status | Notes                                                                                                                                                  |
-| --------- | -------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `CAP LS`  | List server capabilities   | —      | Enabling capabilities like `extended-join` and `message-tags` changes the IRC message format and would break our parser. Requires parser update first. |
-| `CAP REQ` | Request capabilities       | —      |                                                                                                                                                        |
-| `CAP END` | End capability negotiation | —      |                                                                                                                                                        |
+| Command   | Description                | Status | Notes                                                                                                                                |
+| --------- | -------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `CAP LS`  | List server capabilities   | Done   | Sent on every connection before NICK/USER. Capabilities stored in serverInfo. Used to detect IRCv3 support                          |
+| `CAP REQ` | Request capabilities       | Done   | Currently only requests `sasl` when credentials are configured                                                                       |
+| `CAP END` | End capability negotiation | Done   | Sent after SASL completes (or immediately if no SASL needed). Server won't send 001 until CAP END                                   |
 
 ### Common Capabilities
 
@@ -108,7 +108,7 @@ CAP (Capability) negotiation is the IRCv3 mechanism for clients and servers to a
 | `extended-join`     | Includes account info in JOIN messages                            | —      |
 | `message-tags`      | Enables IRCv3 message tags (`@tag=value` prefix on messages)      | —      |
 | `multi-prefix`      | Shows all user prefixes in NAMES (e.g., `@+` instead of just `@`) | —      |
-| `sasl`              | Authentication before registration (EXTERNAL, PLAIN methods)      | —      |
+| `sasl`              | Authentication before registration (EXTERNAL, PLAIN methods)      | Done   | SASL PLAIN implemented. Auto-negotiated during CAP if credentials configured. Falls back to NickServ IDENTIFY |
 | `setname`           | Allows changing realname without reconnecting                     | —      |
 | `userhost-in-names` | Includes `user@host` in NAMES replies                             | —      |
 | `standard-replies`  | Standardized error/success reply format                           | —      |
@@ -148,6 +148,12 @@ CAP (Capability) negotiation is the IRCv3 mechanism for clients and servers to a
 | `442` | ERR_NOTONCHANNEL     | Done                                 | Silently closes the channel in the UI             |
 | `463` | ERR_NOPERMFORHOST    | Done                                 | Shown in status (e.g. TLS required)               |
 | `484` | ERR_RESTRICTED       | Done                                 | Shown in status (e.g. account required to create channels) |
+| `900` | RPL_LOGGEDIN         | Done                                 | Shown in status — confirms account login          |
+| `903` | RPL_SASLSUCCESS      | Done                                 | SASL auth successful, sends CAP END               |
+| `904` | ERR_SASLFAIL         | Done                                 | SASL auth failed, sends CAP END, shows error      |
+| `905` | ERR_SASLTOOLONG      | Done                                 | SASL message too long                             |
+| `906` | ERR_SASLABORTED      | Done                                 | SASL aborted                                      |
+| `907` | ERR_SASLALREADY      | Done                                 | Already authenticated                             |
 | Other | Unhandled numerics   | Shown as `[code] trailing` in status |                                                   |
 
 ## Implementation Notes
@@ -173,6 +179,28 @@ Large servers like Example Network return 6000+ channels. To prevent UI blocking
 
 - Socket `onclose`/`onerror` handlers are detached before `socket.close()` to prevent the old socket's close event from interfering with a new connection.
 - mIRC detection, LIST wait overrides, connection timestamps, and loading state are all cleaned up on disconnect.
+
+### SASL Authentication (IRCv3)
+
+GhostMesh supports SASL PLAIN authentication for servers that require account login before allowing full access (e.g., Example Network requires login to LIST or create channels).
+
+**Connection flow with SASL:**
+
+1. `CAP LS 302` — always sent on connect (before NICK/USER) to detect IRCv3 support
+2. If server advertises `sasl` capability AND credentials are configured in server settings:
+   - `CAP REQ :sasl` → `AUTHENTICATE PLAIN` → base64 credentials → wait for 903/904
+   - On 903 (success): `CAP END`, continue with registration
+   - On 904 (failure): `CAP END`, show error, continue without auth
+3. If server does NOT advertise SASL: `CAP END`, then NickServ IDENTIFY after 001
+
+**NickServ fallback:** After registration completes (376/422), if credentials are configured but SASL was not used, sends `PRIVMSG NickServ :IDENTIFY <account> <password>`.
+
+**Credential storage:** Account name and password stored in per-server settings (localStorage). Configurable via Server Settings → Account tab.
+
+**Slash commands:**
+- `/identify <password>` — manual NickServ IDENTIFY
+- `/register <password> <email>` — NickServ REGISTER (create account)
+- `/verify <code>` — NickServ VERIFY REGISTER (email verification)
 
 ### Server Restrictions (Example Network +T/+q)
 
