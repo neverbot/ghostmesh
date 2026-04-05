@@ -1044,6 +1044,14 @@ class IRCService extends EventEmitter {
         break;
       }
 
+      case '484': {
+        // ERR_RESTRICTED — action requires account login (e.g. channel creation)
+        if (trailing) {
+          s.addSystemMessage(serverId, trailing, command);
+        }
+        break;
+      }
+
       case '465': {
         // ERR_YOUREBANNEDCREEP — banned from server
         if (trailing) {

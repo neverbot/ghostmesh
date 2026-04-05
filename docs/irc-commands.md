@@ -147,6 +147,7 @@ CAP (Capability) negotiation is the IRCv3 mechanism for clients and servers to a
 | `436` | ERR_NICKCOLLISION    | Done                                 | During registration: fallback nick; post: revert  |
 | `442` | ERR_NOTONCHANNEL     | Done                                 | Silently closes the channel in the UI             |
 | `463` | ERR_NOPERMFORHOST    | Done                                 | Shown in status (e.g. TLS required)               |
+| `484` | ERR_RESTRICTED       | Done                                 | Shown in status (e.g. account required to create channels) |
 | Other | Unhandled numerics   | Shown as `[code] trailing` in status |                                                   |
 
 ## Implementation Notes
