@@ -59,7 +59,7 @@
     (val) => {
       if (val) {
         const profile = userSettings.getProfile();
-        form.value = { ...profile };
+        form.value = { ...profile, locale: profile.locale || i18n.global.locale.value };
         confirmForget.value = false;
         nextTick(() => backdrop.value?.focus());
       }
