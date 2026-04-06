@@ -13,6 +13,14 @@ dist
 dist-ssr
 *.local
 .env*
+!.env.example
+
+# Instance-specific config (keep .example.yaml files)
+config/*.yaml
+!config/*.example.yaml
+
+# Instance-specific plugins
+plugins/
 
 # TypeScript build artifacts
 *.tsbuildinfo
