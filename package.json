@@ -21,7 +21,6 @@
   "devDependencies": {
     "@eslint/js": "^9.25.1",
     "@intlify/unplugin-vue-i18n": "^11.0.7",
-    "@modyfi/vite-plugin-yaml": "^1.1.1",
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^25.5.0",
@@ -41,6 +40,7 @@
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
     "vite": "^8.0.2",
+    "vite-yaml-plugin": "^2.0.3",
     "vue-tsc": "^3.2.6"
   }
 }

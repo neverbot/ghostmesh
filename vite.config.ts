@@ -1,7 +1,7 @@
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite';
-import yaml from '@modyfi/vite-plugin-yaml';
+import { yamlPlugin } from 'vite-yaml-plugin';
 
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath, URL } from 'url';
@@ -12,7 +12,7 @@ export default defineConfig({
   plugins: [
     vue(),
     tailwindcss(),
-    yaml(),
+    yamlPlugin(),
     VueI18nPlugin({
       include: [resolve(dirname(fileURLToPath(import.meta.url)), './src/i18n/locales/*.json')],
       strictMessage: false,
