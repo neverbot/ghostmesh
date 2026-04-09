@@ -113,10 +113,7 @@
   /** Saved scroll positions per channel key. */
   const scrollPositions: Record<string, number> = {};
 
-  /** Whether overflow-anchor is supported (false on Safari). */
-  const hasOverflowAnchor = CSS.supports('overflow-anchor', 'auto');
-
-  /** Safari fallback: ResizeObserver for content size changes. */
+  /** ResizeObserver to detect content growth (images loading, previews expanding). */
   let resizeObserver: ResizeObserver | null = null;
 
   /**
@@ -153,7 +150,8 @@
    * Grouped messages per channel key.
    * Uses a manual cache to avoid recomputing all channels when one channel changes.
    */
-  const groupCache: Record<string, { length: number; groups: MessageGroup[] }> = {};
+  /** Cache key: last message ID + length (handles both append and trim). */
+  const groupCache: Record<string, { lastId: string; length: number; groups: MessageGroup[] }> = {};
 
   // Clean up stale entries when channels are removed
   watch(messageKeys, (keys) => {
@@ -169,13 +167,20 @@
     }
   });
 
+  /**
+   * Get grouped messages for a channel, using a cache to avoid recomputing.
+   * Cache invalidates when the last message ID or array length changes.
+   * @param {string} key Channel key (serverId:channel)
+   * @returns {MessageGroup[]} Grouped messages
+   */
   function getGroups(key: string): MessageGroup[] {
     const msgs = store.messages[key];
-    if (!msgs) return [];
+    if (!msgs || msgs.length === 0) return [];
+    const lastId = msgs[msgs.length - 1].id;
     const cached = groupCache[key];
-    if (cached && cached.length === msgs.length) return cached.groups;
+    if (cached && cached.lastId === lastId && cached.length === msgs.length) return cached.groups;
     const groups = buildGroups(msgs);
-    groupCache[key] = { length: msgs.length, groups };
+    groupCache[key] = { lastId, length: msgs.length, groups };
     return groups;
   }
 
@@ -240,10 +245,13 @@
     }
   }
 
-  // ─── Safari fallback: ResizeObserver ────────────────────────────────────────
+  // ─── ResizeObserver: re-scroll when content grows (images load, previews expand) ──
 
+  /**
+   * Connect ResizeObserver to the active channel div to detect content size changes.
+   * When pinned to bottom, instantly scrolls down when content grows.
+   */
   function connectResizeObserver() {
-    if (hasOverflowAnchor) return;
     disconnectResizeObserver();
     const key = selectedKey.value;
     const target = key ? channelDivs[key] : null;
@@ -367,9 +375,13 @@
     disconnectResizeObserver();
   });
 
-  // When new messages arrive in the current channel
+  // When new messages arrive in the current channel (use last ID, not length, because
+  // length stays constant at maxMessages after trimming)
   watch(
-    () => store.currentMessages.length,
+    () => {
+      const msgs = store.currentMessages;
+      return msgs.length > 0 ? msgs[msgs.length - 1].id : null;
+    },
     () => {
       if (pinnedToBottom) {
         doScroll('smooth');
@@ -388,10 +400,8 @@
 
     if (!newKey) return;
 
-    // Safari fallback: reconnect ResizeObserver to new channel div
-    if (!hasOverflowAnchor) {
-      nextTick(() => connectResizeObserver());
-    }
+    // Reconnect ResizeObserver to new channel div
+    nextTick(() => connectResizeObserver());
 
     nextTick(() => {
       if (!el) return;
