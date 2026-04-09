@@ -1,11 +1,15 @@
 <script setup lang="ts">
   import { ref, computed } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
+  import { useServerSettingsStore } from '@/stores/server-settings.ts';
   import UserContextMenu from '@/components/ui/UserContextMenu.vue';
+  import { parseFormatting, stripFormatting, hasFormatting } from '@/utils/mirc-format.ts';
+  import { formatPlainContent, formatHtmlContent } from '@/services/message.service.ts';
   import { i18n } from '@/i18n/index.ts';
 
   const t = i18n.global.t;
   const store = useIrcStore();
+  const settingsStore = useServerSettingsStore();
 
   const isPrivate = computed(() =>
     store.selectedChannel ? store.isDM(store.selectedChannel) : false,
@@ -41,6 +45,22 @@
     if (!isPrivate.value) return true;
     if (isSelfDM.value) return true;
     return store.isDMOnline(store.selectedServerId!, store.selectedChannel!);
+  });
+
+  /**
+   * Topic text parsed for mIRC formatting and linkified URLs.
+   * @returns {string} Safe HTML string
+   */
+  const formattedTopic = computed(() => {
+    const topic = store.currentTopic;
+    if (!topic) return '';
+    const serverId = store.selectedServerId || '';
+    const detected = hasFormatting(topic);
+    const mircEnabled = settingsStore.isMircEnabled(serverId, detected);
+    if (mircEnabled) {
+      return formatHtmlContent(parseFormatting(topic), { resolveImages: false });
+    }
+    return formatPlainContent(stripFormatting(topic), { resolveImages: false });
   });
 
   // Context menu
@@ -105,10 +125,9 @@
 
       <p
         v-if="!isPrivate && store.currentTopic"
-        class="text-xs leading-relaxed text-slate-500"
-      >
-        {{ store.currentTopic }}
-      </p>
+        class="text-xs leading-relaxed text-slate-500 [&_a]:underline [&_a]:opacity-80 [&_a:hover]:opacity-100"
+        v-html="formattedTopic"
+      />
       <p
         v-else-if="!isPrivate"
         class="text-xs italic text-slate-400"
