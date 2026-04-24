@@ -176,7 +176,9 @@ class IRCService extends EventEmitter {
       // Initialize server runtime info
       this.store.setServerInfo(serverId, {
         host: server.tcpHost || server.host.replace(/^wss?:\/\//, '').replace(/\/.*$/, ''),
-        port: server.tcpPort || (server.host.includes(':') ? parseInt(server.host.split(':').pop() || '0', 10) : 0),
+        port:
+          server.tcpPort ||
+          (server.host.includes(':') ? parseInt(server.host.split(':').pop() || '0', 10) : 0),
         tls: server.tcpTls || server.host.startsWith('wss://'),
         capabilities: [],
         saslAvailable: false,
@@ -1126,7 +1128,10 @@ class IRCService extends EventEmitter {
         if (!this.saslCompleted.has(serverId)) {
           const settings = this.serverSettings.getSettings(serverId);
           if (settings.saslAccount && settings.saslPassword) {
-            this.send(serverId, `PRIVMSG NickServ :IDENTIFY ${settings.saslAccount} ${settings.saslPassword}`);
+            this.send(
+              serverId,
+              `PRIVMSG NickServ :IDENTIFY ${settings.saslAccount} ${settings.saslPassword}`,
+            );
           }
         }
         break;
@@ -1191,7 +1196,8 @@ class IRCService extends EventEmitter {
       }
       case '904': {
         // ERR_SASLFAIL — SASL authentication failed
-        if (trailing) s.addSystemMessage(serverId, `SASL authentication failed: ${trailing}`, command);
+        if (trailing)
+          s.addSystemMessage(serverId, `SASL authentication failed: ${trailing}`, command);
         this.send(serverId, 'CAP END');
         this.capNegotiating.delete(serverId);
         break;

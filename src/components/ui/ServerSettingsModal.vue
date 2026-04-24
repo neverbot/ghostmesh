@@ -196,15 +196,48 @@
           >
             <div
               v-for="item in [
-                { label: $t('settings.server.address'), value: ircStore.getServerInfo(serverId)?.host || props.serverName },
-                { label: $t('settings.server.port'), value: ircStore.getServerInfo(serverId)?.port || '—' },
+                {
+                  label: $t('settings.server.address'),
+                  value: ircStore.getServerInfo(serverId)?.host || props.serverName,
+                },
+                {
+                  label: $t('settings.server.port'),
+                  value: ircStore.getServerInfo(serverId)?.port || '—',
+                },
                 { label: 'TLS', value: ircStore.getServerInfo(serverId)?.tls ? '✓' : '✗' },
-                { label: $t('settings.server.serverVersion'), value: ircStore.getServerInfo(serverId)?.version || '—' },
-                { label: $t('settings.server.network'), value: ircStore.getServerInfo(serverId)?.network || '—' },
-                { label: $t('settings.server.protocol'), value: (ircStore.getServerInfo(serverId)?.capabilities?.length || 0) > 0 ? 'IRCv3' : $t('settings.server.classicIrc') },
-                { label: 'SASL', value: ircStore.getServerInfo(serverId)?.saslAvailable ? (ircStore.getServerInfo(serverId)?.saslAuthenticated ? '✓ ' + $t('settings.server.authenticated') : $t('settings.server.available')) : '✗' },
-                { label: 'mIRC', value: ircStore.getServerInfo(serverId)?.mircDetected ? $t('settings.server.detected') : '—' },
-                { label: $t('settings.server.currentNick'), value: ircStore.nicknamePerServer[serverId] || ircStore.nickname || '—' },
+                {
+                  label: $t('settings.server.serverVersion'),
+                  value: ircStore.getServerInfo(serverId)?.version || '—',
+                },
+                {
+                  label: $t('settings.server.network'),
+                  value: ircStore.getServerInfo(serverId)?.network || '—',
+                },
+                {
+                  label: $t('settings.server.protocol'),
+                  value:
+                    (ircStore.getServerInfo(serverId)?.capabilities?.length || 0) > 0
+                      ? 'IRCv3'
+                      : $t('settings.server.classicIrc'),
+                },
+                {
+                  label: 'SASL',
+                  value: ircStore.getServerInfo(serverId)?.saslAvailable
+                    ? ircStore.getServerInfo(serverId)?.saslAuthenticated
+                      ? '✓ ' + $t('settings.server.authenticated')
+                      : $t('settings.server.available')
+                    : '✗',
+                },
+                {
+                  label: 'mIRC',
+                  value: ircStore.getServerInfo(serverId)?.mircDetected
+                    ? $t('settings.server.detected')
+                    : '—',
+                },
+                {
+                  label: $t('settings.server.currentNick'),
+                  value: ircStore.nicknamePerServer[serverId] || ircStore.nickname || '—',
+                },
               ]"
               :key="item.label"
               class="flex items-center justify-between border-b border-slate-700/30 pb-2"
@@ -238,7 +271,9 @@
               {{ $t('settings.server.accountDescription') }}
             </p>
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-slate-300">{{ $t('settings.server.saslAccount') }}</label>
+              <label class="text-xs font-medium text-slate-300">{{
+                $t('settings.server.saslAccount')
+              }}</label>
               <input
                 v-model="form.saslAccount"
                 type="text"
@@ -247,7 +282,9 @@
               />
             </div>
             <div class="flex flex-col gap-1">
-              <label class="text-xs font-medium text-slate-300">{{ $t('settings.server.saslPassword') }}</label>
+              <label class="text-xs font-medium text-slate-300">{{
+                $t('settings.server.saslPassword')
+              }}</label>
               <input
                 v-model="form.saslPassword"
                 type="password"
