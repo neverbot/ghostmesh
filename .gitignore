@@ -15,12 +15,13 @@ dist-ssr
 .env*
 !.env.example
 
-# Instance-specific config (keep .example.yaml files)
-config/*.yaml
-!config/*.example.yaml
-
-# Instance-specific plugins
-plugins/
+# Plugin files are provided by an overlay (see src/plugins/README.md). Only
+# the scaffolding (.gitkeep, README) is tracked — never commit concrete plugin
+# files into this repo.
+src/plugins/*/*.ts
+src/plugins/*/*.js
+!src/plugins/*/.gitkeep
+!src/plugins/*/README.md
 
 # TypeScript build artifacts
 *.tsbuildinfo
