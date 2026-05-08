@@ -15,13 +15,13 @@ dist-ssr
 .env*
 !.env.example
 
-# Plugin files are provided by an overlay (see src/plugins/README.md). Only
-# the scaffolding (.gitkeep, README) is tracked — never commit concrete plugin
+# Plugin files are provided by an overlay (see src/plugins/readme.md). Only
+# the scaffolding (.gitkeep, readme) is tracked — never commit concrete plugin
 # files into this repo.
 src/plugins/*/*.ts
 src/plugins/*/*.js
 !src/plugins/*/.gitkeep
-!src/plugins/*/README.md
+!src/plugins/*/readme.md
 
 # TypeScript build artifacts
 *.tsbuildinfo

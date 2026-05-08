@@ -17,7 +17,7 @@ A multi-server IRC client for the web. Connect to multiple IRC networks simultan
 
 ## Plugins
 
-GhostMesh ships with **empty** plugin directories. To use it you need to add at least one server plugin (or add servers manually through the UI). See [`src/plugins/README.md`](src/plugins/README.md) for the plugin shapes and how to add your own.
+GhostMesh ships with **empty** plugin directories. To use it you need to add at least one server plugin (or add servers manually through the UI). See [`src/plugins/readme.md`](src/plugins/readme.md) for the plugin shapes and how to add your own.
 
 To connect to IRC servers that don't expose a native WebSocket gateway you also need a separate WebSocket-to-TCP proxy and a `proxies/` plugin pointing at it. The proxy itself is not part of this repo.
 
