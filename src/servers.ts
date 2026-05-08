@@ -3,7 +3,7 @@
 import type { ServerConfig } from '@/types';
 
 const modules = import.meta.glob<{ default: ServerConfig | ServerConfig[] }>(
-  '../plugins/servers/*.ts',
+  './plugins/servers/*.ts',
   { eager: true },
 );
 
