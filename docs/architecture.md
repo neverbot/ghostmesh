@@ -550,7 +550,7 @@ All timers tracked in Maps, cleaned on `cleanupConnection()`.
 | **Path**    | `src/services/message.service.ts` (~250 lines)                  |
 | **Purpose** | Message formatting, URL detection, linkification, image preview |
 
-**Key functions:** `formatPlainContent()`, `formatHtmlContent()`, `handleImageError()` (fallback chain: original → image-proxy.invalid → hide; clears `img.onload`/`img.onerror` before reassigning to prevent closure accumulation), `resolveAsyncImage()` (uses `setTimeout(0)` instead of `requestAnimationFrame`, with DOM existence check before resolving), `isImageUrl()`, `normalizeUrl()`, `trackFailedPreview()`
+**Key functions:** `formatPlainContent()`, `formatHtmlContent()`, `handleImageError()` (fallback chain: original → image proxy plugin → hide; clears `img.onload`/`img.onerror` before reassigning to prevent closure accumulation), `resolveAsyncImage()` (uses `setTimeout(0)` instead of `requestAnimationFrame`, with DOM existence check before resolving), `isImageUrl()`, `normalizeUrl()`, `trackFailedPreview()`
 
 **State:** `failedPreviews: Set<string>` — capped at 500 entries with FIFO eviction via `trackFailedPreview()`
 
@@ -580,7 +580,7 @@ All timers tracked in Maps, cleaned on `cleanupConnection()`.
 | **Path**    | `src/services/upload-providers.ts` (~200 lines)      |
 | **Purpose** | Image upload via public/private providers with retry |
 
-**Providers:** `publicProviders` (ExampleUp), `privateProviders` (ExampleUp)
+**Providers:** `publicProviders` (no API key needed) and `privateProviders` (require user-supplied API key) — both loaded from `src/plugins/upload-providers/`.
 
 **State:** `disabledProviders: Set<string>` — failed providers disabled for session
 

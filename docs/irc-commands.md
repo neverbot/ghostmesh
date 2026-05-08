@@ -163,7 +163,7 @@ CAP (Capability) negotiation is the IRCv3 mechanism for clients and servers to a
 
 ### LIST Performance
 
-Large servers like Example Network return 6000+ channels. To prevent UI blocking:
+Large IRC networks can return thousands of channels via LIST. To prevent UI blocking:
 
 - **Message queuing**: Only RPL_LIST (322) messages are queued; all other commands are processed immediately.
 - **Time-boxed drain**: Queued messages are processed in batches of ~8ms per animation frame.
@@ -174,7 +174,7 @@ Large servers like Example Network return 6000+ channels. To prevent UI blocking
 ### LIST Timing
 
 - Default delay after connecting: 5 seconds (configurable per server in settings).
-- Auto-detection: If the server sends a NOTICE about LIST wait time (e.g., Example's "wait 15s"), the delay is updated automatically.
+- Auto-detection: If the server sends a NOTICE about LIST wait time (e.g., "wait 15s after connecting"), the delay is updated automatically.
 - Periodic refresh: Every 300 seconds by default (configurable per server).
 - Guards: Refresh is blocked if LIST is already loading or minimum wait time hasn't elapsed.
 
@@ -185,7 +185,7 @@ Large servers like Example Network return 6000+ channels. To prevent UI blocking
 
 ### SASL Authentication (IRCv3)
 
-GhostMesh supports SASL PLAIN authentication for servers that require account login before allowing full access (e.g., Example Network requires login to LIST or create channels).
+GhostMesh supports SASL PLAIN authentication for servers that require account login before allowing full access (some networks require it to LIST or create channels).
 
 **Connection flow with SASL:**
 
@@ -205,6 +205,6 @@ GhostMesh supports SASL PLAIN authentication for servers that require account lo
 - `/register <password> <email>` — NickServ REGISTER (create account)
 - `/verify <code>` — NickServ VERIFY REGISTER (email verification)
 
-### Server Restrictions (Example Network +T/+q)
+### Server Restrictions (e.g. `+T` / `+q`)
 
-Some servers (e.g., Example Network) assign user modes like `+T` (block DMs) or `+q` (quiet) to external/WebSocket connections. This restricts the ability to send or receive private messages. This is a server-side limitation that cannot be worked around without WEBIRC credentials (which require server operator approval) or SASL authentication to identify with a registered account before these modes are applied.
+Some networks assign user modes like `+T` (block DMs) or `+q` (quiet) to external/WebSocket connections. This restricts the ability to send or receive private messages. It is a server-side limitation that cannot be worked around without WEBIRC credentials (which require server operator approval) or SASL authentication to identify with a registered account before these modes are applied.
