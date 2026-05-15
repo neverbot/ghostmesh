@@ -214,6 +214,25 @@
     "duplicateNetwork": "{server} pertenece a la misma red IRC que {duplicate}. Ya estás conectado a {duplicate}.",
     "connectionTimeout": "No se pudo conectar a {server}. El servidor puede estar apagado o inaccesible."
   },
+  "welcome": {
+    "tagline": "Un cliente IRC multi-servidor. Sin cuentas. Sin tracking.",
+    "nickname": "Apodo",
+    "nicknamePlaceholder": "elige un nombre",
+    "tabs": {
+      "available": "Servidores disponibles",
+      "custom": "Servidor personalizado"
+    },
+    "serversEmpty": "No hay servidores configurados en esta build.",
+    "serversEmptyForLocale": "No hay servidores en tu idioma.",
+    "serversEmptyAction": "Añadir uno manualmente",
+    "customUrl": "URL del servidor",
+    "customHelper": "URL WebSocket completa, incluyendo esquema y puerto — p. ej. wss://irc.example.com:443/webirc.",
+    "connect": "Conectar",
+    "connecting": "Conectando…",
+    "errors": {
+      "noServer": "Selecciona un servidor o introduce una URL personalizada."
+    }
+  },
   "commands": {
     "nick": { "description": "Cambiar tu apodo" },
     "join": { "description": "Unirse a un canal" },

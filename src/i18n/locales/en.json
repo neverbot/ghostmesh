@@ -214,6 +214,25 @@
     "duplicateNetwork": "{server} is part of the same IRC network as {duplicate}. You are already connected to {duplicate}.",
     "connectionTimeout": "Could not connect to {server}. The server may be offline or unreachable."
   },
+  "welcome": {
+    "tagline": "A multi-server IRC client. No accounts. No tracking.",
+    "nickname": "Nickname",
+    "nicknamePlaceholder": "pick a name",
+    "tabs": {
+      "available": "Available servers",
+      "custom": "Custom server"
+    },
+    "serversEmpty": "No servers configured in this build.",
+    "serversEmptyForLocale": "No servers in your language.",
+    "serversEmptyAction": "Add one manually",
+    "customUrl": "Server URL",
+    "customHelper": "Full WebSocket URL, including scheme and port — e.g. wss://irc.example.com:443/webirc.",
+    "connect": "Connect",
+    "connecting": "Connecting…",
+    "errors": {
+      "noServer": "Select a server or enter a custom URL."
+    }
+  },
   "commands": {
     "nick": { "description": "Change your nickname" },
     "join": { "description": "Join a channel" },
