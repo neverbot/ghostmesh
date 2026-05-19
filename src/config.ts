@@ -78,8 +78,8 @@ const config: AppConfig = {
   /** IRC connection defaults. */
   irc: {
     nickname: 'ghostmesh',
-    username: 'ghostmesh',
-    realname: 'GhostMesh IRC Client',
+    username: import.meta.env.VITE_DEFAULT_USERNAME || '',
+    realname: import.meta.env.VITE_DEFAULT_REALNAME || '',
   },
 
   /** Chat settings. */

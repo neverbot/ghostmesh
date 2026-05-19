@@ -102,7 +102,9 @@ const useUserSettingsStore = defineStore('user-settings', () => {
       if (serverUsername) return serverUsername;
     }
     if (settings.value.username) return settings.value.username;
-    return config.irc.username;
+    if (config.irc.username) return config.irc.username;
+    // Last-resort fallback so IRC USER command is never empty.
+    return resolveNick(serverId, serverSettings);
   }
 
   /**
@@ -115,7 +117,9 @@ const useUserSettingsStore = defineStore('user-settings', () => {
       if (serverRealname) return serverRealname;
     }
     if (settings.value.realname) return settings.value.realname;
-    return config.irc.realname;
+    if (config.irc.realname) return config.irc.realname;
+    // Last-resort fallback so IRC USER command is never empty.
+    return resolveNick(serverId, serverSettings);
   }
 
   /**
