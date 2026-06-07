@@ -22,6 +22,8 @@ interface UploadProviderPlugin {
   configDescription?: string;
   configUrl?: string;
   signupUrl?: string;
+  /** When true, the provider routes through upload-proxy and must be opt-in per server. */
+  proxy?: boolean;
   upload: (
     file: File,
     ctx: { apiKey?: string; disableProvider: (name: string) => void },
@@ -46,17 +48,26 @@ const disabledProviders = new Set<string>();
 
 async function uploadImage(
   file: File,
-  ctx: { apiKey?: string; userKeys?: Record<string, string> } = {},
+  ctx: {
+    apiKey?: string;
+    userKeys?: Record<string, string>;
+    blocked?: string[];
+    proxyAllowed?: string[];
+  } = {},
 ): Promise<string> {
+  const blocked = new Set([...disabledProviders, ...(ctx.blocked || [])]);
+  const proxyAllowed = new Set(ctx.proxyAllowed || []);
   for (const p of providers) {
-    if (disabledProviders.has(p.name)) continue;
+    if (blocked.has(p.name)) continue;
+    // Proxy providers must be explicitly enabled per-server via proxyUploadProviders.
+    if (p.proxy && !proxyAllowed.has(p.name)) continue;
     try {
       const apiKey = p.configKey ? ctx.userKeys?.[p.configKey] || ctx.apiKey : undefined;
       return await p.upload(file, {
         apiKey,
         disableProvider: (n: string) => disabledProviders.add(n),
       });
-    } catch (e) {
+    } catch {
       // try next
     }
   }
@@ -66,12 +77,15 @@ async function uploadImage(
 function hasAvailableProvider(
   blockedNames: string[] = [],
   userKeys: Record<string, string> = {},
-  _proxyAllowed: string[] = [],
+  proxyAllowed: string[] = [],
 ): boolean {
   const blocked = new Set([...disabledProviders, ...blockedNames]);
-  const hasPrivate = privateProviders.some((p) => !blocked.has(p.name) && !!userKeys[p.configKey]);
+  const proxyOk = new Set(proxyAllowed);
+  const eligible = (p: UploadProviderPlugin): boolean =>
+    !blocked.has(p.name) && (!p.proxy || proxyOk.has(p.name));
+  const hasPrivate = providers.some((p) => !!p.configKey && eligible(p) && !!userKeys[p.configKey]);
   if (hasPrivate) return true;
-  return publicProviders.some((p) => !blocked.has(p.name));
+  return providers.some((p) => !p.configKey && eligible(p));
 }
 
 export type { UploadProvider, PrivateUploadProvider, UploadProviderPlugin };

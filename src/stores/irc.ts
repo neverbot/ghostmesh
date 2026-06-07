@@ -952,10 +952,13 @@ const useIrcStore = defineStore('irc', () => {
     );
 
     try {
+      const server = servers.value.find((s) => s.id === serverId);
       const userKeys = useUserSettingsStore().getProfile().uploadProviderKeys || {};
-      // TODO: server.blockedUploadProviders and server.proxyUploadProviders are
-      // not currently honoured by uploadImage — tracked as a follow-up bug.
-      const url = await uploadImage(file, { userKeys });
+      const url = await uploadImage(file, {
+        userKeys,
+        blocked: server?.blockedUploadProviders,
+        proxyAllowed: server?.proxyUploadProviders,
+      });
       // Send the URL directly — bypass URL transforms (upload URLs must not be modified)
       getService().send(serverId, `PRIVMSG ${channel} :${url}`);
       addMessage(serverId, channel, nickname.value, url, 'message');
