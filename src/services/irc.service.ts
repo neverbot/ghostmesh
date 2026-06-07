@@ -64,8 +64,6 @@ const MAX_RECONNECT_ATTEMPTS = 7;
 const RECONNECT_BASE_DELAY_MS = 2000;
 /** Cap on the exponential backoff delay (milliseconds). */
 const RECONNECT_DELAY_CAP_MS = 60000;
-/** Drops shorter than this are considered fatal (DNS/TLS/auth) and not retried unless registered. */
-const MIN_LASTED_FOR_RETRY_MS = 1000;
 
 /**
  * IRC protocol service. Manages WebSocket connections, parses IRC messages,
@@ -253,9 +251,6 @@ class IRCService extends EventEmitter {
 
     socket.onclose = (): void => {
       this.store.addSystemMessage(serverId, `Disconnected from ${server.name}`);
-      const wasRegistered: boolean = this.registered.has(serverId);
-      const startedAt: number = this.connectStartedAt.get(serverId) || Date.now();
-      const lasted: number = Date.now() - startedAt;
       this.connectStartedAt.delete(serverId);
       this.store.removeConnection(serverId);
       this.cleanupConnection(serverId);
@@ -269,12 +264,11 @@ class IRCService extends EventEmitter {
         this.store.clearReconnectingState(serverId);
         return;
       }
-      // Reconnect on: a clean drop after registration, or any drop that lasted long enough
-      // to suggest a transient network blip (filters out instant fatal failures: DNS, TLS).
-      const shouldReconnect: boolean = wasRegistered || lasted >= MIN_LASTED_FOR_RETRY_MS;
-      if (shouldReconnect) {
-        this.scheduleReconnect(serverId);
-      }
+      // Always retry within the attempt budget. Truly-fatal drops are filtered
+      // upstream (skipReconnect for 464/465, autoReconnect=false in settings,
+      // manual disconnect via cancelReconnect). The 7-attempt cap bounds the
+      // cost of retrying transient cases that turn out to be fatal.
+      this.scheduleReconnect(serverId);
     };
 
     this.connections.set(serverId, connection);
@@ -1359,3 +1353,9 @@ export type {
   ParsedMessage,
 };
 export default IRCService;
+
+// This module holds long-lived sockets and timers — HMR cannot safely hot-swap it.
+// Force a full page reload on edit so restoreSession can re-establish state cleanly.
+if (import.meta.hot) {
+  import.meta.hot.invalidate();
+}

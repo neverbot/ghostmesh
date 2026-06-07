@@ -1338,3 +1338,9 @@ const useIrcStore = defineStore('irc', () => {
 
 export type { DisplayChannel, JoinedChannelEntry, SessionData, OpenSettingsRequest };
 export { useIrcStore };
+
+// Pinia setup-store with long-lived watchers; HMR cannot hot-swap safely.
+// Force a full page reload on edit so the session is rebuilt cleanly.
+if (import.meta.hot) {
+  import.meta.hot.invalidate();
+}
