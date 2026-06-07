@@ -1166,6 +1166,21 @@ class IRCService extends EventEmitter {
         if (conn) {
           s.setNickname(serverId, conn.config.nickname);
         }
+        // Rejoin previously-joined channels (after a reconnect they are still in the store
+        // but the server has forgotten us). Throttled to avoid anti-flood. Idempotent: the
+        // server silently ignores JOINs for channels we're already in.
+        const previouslyJoined: string[] = (s.channels[serverId] || []).filter(
+          (ch) => ch.startsWith('#') || ch.startsWith('&'),
+        );
+        if (previouslyJoined.length > 0) {
+          previouslyJoined.forEach((channel, idx) => {
+            setTimeout(() => {
+              if (this.connections.has(serverId)) {
+                this.joinChannel(serverId, channel);
+              }
+            }, idx * 200);
+          });
+        }
         // Use settings > detected > default for LIST delay
         const detected: number | null = this.listWaitOverrides[serverId] || null;
         const waitSec: number = this.serverSettings.getListDelay(serverId, detected);
