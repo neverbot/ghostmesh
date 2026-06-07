@@ -37,8 +37,10 @@ const providers: UploadProviderPlugin[] = Object.values(modules)
   .map((m) => m.default)
   .filter((p): p is UploadProviderPlugin => !!p?.name && typeof p.upload === 'function');
 
-const publicProviders = providers.filter((p) => !p.configKey) as UploadProvider[];
-const privateProviders = providers.filter((p) => !!p.configKey) as unknown as PrivateUploadProvider[];
+const publicProviders = providers.filter((p) => !p.configKey) as unknown as UploadProvider[];
+const privateProviders = providers.filter(
+  (p) => !!p.configKey,
+) as unknown as PrivateUploadProvider[];
 
 const disabledProviders = new Set<string>();
 
@@ -67,9 +69,7 @@ function hasAvailableProvider(
   _proxyAllowed: string[] = [],
 ): boolean {
   const blocked = new Set([...disabledProviders, ...blockedNames]);
-  const hasPrivate = privateProviders.some(
-    (p) => !blocked.has(p.name) && !!userKeys[p.configKey],
-  );
+  const hasPrivate = privateProviders.some((p) => !blocked.has(p.name) && !!userKeys[p.configKey]);
   if (hasPrivate) return true;
   return publicProviders.some((p) => !blocked.has(p.name));
 }

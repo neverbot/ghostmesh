@@ -267,8 +267,9 @@
                       <span
                         v-if="server.notice"
                         class="mt-1 text-[11px] leading-snug text-slate-400"
-                        >{{ server.notice }}</span
                       >
+                        {{ server.notice }}
+                      </span>
                     </span>
                     <span
                       class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors"

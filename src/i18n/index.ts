@@ -29,7 +29,7 @@ const i18n = createI18n({
 /** Switch the active locale and persist the choice. */
 function setLocale(locale: string): void {
   if (!AVAILABLE_LOCALES.includes(locale)) return;
-  i18n.global.locale.value = locale;
+  i18n.global.locale.value = locale as 'en' | 'es';
   localStorage.setItem(STORAGE_KEY, locale);
   document.documentElement.lang = locale;
 }

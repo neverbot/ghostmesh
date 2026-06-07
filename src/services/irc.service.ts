@@ -7,6 +7,7 @@ import type {
   ServerConfig,
   ChannelUser,
   UserMode,
+  MessageType,
 } from '@/types.ts';
 import type { ServerSettingsEntry } from '@/stores/server-settings.ts';
 
@@ -42,6 +43,7 @@ interface ServerSettingsApi {
   getListDelay(serverId: string, detected: number | null): number;
   markMircDetected(serverId: string): void;
   updateSettings(serverId: string, partial: Partial<ServerSettingsEntry>): void;
+  isMessageFiltered(serverId: string, text: string): boolean;
 }
 
 /** Store API for global user profile (nickname, username, realname). */
@@ -661,7 +663,7 @@ class IRCService extends EventEmitter {
         const actionMatch: RegExpMatchArray | null = msgText.match(/^\x01ACTION (.*)\x01?$/);
         const isAction: boolean = !!actionMatch;
         const content: string = isAction ? `* ${nick} ${actionMatch![1]}` : msgText;
-        const msgType: string = isAction ? 'system' : 'message';
+        const msgType: MessageType = isAction ? 'system' : 'message';
 
         // Filter messages matching server-specific patterns
         if (this.serverSettings.isMessageFiltered(serverId, content)) break;
