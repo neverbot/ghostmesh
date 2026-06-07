@@ -1,5 +1,6 @@
 <script setup lang="ts">
-  import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue';
+  import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
+  import type { ComputedRef } from 'vue';
 
   const props = defineProps<{
     open: boolean;
@@ -11,9 +12,49 @@
   }>();
 
   const pickerEl = ref<HTMLElement | null>(null);
-  const activeCategory = ref(0);
   const posX = ref(0);
   const posY = ref(0);
+
+  // ─── Recently-used persistence ────────────────────────────────────────────
+  const RECENT_STORAGE_KEY = 'ghostmesh:emoji-recent';
+  const RECENT_CAP = 24;
+
+  function loadRecents(): string[] {
+    try {
+      const raw = localStorage.getItem(RECENT_STORAGE_KEY);
+      if (!raw) return [];
+      const parsed: unknown = JSON.parse(raw);
+      return Array.isArray(parsed)
+        ? parsed.filter((s): s is string => typeof s === 'string').slice(0, RECENT_CAP)
+        : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveRecents(list: string[]): void {
+    try {
+      localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(list));
+    } catch {
+      // localStorage quota or disabled — silent fail
+    }
+  }
+
+  const recents = ref<string[]>(loadRecents());
+
+  function pushRecent(emoji: string): void {
+    const next: string[] = [emoji, ...recents.value.filter((e) => e !== emoji)].slice(
+      0,
+      RECENT_CAP,
+    );
+    recents.value = next;
+    saveRecents(next);
+  }
+
+  function onSelect(emoji: string): void {
+    pushRecent(emoji);
+    emit('select', emoji);
+  }
 
   /** Position the picker above the trigger button using its DOM rect. */
   function updatePosition() {
@@ -28,20 +69,13 @@
     if (posY.value < 8) posY.value = 8;
   }
 
-  watch(
-    () => props.open,
-    (val) => {
-      if (val) nextTick(updatePosition);
-    },
-  );
-
   interface EmojiCategory {
     icon: string;
     label: string;
     emojis: string[];
   }
 
-  const categories: EmojiCategory[] = [
+  const baseCategories: EmojiCategory[] = [
     {
       icon: '😀',
       label: 'Smileys',
@@ -1145,6 +1179,33 @@
     },
   ];
 
+  /** Categories with an optional "Recent" tab prepended when recents is non-empty. */
+  const categories: ComputedRef<EmojiCategory[]> = computed(() =>
+    recents.value.length === 0
+      ? baseCategories
+      : [{ icon: '🕒', label: 'Recent', emojis: recents.value }, ...baseCategories],
+  );
+
+  /** Active category by label (stable across recents tab appearing/disappearing). */
+  const activeCategory = ref<string>(recents.value.length > 0 ? 'Recent' : 'Smileys');
+
+  const activeEmojis: ComputedRef<string[]> = computed(
+    () => categories.value.find((c) => c.label === activeCategory.value)?.emojis || [],
+  );
+
+  watch(
+    () => props.open,
+    (val) => {
+      if (!val) return;
+      // Default to Recent when available; otherwise fall back to the first visible tab.
+      if (recents.value.length > 0) activeCategory.value = 'Recent';
+      else if (!categories.value.some((c) => c.label === activeCategory.value)) {
+        activeCategory.value = categories.value[0]?.label || 'Smileys';
+      }
+      nextTick(updatePosition);
+    },
+  );
+
   /** Close picker on outside click. */
   function onClickOutside(e: MouseEvent) {
     if (pickerEl.value && !pickerEl.value.contains(e.target as Node)) {
@@ -1167,12 +1228,12 @@
       <!-- Category tabs -->
       <div class="flex shrink-0 border-b border-slate-100">
         <button
-          v-for="(cat, i) in categories"
+          v-for="cat in categories"
           :key="cat.label"
           class="flex-1 py-2 text-center text-base transition-colors"
-          :class="activeCategory === i ? 'bg-slate-50 shadow-inner' : 'hover:bg-slate-50'"
+          :class="activeCategory === cat.label ? 'bg-slate-50 shadow-inner' : 'hover:bg-slate-50'"
           :data-tooltip="cat.label"
-          @click="activeCategory = i"
+          @click="activeCategory = cat.label"
         >
           {{ cat.icon }}
         </button>
@@ -1181,10 +1242,10 @@
       <div class="flex-1 overflow-y-auto p-2">
         <div class="grid grid-cols-8 gap-0.5">
           <button
-            v-for="emoji in categories[activeCategory].emojis"
+            v-for="emoji in activeEmojis"
             :key="emoji"
             class="flex h-8 w-8 items-center justify-center rounded text-lg transition-colors hover:bg-slate-100"
-            @click="emit('select', emoji)"
+            @click="onSelect(emoji)"
           >
             {{ emoji }}
           </button>
