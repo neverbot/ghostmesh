@@ -151,6 +151,27 @@
             <span class="truncate text-sm">{{ server.name }}</span>
             <span class="truncate text-[10px] text-slate-600">{{ server.host }}</span>
           </div>
+          <!-- Reconnect now (during backoff) -->
+          <button
+            v-if="store.reconnectingServers[server.id]"
+            class="rounded p-1 text-amber-400 transition-colors hover:bg-slate-600 hover:text-amber-300"
+            data-tooltip="Reconnect now"
+            data-tooltip-delay="500"
+            @click.stop="store.reconnectNow(server.id)"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              class="h-3 w-3"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M8 3a5 5 0 1 0 4.546 2.914.75.75 0 0 1 1.364-.626A6.5 6.5 0 1 1 8 1.5v-.75a.75.75 0 0 1 1.28-.53l1.5 1.5a.75.75 0 0 1 0 1.06l-1.5 1.5A.75.75 0 0 1 8 3.75V3Z"
+                clip-rule="evenodd"
+              />
+            </svg>
+          </button>
           <!-- Settings gear -->
           <button
             class="rounded p-1 text-transparent transition-colors hover:bg-slate-600 hover:text-slate-300 group-hover:text-slate-500"
