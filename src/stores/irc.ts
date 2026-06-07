@@ -1124,12 +1124,12 @@ const useIrcStore = defineStore('irc', () => {
 
   /** Save current session to localStorage. */
   function persistSession(): void {
-    // During page unload, don't touch the session — keep the last good save
+    // During page unload, don't touch the session — keep the last good save.
     if (unloading) return;
-    if (activeConnections.value.length === 0) {
-      clearSession();
-      return;
-    }
+    // When all servers are momentarily disconnected (network drop, HMR-driven unload,
+    // user click of Disconnect), preserve the previous save so the next page load can
+    // restore. Explicit forget happens via cleanup() / forget-me actions.
+    if (activeConnections.value.length === 0) return;
     saveSession({
       serverIds: [...activeConnections.value],
       channels: { ...channels.value },
