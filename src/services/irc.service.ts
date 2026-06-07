@@ -201,6 +201,7 @@ class IRCService extends EventEmitter {
     socket.onopen = (): void => {
       this.connectedAt[serverId] = Date.now();
       this.reconnectAttempts.delete(serverId);
+      this.store.clearReconnectingState(serverId);
       this.store.addConnection(serverId);
       // Initialize server runtime info
       this.store.setServerInfo(serverId, {
@@ -265,6 +266,7 @@ class IRCService extends EventEmitter {
         );
         this.skipReconnect.delete(serverId);
         this.reconnectAttempts.delete(serverId);
+        this.store.clearReconnectingState(serverId);
         return;
       }
       // Reconnect on: a clean drop after registration, or any drop that lasted long enough
@@ -549,6 +551,7 @@ class IRCService extends EventEmitter {
         `Reconnection failed after ${MAX_RECONNECT_ATTEMPTS} attempts.`,
       );
       this.reconnectAttempts.delete(serverId);
+      this.store.clearReconnectingState(serverId);
       return;
     }
 
@@ -564,6 +567,12 @@ class IRCService extends EventEmitter {
     this.store.addSystemMessage(
       serverId,
       `Reconnecting in ${(delay / 1000).toFixed(1)}s (attempt ${attempts + 1}/${MAX_RECONNECT_ATTEMPTS})...`,
+    );
+    this.store.setReconnectingState(
+      serverId,
+      attempts + 1,
+      MAX_RECONNECT_ATTEMPTS,
+      Date.now() + delay,
     );
 
     const timer: ReturnType<typeof setTimeout> = setTimeout(() => {
@@ -604,6 +613,7 @@ class IRCService extends EventEmitter {
       this.reconnectTimers.delete(serverId);
     }
     this.reconnectAttempts.delete(serverId);
+    this.store.clearReconnectingState(serverId);
   }
 
   /**

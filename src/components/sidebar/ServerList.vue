@@ -130,11 +130,18 @@
             v-else
             class="h-2 w-2 shrink-0 rounded-full"
             :class="
-              store.isConnected(server.id)
-                ? 'bg-emerald-400'
-                : store.statusRetainedServers.includes(server.id)
-                  ? 'bg-amber-400'
-                  : 'bg-slate-600'
+              store.reconnectingServers[server.id]
+                ? 'animate-pulse bg-amber-400'
+                : store.isConnected(server.id)
+                  ? 'bg-emerald-400'
+                  : store.statusRetainedServers.includes(server.id)
+                    ? 'bg-amber-400'
+                    : 'bg-slate-600'
+            "
+            :data-tooltip="
+              store.reconnectingServers[server.id]
+                ? `Reconnecting · attempt ${store.reconnectingServers[server.id].attempt}/${store.reconnectingServers[server.id].maxAttempts}`
+                : undefined
             "
           />
           <div

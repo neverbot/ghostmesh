@@ -148,6 +148,15 @@ interface IrcStoreApi {
   warnLastOwnMessage(serverId: string, warningText: string): void;
   /** Add a system-level message to the active server's status channel. */
   addSystemMessage(serverId: string, content: string, numericCode?: string): void;
+  /** Mark a server as currently in a reconnect backoff cycle. */
+  setReconnectingState(
+    serverId: string,
+    attempt: number,
+    maxAttempts: number,
+    nextRetryAt: number,
+  ): void;
+  /** Clear the reconnect-cycle state for a server. */
+  clearReconnectingState(serverId: string): void;
   /** Set the topic for a channel. */
   setTopic(serverId: string, channel: string, topic: string): void;
   /** Add a single user to a channel's member list. */

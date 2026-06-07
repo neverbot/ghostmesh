@@ -85,6 +85,13 @@ const useIrcStore = defineStore('irc', () => {
   /** Servers that disconnected but still have a *status channel with messages to show. */
   const statusRetainedServers: Ref<string[]> = ref([]);
   const connectingServers: Ref<string[]> = ref([]);
+  /** Per-server reconnect cycle state for sidebar feedback. */
+  interface ReconnectingEntry {
+    attempt: number;
+    maxAttempts: number;
+    nextRetryAt: number;
+  }
+  const reconnectingServers: Ref<Record<string, ReconnectingEntry>> = ref({});
   const selectedServerId: Ref<string | null> = ref(null);
   const selectedChannel: Ref<string | null> = ref(null);
   const nickname: Ref<string> = ref('');
@@ -436,6 +443,42 @@ const useIrcStore = defineStore('irc', () => {
    */
   function isConnected(serverId: string): boolean {
     return activeConnections.value.includes(serverId);
+  }
+
+  /**
+   * Mark a server as currently in a reconnect backoff cycle (called by the service).
+   */
+  function setReconnectingState(
+    serverId: string,
+    attempt: number,
+    maxAttempts: number,
+    nextRetryAt: number,
+  ): void {
+    reconnectingServers.value = {
+      ...reconnectingServers.value,
+      [serverId]: { attempt, maxAttempts, nextRetryAt },
+    };
+  }
+
+  /**
+   * Clear the reconnect cycle state for a server (success or give-up).
+   */
+  function clearReconnectingState(serverId: string): void {
+    if (!reconnectingServers.value[serverId]) return;
+    const next = { ...reconnectingServers.value };
+    delete next[serverId];
+    reconnectingServers.value = next;
+  }
+
+  /**
+   * Cancel any pending reconnect timer and try to connect now.
+   * Used by the "reconnect now" sidebar button.
+   */
+  function reconnectNow(serverId: string): void {
+    const server: ServerConfig | undefined = servers.value.find((s) => s.id === serverId);
+    if (!server) return;
+    clearReconnectingState(serverId);
+    connectToServer(server);
   }
 
   /**
@@ -1196,6 +1239,8 @@ const useIrcStore = defineStore('irc', () => {
     addMessage,
     warnLastOwnMessage,
     addSystemMessage,
+    setReconnectingState,
+    clearReconnectingState,
     setTopic,
     addUser,
     addUsers,
@@ -1218,6 +1263,7 @@ const useIrcStore = defineStore('irc', () => {
     activeConnections,
     statusRetainedServers,
     connectingServers,
+    reconnectingServers,
     connectionError,
     openSettingsRequest,
     requestOpenSettings,
@@ -1284,6 +1330,9 @@ const useIrcStore = defineStore('irc', () => {
     serverInfo,
     getServerInfo,
     setServerInfo,
+    setReconnectingState,
+    clearReconnectingState,
+    reconnectNow,
   };
 });
 
