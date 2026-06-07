@@ -1179,30 +1179,19 @@
     },
   ];
 
-  /** Categories with an optional "Recent" tab prepended when recents is non-empty. */
-  const categories: ComputedRef<EmojiCategory[]> = computed(() =>
-    recents.value.length === 0
-      ? baseCategories
-      : [{ icon: '🕒', label: 'Recent', emojis: recents.value }, ...baseCategories],
-  );
+  const categories: EmojiCategory[] = baseCategories;
 
-  /** Active category by label (stable across recents tab appearing/disappearing). */
-  const activeCategory = ref<string>(recents.value.length > 0 ? 'Recent' : 'Smileys');
+  /** Active category by label. Defaults to the first category. */
+  const activeCategory = ref<string>(categories[0]?.label || 'Smileys');
 
   const activeEmojis: ComputedRef<string[]> = computed(
-    () => categories.value.find((c) => c.label === activeCategory.value)?.emojis || [],
+    () => categories.find((c) => c.label === activeCategory.value)?.emojis || [],
   );
 
   watch(
     () => props.open,
     (val) => {
-      if (!val) return;
-      // Default to Recent when available; otherwise fall back to the first visible tab.
-      if (recents.value.length > 0) activeCategory.value = 'Recent';
-      else if (!categories.value.some((c) => c.label === activeCategory.value)) {
-        activeCategory.value = categories.value[0]?.label || 'Smileys';
-      }
-      nextTick(updatePosition);
+      if (val) nextTick(updatePosition);
     },
   );
 
@@ -1240,6 +1229,20 @@
       </div>
       <!-- Emoji grid -->
       <div class="flex-1 overflow-y-auto p-2">
+        <!-- Recently used: a strip at the top of the first tab, separated by a divider. -->
+        <template v-if="activeCategory === 'Smileys' && recents.length > 0">
+          <div class="grid grid-cols-8 gap-0.5">
+            <button
+              v-for="emoji in recents"
+              :key="`recent-${emoji}`"
+              class="flex h-8 w-8 items-center justify-center rounded text-lg transition-colors hover:bg-slate-100"
+              @click="onSelect(emoji)"
+            >
+              {{ emoji }}
+            </button>
+          </div>
+          <hr class="my-2 border-slate-100" />
+        </template>
         <div class="grid grid-cols-8 gap-0.5">
           <button
             v-for="emoji in activeEmojis"
