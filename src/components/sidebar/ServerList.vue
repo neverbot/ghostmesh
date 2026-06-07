@@ -1,10 +1,40 @@
 <script setup lang="ts">
-  import { ref, computed, watch } from 'vue';
+  import { ref, computed, watch, onUnmounted } from 'vue';
   import { useIrcStore } from '@/stores/irc.ts';
   import { i18n } from '@/i18n/index.ts';
   import type { ServerConfig } from '@/types.ts';
 
   const store = useIrcStore();
+
+  // ── Reconnect countdown ticker ────────────────────────────────────────────
+  // Updates once a second while any server is in a reconnect cycle so the
+  // sidebar status line ("Reconnecting · 3/7 · 8s") shows a live countdown.
+  const now = ref(Date.now());
+  let tickHandle: ReturnType<typeof setInterval> | null = null;
+  watch(
+    () => Object.keys(store.reconnectingServers).length,
+    (n) => {
+      if (n > 0 && !tickHandle) {
+        tickHandle = setInterval(() => {
+          now.value = Date.now();
+        }, 1000);
+      } else if (n === 0 && tickHandle) {
+        clearInterval(tickHandle);
+        tickHandle = null;
+      }
+    },
+    { immediate: true },
+  );
+  onUnmounted(() => {
+    if (tickHandle) clearInterval(tickHandle);
+  });
+
+  function reconnectCountdown(serverId: string): string {
+    const entry = store.reconnectingServers[serverId];
+    if (!entry) return '';
+    const secs: number = Math.max(0, Math.ceil((entry.nextRetryAt - now.value) / 1000));
+    return secs > 0 ? `${secs}s` : 'now';
+  }
 
   const emit = defineEmits<{
     'open-settings': [server: ServerConfig];
@@ -149,7 +179,36 @@
             :data-tooltip="server.notice || undefined"
           >
             <span class="truncate text-sm">{{ server.name }}</span>
-            <span class="truncate text-[10px] text-slate-600">{{ server.host }}</span>
+            <!-- Reconnect status replaces the host line when the server is in a backoff cycle. -->
+            <span
+              v-if="store.reconnectingServers[server.id]"
+              class="flex items-center gap-1 truncate text-[10px] text-amber-400"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 16 16"
+                fill="currentColor"
+                class="h-2.5 w-2.5 shrink-0 animate-spin"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M8 3a5 5 0 1 0 4.546 2.914.75.75 0 0 1 1.364-.626A6.5 6.5 0 1 1 8 1.5v-.75a.75.75 0 0 1 1.28-.53l1.5 1.5a.75.75 0 0 1 0 1.06l-1.5 1.5A.75.75 0 0 1 8 3.75V3Z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              <span class="truncate">
+                Reconnecting · {{ store.reconnectingServers[server.id].attempt }}/{{
+                  store.reconnectingServers[server.id].maxAttempts
+                }}
+                · {{ reconnectCountdown(server.id) }}
+              </span>
+            </span>
+            <span
+              v-else
+              class="truncate text-[10px] text-slate-600"
+            >
+              {{ server.host }}
+            </span>
           </div>
           <!-- Reconnect now (during backoff) -->
           <button
