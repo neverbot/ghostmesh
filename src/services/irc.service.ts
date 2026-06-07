@@ -64,7 +64,6 @@ const MAX_RECONNECT_ATTEMPTS = 7;
 const RECONNECT_BASE_DELAY_MS = 2000;
 /** Cap on the exponential backoff delay (milliseconds). */
 const RECONNECT_DELAY_CAP_MS = 60000;
-
 /**
  * IRC protocol service. Manages WebSocket connections, parses IRC messages,
  * handles protocol commands, and periodically refreshes channel lists.
@@ -291,7 +290,7 @@ class IRCService extends EventEmitter {
    * @param channel — with or without # prefix
    */
   joinChannel(serverId: string, channel: string): void {
-    if (!channel.startsWith('#')) channel = '#' + channel;
+    // Caller is expected to have validated/normalised the name.
     this.send(serverId, `JOIN ${channel}`);
   }
 
@@ -1087,9 +1086,13 @@ class IRCService extends EventEmitter {
       }
 
       case '322': {
-        // RPL_LIST — one channel per message, arrives async
+        // RPL_LIST — one channel per message, arrives async.
+        // Skip entries whose name doesn't look like a real channel — UnrealIRCd masks
+        // +p (private) channels with name '*' which cannot be meaningfully joined.
+        const name: string = params[1];
+        if (!name || !/^[#&!+]/.test(name)) break;
         const channelEntry: AvailableChannel = {
-          name: params[1],
+          name,
           users: parseInt(params[2], 10) || 0,
           topic: trailing || '',
         };

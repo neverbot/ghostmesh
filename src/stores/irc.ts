@@ -893,7 +893,12 @@ const useIrcStore = defineStore('irc', () => {
    */
   function joinChannel(serverId: string, channel: string): void {
     if (!isConnected(serverId)) return;
-    getService().joinChannel(serverId, channel);
+    // Normalise: typed "foo" becomes "#foo"; reject anything that still doesn't
+    // look like a valid IRC channel name.
+    const normalised: string = /^[#&!+]/.test(channel) ? channel : '#' + channel;
+    // IRC channel names: prefix + 1-49 chars, no space / comma / asterisk.
+    if (!/^[#&!+][^\s,*]{1,49}$/.test(normalised)) return;
+    getService().joinChannel(serverId, normalised);
   }
 
   /**
