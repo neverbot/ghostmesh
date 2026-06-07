@@ -369,7 +369,9 @@ const useIrcStore = defineStore('irc', () => {
       delete connectTimers[serverId];
     }
 
-    // Clean up all data for this server, but preserve *status channel and its messages
+    // Clean up heavy data (messages, users, topics) for non-status channels but
+    // PRESERVE the channels list itself — auto-reconnect needs it to rejoin on next
+    // RPL_WELCOME (376/422). Explicit forget is via clearDisconnectedServer().
     const serverChannels: string[] = channels.value[serverId] || [];
     for (const ch of serverChannels) {
       if (ch === '*status') continue;
@@ -378,8 +380,6 @@ const useIrcStore = defineStore('irc', () => {
       delete users.value[key];
       delete topics.value[key];
     }
-    // Keep only *status in the channel list
-    channels.value[serverId] = ['*status'];
     triggerRef(messages);
     users.value = { ...users.value };
     delete availableChannels.value[serverId];
