@@ -17,7 +17,8 @@
 
   // ─── Recently-used persistence ────────────────────────────────────────────
   const RECENT_STORAGE_KEY = 'ghostmesh:emoji-recent';
-  const RECENT_CAP = 24;
+  // Matches the picker grid width (grid-cols-8) so recents always fit on one row.
+  const RECENT_CAP = 8;
 
   function loadRecents(): string[] {
     try {
