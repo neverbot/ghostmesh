@@ -26,7 +26,7 @@ interface UploadProviderPlugin {
   proxy?: boolean;
   upload: (
     file: File,
-    ctx: { apiKey?: string; disableProvider: (name: string) => void },
+    ctx: { apiKey?: string; nick?: string; disableProvider: (name: string) => void },
   ) => Promise<string>;
 }
 
@@ -53,6 +53,7 @@ async function uploadImage(
     userKeys?: Record<string, string>;
     blocked?: string[];
     proxyAllowed?: string[];
+    nick?: string;
   } = {},
 ): Promise<string> {
   const blocked = new Set([...disabledProviders, ...(ctx.blocked || [])]);
@@ -65,6 +66,7 @@ async function uploadImage(
       const apiKey = p.configKey ? ctx.userKeys?.[p.configKey] || ctx.apiKey : undefined;
       return await p.upload(file, {
         apiKey,
+        nick: ctx.nick,
         disableProvider: (n: string) => disabledProviders.add(n),
       });
     } catch {

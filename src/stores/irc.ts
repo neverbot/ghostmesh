@@ -954,10 +954,12 @@ const useIrcStore = defineStore('irc', () => {
     try {
       const server = servers.value.find((s) => s.id === serverId);
       const userKeys = useUserSettingsStore().getProfile().uploadProviderKeys || {};
+      const serverNick = nicknamePerServer.value[serverId] || nickname.value;
       const url = await uploadImage(file, {
         userKeys,
         blocked: server?.blockedUploadProviders,
         proxyAllowed: server?.proxyUploadProviders,
+        nick: serverNick,
       });
       // Send the URL directly — bypass URL transforms (upload URLs must not be modified)
       getService().send(serverId, `PRIVMSG ${channel} :${url}`);
