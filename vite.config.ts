@@ -34,7 +34,9 @@ export default defineConfig({
     port: 5174,
     proxy: {
       '/api/upload': {
-        target: 'http://localhost:8081',
+        // Docker compose service name; resolves inside the frontend container.
+        // Override with UPLOAD_PROXY_TARGET for dev outside the compose network.
+        target: process.env.UPLOAD_PROXY_TARGET || 'http://upload-proxy:8081',
         rewrite: (path) => path.replace(/^\/api\/upload/, '/upload'),
       },
     },
