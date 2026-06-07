@@ -787,6 +787,8 @@ const useIrcStore = defineStore('irc', () => {
     }
 
     connectingServers.value.push(server.id);
+    // Manual click — clear any pending backoff/attempts so this is a fresh try.
+    getService().cancelReconnect(server.id);
     getService().connect(server);
     // Timeout: if not connected after 15s, show error
     connectTimers[server.id] = setTimeout(() => {

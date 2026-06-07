@@ -58,6 +58,15 @@ interface UserPrefsApi {
   isUserBlocked(serverId: string, nick: string): boolean;
 }
 
+/** Max number of reconnect attempts before giving up. */
+const MAX_RECONNECT_ATTEMPTS = 7;
+/** Base delay before the first reconnect attempt (milliseconds). */
+const RECONNECT_BASE_DELAY_MS = 2000;
+/** Cap on the exponential backoff delay (milliseconds). */
+const RECONNECT_DELAY_CAP_MS = 60000;
+/** Drops shorter than this are considered fatal (DNS/TLS/auth) and not retried unless registered. */
+const MIN_LASTED_FOR_RETRY_MS = 1000;
+
 /**
  * IRC protocol service. Manages WebSocket connections, parses IRC messages,
  * handles protocol commands, and periodically refreshes channel lists.
@@ -91,6 +100,10 @@ class IRCService extends EventEmitter {
   reconnectAttempts: Map<string, number>;
   /** Reconnection timeout per server. */
   reconnectTimers: Map<string, ReturnType<typeof setTimeout>>;
+  /** Servers where auto-reconnect should be skipped due to fatal errors (auth, ban). */
+  skipReconnect: Set<string>;
+  /** Connect-start timestamp per server (epoch ms), used to gate retries on too-short drops. */
+  connectStartedAt: Map<string, number>;
   /** Queue of parsed messages waiting to be processed. */
   messageQueue: ParsedMessage[];
   /** rAF id for queue drain. */
@@ -131,6 +144,11 @@ class IRCService extends EventEmitter {
     this.serverConfigs = new Map();
     this.reconnectAttempts = new Map();
     this.reconnectTimers = new Map();
+    this.skipReconnect = new Set();
+    this.connectStartedAt = new Map();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', this.handleOnline);
+    }
     this.messageQueue = [];
     this.drainFrame = null;
     this.capNegotiating = new Set();
@@ -170,6 +188,15 @@ class IRCService extends EventEmitter {
 
     // Store server config for potential reconnection
     this.serverConfigs.set(serverId, server);
+    // Defensive: clear any pending timer so we don't end up with two sockets.
+    // (Timer-driven retries have already self-cleared; this catches manual calls during backoff.)
+    const existingTimer = this.reconnectTimers.get(serverId);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+      this.reconnectTimers.delete(serverId);
+    }
+    this.skipReconnect.delete(serverId);
+    this.connectStartedAt.set(serverId, Date.now());
 
     socket.onopen = (): void => {
       this.connectedAt[serverId] = Date.now();
@@ -216,24 +243,34 @@ class IRCService extends EventEmitter {
     };
 
     socket.onerror = (): void => {
+      // onerror is always followed by onclose; let onclose do the reconnect.
       const msg = server.tcpHost
         ? `Error connecting to ${server.name} — proxy service may be unavailable`
         : `Error connecting to ${server.name}`;
       this.store.addSystemMessage(serverId, msg);
-      const wasRegistered: boolean = this.registered.has(serverId);
-      this.store.removeConnection(serverId);
-      this.cleanupConnection(serverId);
-      if (wasRegistered) {
-        this.scheduleReconnect(serverId);
-      }
     };
 
     socket.onclose = (): void => {
       this.store.addSystemMessage(serverId, `Disconnected from ${server.name}`);
       const wasRegistered: boolean = this.registered.has(serverId);
+      const startedAt: number = this.connectStartedAt.get(serverId) || Date.now();
+      const lasted: number = Date.now() - startedAt;
+      this.connectStartedAt.delete(serverId);
       this.store.removeConnection(serverId);
       this.cleanupConnection(serverId);
-      if (wasRegistered) {
+      if (this.skipReconnect.has(serverId)) {
+        this.store.addSystemMessage(
+          serverId,
+          'Auto-reconnect disabled (authentication failure or ban).',
+        );
+        this.skipReconnect.delete(serverId);
+        this.reconnectAttempts.delete(serverId);
+        return;
+      }
+      // Reconnect on: a clean drop after registration, or any drop that lasted long enough
+      // to suggest a transient network blip (filters out instant fatal failures: DNS, TLS).
+      const shouldReconnect: boolean = wasRegistered || lasted >= MIN_LASTED_FOR_RETRY_MS;
+      if (shouldReconnect) {
         this.scheduleReconnect(serverId);
       }
     };
@@ -496,26 +533,37 @@ class IRCService extends EventEmitter {
   scheduleReconnect(serverId: string): void {
     const server: ServerConfig | undefined = this.serverConfigs.get(serverId);
     if (!server) return;
+    if (this.skipReconnect.has(serverId)) return;
 
     const settings: ServerSettingsEntry = this.serverSettings.getSettings(serverId);
     if (!settings.autoReconnect) return;
 
-    // Cancel any existing reconnect timer
+    // Cancel any existing reconnect timer (idempotent).
     const existing: ReturnType<typeof setTimeout> | undefined = this.reconnectTimers.get(serverId);
     if (existing) clearTimeout(existing);
 
     const attempts: number = this.reconnectAttempts.get(serverId) || 0;
-    if (attempts >= 5) {
-      this.store.addSystemMessage(serverId, 'Reconnection failed after 5 attempts.');
+    if (attempts >= MAX_RECONNECT_ATTEMPTS) {
+      this.store.addSystemMessage(
+        serverId,
+        `Reconnection failed after ${MAX_RECONNECT_ATTEMPTS} attempts.`,
+      );
       this.reconnectAttempts.delete(serverId);
       return;
     }
 
-    // Exponential backoff: 2s, 4s, 8s, 16s, 32s
-    const delay: number = Math.pow(2, attempts + 1) * 1000;
+    // Exponential backoff capped at RECONNECT_DELAY_CAP_MS, with ±20% jitter
+    // to avoid thundering herd when many clients drop together.
+    const raw: number = Math.min(
+      RECONNECT_DELAY_CAP_MS,
+      RECONNECT_BASE_DELAY_MS * Math.pow(2, attempts),
+    );
+    const jitter: number = 0.8 + Math.random() * 0.4;
+    const delay: number = Math.round(raw * jitter);
+
     this.store.addSystemMessage(
       serverId,
-      `Reconnecting in ${delay / 1000}s (attempt ${attempts + 1}/5)...`,
+      `Reconnecting in ${(delay / 1000).toFixed(1)}s (attempt ${attempts + 1}/${MAX_RECONNECT_ATTEMPTS})...`,
     );
 
     const timer: ReturnType<typeof setTimeout> = setTimeout(() => {
@@ -526,6 +574,24 @@ class IRCService extends EventEmitter {
 
     this.reconnectTimers.set(serverId, timer);
   }
+
+  /**
+   * Triggered when the browser regains network connectivity.
+   * Fires any pending reconnect timers immediately instead of waiting out the backoff.
+   */
+  handleOnline = (): void => {
+    if (this.reconnectTimers.size === 0) return;
+    for (const [serverId, timer] of this.reconnectTimers) {
+      clearTimeout(timer);
+      this.reconnectTimers.delete(serverId);
+      const server = this.serverConfigs.get(serverId);
+      if (!server) continue;
+      this.store.addSystemMessage(serverId, 'Network back online — reconnecting now...');
+      const attempts: number = this.reconnectAttempts.get(serverId) || 0;
+      this.reconnectAttempts.set(serverId, attempts + 1);
+      this.connect(server);
+    }
+  };
 
   /**
    * Cancel any pending reconnection for a server.
@@ -1173,11 +1239,19 @@ class IRCService extends EventEmitter {
         break;
       }
 
+      case '464': {
+        // ERR_PASSWDMISMATCH — bad server password. Fatal: skip auto-reconnect.
+        if (trailing) s.addSystemMessage(serverId, trailing, command);
+        this.skipReconnect.add(serverId);
+        break;
+      }
+
       case '465': {
-        // ERR_YOUREBANNEDCREEP — banned from server
+        // ERR_YOUREBANNEDCREEP — banned from server. Fatal: skip auto-reconnect.
         if (trailing) {
           s.addSystemMessage(serverId, trailing, command);
         }
+        this.skipReconnect.add(serverId);
         break;
       }
 
