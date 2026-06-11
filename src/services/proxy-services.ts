@@ -31,15 +31,25 @@ const disabled = new Set<string>();
 
 async function fetchWithProxy(url: string): Promise<Response> {
   if (corsProxies.length === 0) return fetch(url);
+  let lastError: Error | undefined;
   for (const p of corsProxies) {
     if (disabled.has(p.name)) continue;
     try {
-      return await fetch(p.buildUrl(url));
+      const resp: Response = await fetch(p.buildUrl(url));
+      // fetch() only throws on network-level errors. HTTP non-2xx (500, 502, 522,
+      // rate limits, etc.) come back as a Response with ok=false. Treat those as
+      // a proxy failure so we try the next one. Don't permanently disable on
+      // HTTP errors — they tend to recover quickly.
+      if (resp.ok) return resp;
+      lastError = new Error(`${p.name}: HTTP ${resp.status}`);
     } catch (e) {
+      // Network-level failure (DNS, connection refused). Likely persistent for
+      // this session — skip this proxy on subsequent calls.
+      lastError = e as Error;
       disabled.add(p.name);
     }
   }
-  throw new Error('All CORS proxies failed');
+  throw lastError || new Error('All CORS proxies failed');
 }
 
 function corsProxyUrl(url: string): string {
