@@ -30,6 +30,7 @@ interface ImagesConfig {
   cacheTtl: number;
   cacheCleanupInterval: number;
   cacheDebug: boolean;
+  corsProxyCooldown: number;
 }
 
 interface ServerDefaults {
@@ -108,6 +109,11 @@ const config: AppConfig = {
     cacheCleanupInterval: 5 * 60 * 1000,
     /** Log cache cleanup stats to console. */
     cacheDebug: true,
+    /**
+     * Milliseconds a CORS proxy stays disabled after a network-level failure.
+     * A single transient error must not take a proxy out for the whole session.
+     */
+    corsProxyCooldown: 60 * 1000,
   },
 
   /** WebSocket-to-TCP proxy for servers without native WebSocket support. */

@@ -1,4 +1,5 @@
 // CORS and image proxy services — loaded as plugins from src/plugins/proxies/.
+import config from '@/config.ts';
 
 interface CorsProxy {
   type: 'cors';
@@ -27,33 +28,50 @@ const corsProxies = proxies.filter((p): p is CorsProxy => p.type === 'cors');
 const imageProxy: ImageProxy | null =
   (proxies.find((p): p is ImageProxy => p.type === 'image') as ImageProxy) || null;
 
-const disabled = new Set<string>();
+/** Proxy name → epoch ms of the network failure that disabled it. */
+const disabled = new Map<string, number>();
+
+/**
+ * Whether a proxy is currently in cooldown after a network-level failure.
+ * Expired entries are dropped so the proxy is retried on the next call.
+ */
+function isDisabled(name: string): boolean {
+  const since = disabled.get(name);
+  if (since === undefined) return false;
+  if (Date.now() - since < config.images.corsProxyCooldown) return true;
+  disabled.delete(name);
+  return false;
+}
 
 async function fetchWithProxy(url: string): Promise<Response> {
   if (corsProxies.length === 0) return fetch(url);
   let lastError: Error | undefined;
   for (const p of corsProxies) {
-    if (disabled.has(p.name)) continue;
+    if (isDisabled(p.name)) continue;
     try {
       const resp: Response = await fetch(p.buildUrl(url));
       // fetch() only throws on network-level errors. HTTP non-2xx (500, 502, 522,
       // rate limits, etc.) come back as a Response with ok=false. Treat those as
-      // a proxy failure so we try the next one. Don't permanently disable on
-      // HTTP errors — they tend to recover quickly.
-      if (resp.ok) return resp;
+      // a proxy failure so we try the next one. Don't disable on HTTP errors —
+      // they tend to recover quickly.
+      if (resp.ok) {
+        disabled.delete(p.name);
+        return resp;
+      }
       lastError = new Error(`${p.name}: HTTP ${resp.status}`);
     } catch (e) {
-      // Network-level failure (DNS, connection refused). Likely persistent for
-      // this session — skip this proxy on subsequent calls.
+      // Network-level failure (DNS, CORS, connection refused). Put the proxy in
+      // cooldown rather than disabling it for the session — a single transient
+      // error would otherwise poison every later request.
       lastError = e as Error;
-      disabled.add(p.name);
+      disabled.set(p.name, Date.now());
     }
   }
   throw lastError || new Error('All CORS proxies failed');
 }
 
 function corsProxyUrl(url: string): string {
-  const p = corsProxies.find((p) => !disabled.has(p.name));
+  const p = corsProxies.find((p) => !isDisabled(p.name));
   return p ? p.buildUrl(url) : url;
 }
 
